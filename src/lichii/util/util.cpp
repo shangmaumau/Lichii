@@ -50,6 +50,19 @@ QIcon MenuIcon(const char* name) {
     return icon;
 }
 
+QPixmap ThemePixmap(const char* name, const QSize& logical_size, qreal dpr) {
+    if (UISettings::values.theme != "lichii") {
+        return {};
+    }
+
+    QPixmap source = QtCommon::LoadPixmapForDpr(
+        QStringLiteral(":/lichii/icons/%1@2x.png").arg(QLatin1String(name)), dpr);
+    if (source.isNull() || logical_size.isEmpty()) {
+        return source;
+    }
+    return QtCommon::ScalePixmapForDpr(source, logical_size, dpr);
+}
+
 const std::optional<Common::UUID> GetProfileID() {
     // if there's only a single profile, the user probably wants to use that... right?
     const auto& profiles = QtCommon::system->GetProfileManager().FindExistingProfileUUIDs();

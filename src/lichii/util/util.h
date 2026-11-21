@@ -8,6 +8,8 @@
 
 #include <QFont>
 #include <QIcon>
+#include <QPixmap>
+#include <QSize>
 #include <QString>
 #include "common/uuid.h"
 
@@ -17,6 +19,10 @@
 /// A menu icon from the Lichii icon set, white on the highlighted row. Other themes keep menus
 /// without icons, so this returns a null icon unless Lichii Dark is active.
 [[nodiscard]] QIcon MenuIcon(const char* name);
+
+/// An icon from the Lichii set at a logical size, backed by its @2x bitmap. Returns a null
+/// pixmap for other themes so callers can keep their theme icon.
+[[nodiscard]] QPixmap ThemePixmap(const char* name, const QSize& logical_size, qreal dpr = 2.0);
 
 /**
  * Prompt the user for a profile ID. If there is only one valid profile, returns that profile.

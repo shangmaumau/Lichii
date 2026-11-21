@@ -1510,7 +1510,11 @@ void MainWindow::InitializeWidgets() {
 
     // Setup Refresh Button
     refresh_button = new QPushButton();
-    refresh_button->setIcon(QIcon::fromTheme(QStringLiteral("view-refresh")));
+    const QIcon refresh_icon = MenuIcon("refresh");
+    refresh_button->setIcon(refresh_icon.isNull()
+                                ? QIcon::fromTheme(QStringLiteral("view-refresh"))
+                                : refresh_icon);
+    refresh_button->setIconSize(QSize(16, 16));
     refresh_button->setObjectName(QStringLiteral("RefreshButton"));
     refresh_button->setFocusPolicy(Qt::NoFocus);
     connect(refresh_button, &QPushButton::clicked, this, &MainWindow::OnGameListRefresh);
