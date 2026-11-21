@@ -589,7 +589,7 @@ NupEditDialog::NupEditDialog(const std::filesystem::path& archive, QWidget* pare
     localized_toggle = new QToolButton;
     localized_toggle->setCheckable(true);
     localized_toggle->setAutoRaise(true);
-    QIcon language_icon = MenuIcon("globe");
+    QIcon language_icon = WidgetIcon("globe");
     if (language_icon.isNull()) {
         language_icon = QIcon::fromTheme(
             QStringLiteral("preferences-desktop-locale"),

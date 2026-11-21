@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <algorithm>
+#include <utility>
 
+#include <QAbstractItemModel>
 #include <QApplication>
+#include <QEasingCurve>
 #include <QHeaderView>
 #include <QPainter>
 #include <QScroller>
 #include <QScrollerProperties>
 #include <QStyledItemDelegate>
+#include <QVariant>
+#include <QVariantAnimation>
 
 #include "qt_common/config/uisettings.h"
 #include "qt_common/game_list/game_list_p.h"
@@ -199,7 +204,12 @@ GameTree::GameTree(QWidget* parent) : QTreeView{parent} {
 }
 
 void GameTree::SetModel(GameListModel* model) {
+    ClearArrowAnimations();
     QTreeView::setModel(model);
+    if (model != nullptr) {
+        connect(model, &QAbstractItemModel::modelReset, this, &GameTree::ClearArrowAnimations,
+                Qt::UniqueConnection);
+    }
     const int icon_size = static_cast<int>(UISettings::values.game_icon_size.GetValue());
     setIconSize(QSize(icon_size, icon_size));
     LoadInterfaceLayout();
@@ -208,15 +218,14 @@ void GameTree::SetModel(GameListModel* model) {
 
 void GameTree::drawBranches(QPainter* painter, const QRect& rect,
                             const QModelIndex& index) const {
-    // Keep the style's row background, then cover its 1x chevron with the @2x asset.
+    // Keep the style's row background, then draw the rotated @2x chevron.
     QTreeView::drawBranches(painter, rect, index);
     if (!index.isValid() || model() == nullptr || !model()->hasChildren(index)) {
         return;
     }
 
     const bool expanded = isExpanded(index);
-    QPixmap chevron(QStringLiteral(":/lichii/icons/chevron_%1@2x.png")
-                        .arg(expanded ? QStringLiteral("down") : QStringLiteral("right")));
+    QPixmap chevron(QStringLiteral(":/lichii/icons/tree_chevron@2x.png"));
     if (chevron.isNull()) {
         return;
     }
@@ -228,13 +237,96 @@ void GameTree::drawBranches(QPainter* painter, const QRect& rect,
     const int indent = indentation();
     const QRect branch(rect.left() + depth * indent, rect.top(), indent, rect.height());
 
+    qreal angle = expanded ? 90.0 : 0.0;
+    if (!arrow_angles.isEmpty()) {
+        const QPersistentModelIndex key(index);
+        if (const auto it = arrow_angles.constFind(key); it != arrow_angles.constEnd()) {
+            angle = it.value();
+        }
+    }
+
     chevron.setDevicePixelRatio(2.0);
-    constexpr int side = 14;
+    constexpr int side = 20;
     const QPoint center = branch.center();
-    painter->drawPixmap(QRect(center.x() - side / 2, center.y() - side / 2, side, side), chevron);
+    const QRect target(center.x() - side / 2, center.y() - side / 2, side, side);
+
+    painter->save();
+    painter->setRenderHint(QPainter::SmoothPixmapTransform);
+    const QPoint pivot = target.center();
+    painter->translate(pivot);
+    painter->rotate(angle);
+    painter->translate(-pivot.x(), -pivot.y());
+    painter->drawPixmap(target, chevron);
+    painter->restore();
+}
+
+void GameTree::AnimateArrow(const QModelIndex& index, bool expanded) {
+    if (!index.isValid() || model() == nullptr || !model()->hasChildren(index)) {
+        return;
+    }
+
+    const QPersistentModelIndex key(index);
+    const qreal end = expanded ? 90.0 : 0.0;
+    const qreal start = arrow_angles.value(key, expanded ? 0.0 : 90.0);
+
+    if (QVariantAnimation* old = arrow_animations.take(key)) {
+        old->stop();
+        old->deleteLater();
+    }
+
+    // Keep the first paint at the current angle; otherwise a new expansion would flash at 90°.
+    arrow_angles[key] = start;
+
+    auto* animation = new QVariantAnimation(this);
+    animation->setStartValue(start);
+    animation->setEndValue(end);
+    animation->setDuration(160);
+    animation->setEasingCurve(QEasingCurve::OutCubic);
+    connect(animation, &QVariantAnimation::valueChanged, this,
+            [this, key](const QVariant& value) {
+                arrow_angles[key] = value.toReal();
+                const QModelIndex current = static_cast<QModelIndex>(key);
+                if (!current.isValid()) {
+                    return;
+                }
+                const QRect row = visualRect(current);
+                if (row.isValid()) {
+                    viewport()->update(QRect(0, row.top(), viewport()->width(), row.height()));
+                }
+            });
+    connect(animation, &QVariantAnimation::finished, this, [this, key, animation] {
+        // A newer animation for this row may have replaced this one.
+        if (arrow_animations.value(key) == animation) {
+            arrow_animations.remove(key);
+            arrow_angles.remove(key);
+            const QModelIndex current = static_cast<QModelIndex>(key);
+            if (current.isValid()) {
+                const QRect row = visualRect(current);
+                if (row.isValid()) {
+                    viewport()->update(
+                        QRect(0, row.top(), viewport()->width(), row.height()));
+                }
+            }
+        }
+        animation->deleteLater();
+    });
+    arrow_animations.insert(key, animation);
+    animation->start();
+}
+
+void GameTree::ClearArrowAnimations() {
+    for (auto* animation : std::as_const(arrow_animations)) {
+        animation->stop();
+        animation->deleteLater();
+    }
+    arrow_animations.clear();
+    arrow_angles.clear();
 }
 
 void GameTree::OnItemExpanded(const QModelIndex& item) {
+    const bool is_expanded = isExpanded(item);
+    AnimateArrow(item, is_expanded);
+
     const auto type = item.data(GameListItem::TypeRole).value<GameListItemType>();
     const bool is_dir = type == GameListItemType::CustomDir || type == GameListItemType::SdmcDir ||
                         type == GameListItemType::UserNandDir ||
@@ -243,7 +335,6 @@ void GameTree::OnItemExpanded(const QModelIndex& item) {
     if (!is_dir && !is_fave) {
         return;
     }
-    const bool is_expanded = isExpanded(item);
     if (is_fave) {
         UISettings::values.favorites_expanded = is_expanded;
         return;

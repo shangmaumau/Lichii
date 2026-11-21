@@ -388,14 +388,14 @@ ConfigurePerGame::ConfigurePerGame(QWidget* parent, u64 title_id_, const std::st
 
     scene = new QGraphicsScene(this);
     ui->icon_view->setScene(scene);
-    QIcon detect_icon = MenuIcon("globe");
+    QIcon detect_icon = WidgetIcon("globe");
     if (detect_icon.isNull()) {
         detect_icon = QIcon::fromTheme(QStringLiteral("edit-find"),
                                       QIcon::fromTheme(QStringLiteral("search")));
     }
     ui->button_detect_icon->setIcon(detect_icon);
 
-    QIcon upload_icon = MenuIcon("image");
+    QIcon upload_icon = WidgetIcon("image");
     if (upload_icon.isNull()) {
         upload_icon = QIcon::fromTheme(QStringLiteral("document-open"),
                                       QIcon::fromTheme(QStringLiteral("insert-image")));
@@ -406,7 +406,7 @@ ConfigurePerGame::ConfigurePerGame(QWidget* parent, u64 title_id_, const std::st
             &ConfigurePerGame::OnUploadNupIcon);
     connect(ui->button_detect_icon, &QPushButton::clicked, this,
             &ConfigurePerGame::OnDetectNupIcon);
-    QIcon remove_icon = MenuIcon("trash");
+    QIcon remove_icon = WidgetIcon("trash");
     if (remove_icon.isNull()) {
         remove_icon = QIcon::fromTheme(QStringLiteral("edit-clear"));
     }

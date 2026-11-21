@@ -3,9 +3,12 @@
 
 #pragma once
 
+#include <QHash>
+#include <QPersistentModelIndex>
 #include <QTreeView>
 
 class QPainter;
+class QVariantAnimation;
 class GameListModel;
 
 class GameTree : public QTreeView {
@@ -28,6 +31,13 @@ public:
 protected:
     void drawBranches(QPainter* painter, const QRect& rect,
                       const QModelIndex& index) const override;
+
+private:
+    void AnimateArrow(const QModelIndex& index, bool expanded);
+    void ClearArrowAnimations();
+
+    QHash<QPersistentModelIndex, qreal> arrow_angles;
+    QHash<QPersistentModelIndex, QVariantAnimation*> arrow_animations;
 
 signals:
     void ItemExpandedChanged(const QModelIndex& item);

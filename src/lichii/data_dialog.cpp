@@ -49,7 +49,7 @@ DataWidget::DataWidget(FrontendCommon::DataManager::DataDir data_dir,
     ui->tooltip->setText(QtCommon::StringLookup::Lookup(tooltip));
 
     const auto set_theme_icon = [](QPushButton* button, const char* name, const char* fallback) {
-        const QIcon icon = MenuIcon(name);
+        const QIcon icon = WidgetIcon(name);
         button->setIcon(icon.isNull() ? QIcon::fromTheme(QLatin1String(fallback)) : icon);
     };
     set_theme_icon(ui->clear, "trash", "user-trash");
