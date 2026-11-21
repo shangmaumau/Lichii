@@ -1046,9 +1046,13 @@ ArtworkLookupResult LookUpNintendoStoreArtwork(u64 title_id, const std::atomic_b
         ids.push_back(std::move(base));
     }
 
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{20};
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{30};
     bool network_error = false;
     std::string detail;
+    // Non-square key art is only a last resort. A localized store often serves a 16:9 banner,
+    // while another region has the proper square cover the grid expects.
+    QImage fallback;
+    std::string fallback_detail;
     const auto regions = NintendoStoreRegions();
     for (const auto& id : ids) {
         for (const auto& region : regions) {
@@ -1092,16 +1096,32 @@ ArtworkLookupResult LookUpNintendoStoreArtwork(u64 title_id, const std::atomic_b
                 detail = "image could not be decoded";
                 continue;
             }
-            out.image = CenterSquare(decoded);
-            if (out.image.isNull()) {
-                detail = "empty image";
-                continue;
+
+            const auto image_detail = fmt::format("{} {}", id, region);
+            if (decoded.width() == decoded.height()) {
+                out.image = CenterSquare(decoded);
+                if (out.image.isNull()) {
+                    detail = "empty image";
+                    continue;
+                }
+                out.status = ArtworkLookupStatus::Found;
+                out.detail = image_detail;
+                out.from_official_store = true;
+                return out;
             }
-            out.status = ArtworkLookupStatus::Found;
-            out.detail = fmt::format("{} {}", id, region);
-            out.from_official_store = true;
-            return out;
+            if (fallback.isNull()) {
+                fallback = CenterSquare(decoded);
+                fallback_detail = image_detail;
+            }
         }
+    }
+
+    if (!fallback.isNull()) {
+        out.image = std::move(fallback);
+        out.status = ArtworkLookupStatus::Found;
+        out.detail = std::move(fallback_detail);
+        out.from_official_store = true;
+        return out;
     }
 
     out.status =

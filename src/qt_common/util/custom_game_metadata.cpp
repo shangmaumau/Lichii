@@ -171,8 +171,10 @@ bool RemoveCustomArtwork(u64 program_id) {
 }
 
 std::filesystem::path CoverCachePath(u64 program_id) {
+    // v2 marks covers chosen by composition rather than by region order. Older caches can hold a
+    // 16:9 store banner cropped to a square, which cuts off part of the key art.
     return Common::FS::GetEdenPath(Common::FS::EdenPath::CacheDir) / "covers" /
-           fmt::format("{:016X}.{}.jpg", program_id,
+           fmt::format("{:016X}.{}.v2.jpg", program_id,
                        FileSys::GetConfiguredLanguageTag());
 }
 
