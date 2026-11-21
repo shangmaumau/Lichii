@@ -35,50 +35,60 @@ public:
 
         QStyleOptionViewItem item = option;
         initStyleOption(&item, index);
-        // The tree delegate draws the game picture itself. Keep its decoration square even when
-        // the name column is narrower than the configured icon size; otherwise Qt stretches or
-        // clips the picture into a portrait rectangle.
         const int icon_size = static_cast<int>(UISettings::values.game_icon_size.GetValue());
         const int icon_side =
             std::min({icon_size, item.rect.height() - 2, item.rect.width() - 8});
-        if (icon_side > 0) {
-            item.decorationSize = QSize(icon_side, icon_side);
-        }
         const QStringList lines =
             item.text.replace(QChar::LineSeparator, QLatin1Char('\n')).split(QLatin1Char('\n'));
         item.text.clear();
 
-        QPixmap game_picture;
-        if (type == GameListItemType::Game) {
-            game_picture = index.data(Qt::DecorationRole).value<QPixmap>();
-            if (!game_picture.isNull()) {
+        QPixmap decoration_picture = index.data(Qt::DecorationRole).value<QPixmap>();
+        QSize decoration_size;
+        if (!decoration_picture.isNull()) {
+            if (type == GameListItemType::Game) {
+                if (icon_side > 0) {
+                    decoration_size = QSize(icon_side, icon_side);
+                }
+            } else {
+                const qreal dpr = decoration_picture.devicePixelRatio() > 0.0
+                                      ? decoration_picture.devicePixelRatio()
+                                      : 1.0;
+                decoration_size =
+                    QSize(qRound(decoration_picture.width() / dpr),
+                          qRound(decoration_picture.height() / dpr));
+                const int max_side = std::max(0, item.rect.height() - 2);
+                if (max_side > 0 && (decoration_size.width() > max_side ||
+                                     decoration_size.height() > max_side)) {
+                    decoration_size.scale(QSize(max_side, max_side), Qt::KeepAspectRatio);
+                }
+            }
+
+            if (!decoration_size.isEmpty()) {
                 // Keep the decoration slot for layout and text, but draw the bitmap ourselves so
                 // its physical @2x pixels are used instead of QIcon scaling it through 1x.
-                QPixmap placeholder(item.decorationSize);
+                item.decorationSize = decoration_size;
+                QPixmap placeholder(decoration_size);
                 placeholder.fill(Qt::transparent);
                 item.icon = QIcon(placeholder);
             }
-        } else if (const QPixmap picture = index.data(Qt::DecorationRole).value<QPixmap>();
-                   !picture.isNull()) {
-            QIcon icon(picture);
-            icon.addPixmap(picture, QIcon::Selected);
-            item.icon = icon;
         }
 
         const QWidget* widget = item.widget;
         QStyle* style = widget != nullptr ? widget->style() : QApplication::style();
         style->drawControl(QStyle::CE_ItemViewItem, &item, painter, widget);
 
-        if (!game_picture.isNull()) {
-            const QRect decoration =
+        if (!decoration_picture.isNull() && !decoration_size.isEmpty()) {
+            const QRect slot =
                 style->subElementRect(QStyle::SE_ItemViewItemDecoration, &item, widget);
-            const int picture_side = std::min({decoration.width(), decoration.height(), icon_side});
-            if (picture_side > 0) {
-                const QRect target(decoration.left() +
-                                       (decoration.width() - picture_side) / 2,
-                                   decoration.top() + (decoration.height() - picture_side) / 2,
-                                   picture_side, picture_side);
-                painter->drawPixmap(target, game_picture);
+            QSize draw_size = decoration_size;
+            if (draw_size.width() > slot.width() || draw_size.height() > slot.height()) {
+                draw_size.scale(slot.size(), Qt::KeepAspectRatio);
+            }
+            if (!draw_size.isEmpty()) {
+                const QRect target(slot.left() + (slot.width() - draw_size.width()) / 2,
+                                   slot.top() + (slot.height() - draw_size.height()) / 2,
+                                   draw_size.width(), draw_size.height());
+                painter->drawPixmap(target, decoration_picture);
             }
         }
 
@@ -194,6 +204,34 @@ void GameTree::SetModel(GameListModel* model) {
     setIconSize(QSize(icon_size, icon_size));
     LoadInterfaceLayout();
     UpdateColumnVisibility(model);
+}
+
+void GameTree::drawBranches(QPainter* painter, const QRect& rect,
+                            const QModelIndex& index) const {
+    // Keep the style's row background, then cover its 1x chevron with the @2x asset.
+    QTreeView::drawBranches(painter, rect, index);
+    if (!index.isValid() || model() == nullptr || !model()->hasChildren(index)) {
+        return;
+    }
+
+    const bool expanded = isExpanded(index);
+    QPixmap chevron(QStringLiteral(":/lichii/icons/chevron_%1@2x.png")
+                        .arg(expanded ? QStringLiteral("down") : QStringLiteral("right")));
+    if (chevron.isNull()) {
+        return;
+    }
+
+    int depth = 0;
+    for (QModelIndex parent = index.parent(); parent.isValid(); parent = parent.parent()) {
+        ++depth;
+    }
+    const int indent = indentation();
+    const QRect branch(rect.left() + depth * indent, rect.top(), indent, rect.height());
+
+    chevron.setDevicePixelRatio(2.0);
+    constexpr int side = 12;
+    const QPoint center = branch.center();
+    painter->drawPixmap(QRect(center.x() - side / 2, center.y() - side / 2, side, side), chevron);
 }
 
 void GameTree::OnItemExpanded(const QModelIndex& item) {

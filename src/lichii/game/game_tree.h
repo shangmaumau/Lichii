@@ -5,6 +5,7 @@
 
 #include <QTreeView>
 
+class QPainter;
 class GameListModel;
 
 class GameTree : public QTreeView {
@@ -23,6 +24,10 @@ public:
     void LoadInterfaceLayout();
 
     void UpdateColumnVisibility(GameListModel* model);
+
+protected:
+    void drawBranches(QPainter* painter, const QRect& rect,
+                      const QModelIndex& index) const override;
 
 signals:
     void ItemExpandedChanged(const QModelIndex& item);
