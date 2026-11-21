@@ -35,6 +35,15 @@ public:
 
         QStyleOptionViewItem item = option;
         initStyleOption(&item, index);
+        // The tree delegate draws the game picture itself. Keep its decoration square even when
+        // the name column is narrower than the configured icon size; otherwise Qt stretches or
+        // clips the picture into a portrait rectangle.
+        const int icon_size = static_cast<int>(UISettings::values.game_icon_size.GetValue());
+        const int icon_side =
+            std::min({icon_size, item.rect.height() - 2, item.rect.width() - 8});
+        if (icon_side > 0) {
+            item.decorationSize = QSize(icon_side, icon_side);
+        }
         const QStringList lines =
             item.text.replace(QChar::LineSeparator, QLatin1Char('\n')).split(QLatin1Char('\n'));
         item.text.clear();
@@ -154,6 +163,8 @@ GameTree::GameTree(QWidget* parent) : QTreeView{parent} {
 
 void GameTree::SetModel(GameListModel* model) {
     QTreeView::setModel(model);
+    const int icon_size = static_cast<int>(UISettings::values.game_icon_size.GetValue());
+    setIconSize(QSize(icon_size, icon_size));
     LoadInterfaceLayout();
     UpdateColumnVisibility(model);
 }
