@@ -7374,8 +7374,8 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
     </message>
     <message>
         <location line="+3"/>
-        <source>Look up artwork on SteamGridDB</source>
-        <translation>在 SteamGridDB 上查找封面</translation>
+        <source>Look up artwork</source>
+        <translation>查找封面</translation>
     </message>
     <message>
         <location line="+2"/>
