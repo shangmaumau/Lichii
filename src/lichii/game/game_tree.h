@@ -5,6 +5,7 @@
 
 #include <QHash>
 #include <QPersistentModelIndex>
+#include <QPixmap>
 #include <QTreeView>
 
 class QPainter;
@@ -38,6 +39,7 @@ private:
 
     QHash<QPersistentModelIndex, qreal> arrow_angles;
     QHash<QPersistentModelIndex, QVariantAnimation*> arrow_animations;
+    QPixmap arrow_pixmap;
 
 signals:
     void ItemExpandedChanged(const QModelIndex& item);

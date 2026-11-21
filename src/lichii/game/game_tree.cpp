@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QEasingCurve>
 #include <QHeaderView>
+#include <QImage>
 #include <QPainter>
 #include <QScroller>
 #include <QScrollerProperties>
@@ -184,9 +185,42 @@ public:
     }
 };
 
+QPixmap LoadTreeChevron() {
+    QPixmap full(QStringLiteral(":/lichii/icons/tree_chevron@2x.png"));
+    if (full.isNull()) {
+        return {};
+    }
+    full.setDevicePixelRatio(2.0);
+    const QImage image = full.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    int min_x = image.width();
+    int min_y = image.height();
+    int max_x = -1;
+    int max_y = -1;
+    for (int y = 0; y < image.height(); ++y) {
+        const auto* line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            if (qAlpha(line[x]) == 0) {
+                continue;
+            }
+            min_x = std::min(min_x, x);
+            min_y = std::min(min_y, y);
+            max_x = std::max(max_x, x);
+            max_y = std::max(max_y, y);
+        }
+    }
+    if (max_x < min_x || max_y < min_y) {
+        return {};
+    }
+    QPixmap cropped = QPixmap::fromImage(
+        image.copy(QRect(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)));
+    cropped.setDevicePixelRatio(2.0);
+    return cropped;
+}
+
 } // namespace
 
 GameTree::GameTree(QWidget* parent) : QTreeView{parent} {
+    arrow_pixmap = LoadTreeChevron();
     setItemDelegateForColumn(GameListModel::COLUMN_NAME, new LichiiNameDelegate(this));
     setAlternatingRowColors(true);
     setSelectionMode(QHeaderView::SingleSelection);
@@ -220,16 +254,16 @@ void GameTree::drawBranches(QPainter* painter, const QRect& rect,
                             const QModelIndex& index) const {
     // Keep the style's row background, then draw the rotated @2x chevron.
     QTreeView::drawBranches(painter, rect, index);
-    if (!index.isValid() || model() == nullptr || !model()->hasChildren(index)) {
+    if (!IsLichiiTheme() || !index.isValid() || model() == nullptr ||
+        !model()->hasChildren(index)) {
+        return;
+    }
+
+    if (arrow_pixmap.isNull()) {
         return;
     }
 
     const bool expanded = isExpanded(index);
-    QPixmap chevron(QStringLiteral(":/lichii/icons/tree_chevron@2x.png"));
-    if (chevron.isNull()) {
-        return;
-    }
-
     int depth = 0;
     for (QModelIndex parent = index.parent(); parent.isValid(); parent = parent.parent()) {
         ++depth;
@@ -245,23 +279,27 @@ void GameTree::drawBranches(QPainter* painter, const QRect& rect,
         }
     }
 
-    chevron.setDevicePixelRatio(2.0);
-    constexpr int side = 20;
-    const QPoint center = branch.center();
-    const QRect target(center.x() - side / 2, center.y() - side / 2, side, side);
+    // Center the visible (alpha-cropped) chevron, not its padded canvas, and rotate around
+    // that exact center.
+    const QSizeF arrow_size = arrow_pixmap.deviceIndependentSize();
+    const QPointF center = QRectF(branch).center();
+    const QRectF target(center.x() - arrow_size.width() / 2.0,
+                        center.y() - arrow_size.height() / 2.0,
+                        arrow_size.width(), arrow_size.height());
 
     painter->save();
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
-    const QPoint pivot = target.center();
+    const QPointF pivot = target.center();
     painter->translate(pivot);
     painter->rotate(angle);
     painter->translate(-pivot.x(), -pivot.y());
-    painter->drawPixmap(target, chevron);
+    painter->drawPixmap(target.topLeft(), arrow_pixmap);
     painter->restore();
 }
 
 void GameTree::AnimateArrow(const QModelIndex& index, bool expanded) {
-    if (!index.isValid() || model() == nullptr || !model()->hasChildren(index)) {
+    if (!IsLichiiTheme() || !index.isValid() || model() == nullptr ||
+        !model()->hasChildren(index)) {
         return;
     }
 
