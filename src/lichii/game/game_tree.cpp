@@ -229,7 +229,7 @@ void GameTree::drawBranches(QPainter* painter, const QRect& rect,
     const QRect branch(rect.left() + depth * indent, rect.top(), indent, rect.height());
 
     chevron.setDevicePixelRatio(2.0);
-    constexpr int side = 12;
+    constexpr int side = 14;
     const QPoint center = branch.center();
     painter->drawPixmap(QRect(center.x() - side / 2, center.y() - side / 2, side, side), chevron);
 }
