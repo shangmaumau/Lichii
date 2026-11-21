@@ -11,6 +11,7 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include "common/common_types.h"
+#include "qt_common/qt_common.h"
 
 namespace Column {
 enum List {
@@ -94,7 +95,8 @@ public:
         if (!smdh_icon.isNull()) {
             setData(smdh_icon, GameIconRole);
         } else {
-            setData(QIcon::fromTheme(QStringLiteral("chip")).pixmap(32), GameIconRole);
+            setData(QIcon::fromTheme(QStringLiteral("chip")).pixmap(QSize(32, 32), 2.0),
+                    GameIconRole);
         }
     }
 
@@ -102,11 +104,11 @@ public:
         if (role == Qt::DecorationRole) {
             auto val = data(GameIconRole);
             if (val.isValid()) {
-                val = val.value<QPixmap>().scaled(32, 32, Qt::KeepAspectRatio,
-                                                  Qt::TransformationMode::SmoothTransformation);
+                val = QtCommon::ScalePixmapForDpr(val.value<QPixmap>(), QSize(32, 32), 2.0);
             } else {
-                auto blank_image = QPixmap(32, 32);
+                auto blank_image = QPixmap(64, 64);
                 blank_image.fill(Qt::black);
+                blank_image.setDevicePixelRatio(2.0);
                 val = blank_image;
             }
             return val;

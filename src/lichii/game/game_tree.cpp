@@ -47,15 +47,41 @@ public:
         const QStringList lines =
             item.text.replace(QChar::LineSeparator, QLatin1Char('\n')).split(QLatin1Char('\n'));
         item.text.clear();
-        if (const QPixmap picture = index.data(Qt::DecorationRole).value<QPixmap>();
-            !picture.isNull()) {
+
+        QPixmap game_picture;
+        if (type == GameListItemType::Game) {
+            game_picture = index.data(Qt::DecorationRole).value<QPixmap>();
+            if (!game_picture.isNull()) {
+                // Keep the decoration slot for layout and text, but draw the bitmap ourselves so
+                // its physical @2x pixels are used instead of QIcon scaling it through 1x.
+                QPixmap placeholder(item.decorationSize);
+                placeholder.fill(Qt::transparent);
+                item.icon = QIcon(placeholder);
+            }
+        } else if (const QPixmap picture = index.data(Qt::DecorationRole).value<QPixmap>();
+                   !picture.isNull()) {
             QIcon icon(picture);
             icon.addPixmap(picture, QIcon::Selected);
             item.icon = icon;
         }
+
         const QWidget* widget = item.widget;
         QStyle* style = widget != nullptr ? widget->style() : QApplication::style();
         style->drawControl(QStyle::CE_ItemViewItem, &item, painter, widget);
+
+        if (!game_picture.isNull()) {
+            const QRect decoration =
+                style->subElementRect(QStyle::SE_ItemViewItemDecoration, &item, widget);
+            const int picture_side = std::min({decoration.width(), decoration.height(), icon_side});
+            if (picture_side > 0) {
+                const QRect target(decoration.left() +
+                                       (decoration.width() - picture_side) / 2,
+                                   decoration.top() + (decoration.height() - picture_side) / 2,
+                                   picture_side, picture_side);
+                painter->drawPixmap(target, game_picture);
+            }
+        }
+
         const int text_left =
             style->subElementRect(QStyle::SE_ItemViewItemText, &item, widget).left() + 4;
         const QRect rect(text_left, item.rect.top(), item.rect.right() - text_left - 4,
@@ -109,8 +135,9 @@ public:
             const int star_x = title_rect.right() + 8;
             const int star_y = title_rect.center().y() - 7;
             if (star_x + 14 <= rect.right()) {
-                painter->drawPixmap(QRect(star_x, star_y, 14, 14),
-                                    QPixmap(QStringLiteral(":/lichii/icons/star_accent@2x.png")));
+                QPixmap star(QStringLiteral(":/lichii/icons/star_accent@2x.png"));
+                star.setDevicePixelRatio(2.0);
+                painter->drawPixmap(QRect(star_x, star_y, 14, 14), star);
             }
         }
 

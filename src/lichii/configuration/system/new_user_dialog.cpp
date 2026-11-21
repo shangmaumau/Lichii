@@ -30,7 +30,7 @@ QPixmap NewUserDialog::DefaultAvatar() {
     icon.loadFromData(Core::Constants::ACCOUNT_BACKUP_JPEG.data(),
                       static_cast<u32>(Core::Constants::ACCOUNT_BACKUP_JPEG.size()));
 
-    return icon.scaled(64, 64, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    return QtCommon::ScalePixmapForDpr(icon, QSize(64, 64), 2.0);
 }
 
 QString NewUserDialog::GetImagePath(const Common::UUID& uuid) {
@@ -47,7 +47,7 @@ QPixmap NewUserDialog::GetIcon(const Common::UUID& uuid) {
         return DefaultAvatar();
     }
 
-    return icon.scaled(64, 64, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    return QtCommon::ScalePixmapForDpr(icon, QSize(64, 64), 2.0);
 }
 
 NewUserDialog::NewUserDialog(Common::UUID uuid, const std::string& username, const QString& title,
@@ -147,7 +147,7 @@ void NewUserDialog::selectImage() {
         image = image.scaled(256, 256, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
     }
 
-    setImage(image.scaled(64, 64, Qt::IgnoreAspectRatio));
+    setImage(QtCommon::ScalePixmapForDpr(image, QSize(64, 64), 2.0));
     setIsDefaultAvatar(false);
 }
 
@@ -158,7 +158,8 @@ void NewUserDialog::setAvatar() {
         }
     }
     if (avatar_dialog->exec() == QDialog::Accepted) {
-        setImage(avatar_dialog->GetSelectedAvatar().scaled(64, 64, Qt::IgnoreAspectRatio));
+        setImage(QtCommon::ScalePixmapForDpr(avatar_dialog->GetSelectedAvatar(),
+                                             QSize(64, 64), 2.0));
     }
 }
 

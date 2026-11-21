@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QPainter>
+#include <QPixmap>
 
 #include "applets/qt_profile_select.h"
 #include "core/frontend/applets/profile_select.h"
@@ -31,9 +32,21 @@ QIcon MenuIcon(const char* name) {
     if (UISettings::values.theme != "lichii") {
         return icon;
     }
-    icon.addFile(QStringLiteral(":/lichii/icons/menu_%1.png").arg(QLatin1String(name)));
-    icon.addFile(QStringLiteral(":/lichii/icons/menu_%1_white.png").arg(QLatin1String(name)), {},
-                 QIcon::Active);
+
+    const QString base = QStringLiteral(":/lichii/icons/menu_%1").arg(QLatin1String(name));
+    const auto add_2x = [&](const QString& suffix, QIcon::Mode mode) {
+        QPixmap pixmap = QtCommon::LoadPixmapForDpr(base + suffix + QStringLiteral(".png"), 2.0);
+        if (!pixmap.isNull()) {
+            icon.addPixmap(pixmap, mode);
+        }
+    };
+    add_2x(QStringLiteral("@2x"), QIcon::Normal);
+    add_2x(QStringLiteral("_white@2x"), QIcon::Active);
+
+    if (icon.isNull()) {
+        icon.addFile(base + QStringLiteral(".png"));
+        icon.addFile(base + QStringLiteral("_white.png"), {}, QIcon::Active);
+    }
     return icon;
 }
 
