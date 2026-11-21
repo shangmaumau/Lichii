@@ -71,8 +71,11 @@ static QPixmap GetDefaultIcon(u32 size) {
     painter.setBrush(QColor(0x23, 0x24, 0x2a));
     painter.drawRoundedRect(QRectF(0, 0, side, side), side * 0.18, side * 0.18);
     const int glyph = side * 3 / 8;
-    painter.drawImage(QRect((side - glyph) / 2, (side - glyph) / 2, glyph, glyph),
-                      QImage(QStringLiteral(":/lichii/icons/menu_gamepad@2x.png")));
+    QImage glyph_image(QStringLiteral(":/lichii/icons/menu_gamepad_256.png"));
+    if (glyph_image.isNull()) {
+        glyph_image = QImage(QStringLiteral(":/lichii/icons/menu_gamepad@2x.png"));
+    }
+    painter.drawImage(QRect((side - glyph) / 2, (side - glyph) / 2, glyph, glyph), glyph_image);
     painter.end();
     icon.setDevicePixelRatio(GameIconDpr);
     QPixmap result = QPixmap::fromImage(icon);

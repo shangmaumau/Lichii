@@ -107,7 +107,7 @@ QPushButton* Widget::CreateRestoreGlobalButton(bool using_global, QWidget* paren
     restore_button_count++;
 
     const qreal dpr = parent != nullptr ? parent->devicePixelRatioF() : 1.0;
-    QPixmap reset_pixmap = ThemePixmap("reset", QSize(16, 16), dpr);
+    QPixmap reset_pixmap = ThemePixmap("reset", QSize(14, 14), dpr);
     if (reset_pixmap.isNull()) {
         reset_pixmap = QIcon::fromTheme(QStringLiteral("edit-undo"))
                            .pixmap(QSize(16, 16), dpr);
