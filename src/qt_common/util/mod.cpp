@@ -1,14 +1,51 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <system_error>
 #include <JlCompress.h>
+#include <QCoreApplication>
 #include "frontend_common/mod_manager.h"
 #include "mod.h"
 #include "qt_common/abstract/frontend.h"
 
 namespace QtCommon::Mod {
+
+QString TranslatePatchName(const char* name) {
+    static constexpr const char* names[] = {
+        QT_TRANSLATE_NOOP("GameListPatches", "Update"),
+        QT_TRANSLATE_NOOP("GameListPatches", "DLC"),
+        QT_TRANSLATE_NOOP("GameListPatches", "60 FPS (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Max Resolution (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Texture Pool x2 (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "FPS Unlock (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Dynamic FPS by Dark (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Text Speed Instant (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Text Speed 4x (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Text Speed 2x (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Texture heap compaction interval (built-in)"),
+        QT_TRANSLATE_NOOP("GameListPatches", "Full Scene Resolution with FXAA (built-in)"),
+    };
+    const auto match = std::ranges::find_if(names, [name](const char* candidate) {
+        return std::strcmp(name, candidate) == 0;
+    });
+    return match == std::ranges::end(names) ? QString::fromUtf8(name)
+                                            : QCoreApplication::translate("GameListPatches", *match);
+}
+
+QString TranslatePatchDescription(const char* description) {
+    static constexpr auto wonder_60_fps = QT_TRANSLATE_NOOP(
+        "GameListPatches",
+        "Runs the game at 60 FPS, as on the console. A PC that can't hold 60 FPS "
+        "plays slow frames in slow motion; turn this off for the game's own 30 FPS "
+        "mode. Restart the game to apply.");
+    return std::strcmp(description, wonder_60_fps) == 0
+               ? QCoreApplication::translate("GameListPatches", wonder_60_fps)
+               : QString::fromUtf8(description);
+}
+
 QStringList GetModFolders(const QString& root, const QString& fallbackName) {
     namespace fs = std::filesystem;
 

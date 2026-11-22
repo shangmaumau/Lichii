@@ -60,6 +60,9 @@ public:
     // See https://wiki.qt.io/How_to_Change_the_Background_Color_of_QWidget
     void paintEvent(QPaintEvent* event) override;
 
+protected:
+    void resizeEvent(QResizeEvent* event) override;
+
 signals:
     void LoadProgress(VideoCore::LoadCallbackStage stage, std::size_t value, std::size_t total);
     /// Signals that this widget is completely hidden now and should be replaced with the other

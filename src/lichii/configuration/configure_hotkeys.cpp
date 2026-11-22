@@ -20,6 +20,7 @@
 #include "lichii/configuration/configure_hotkeys.h"
 #include "lichii/hotkeys.h"
 #include "lichii/util/sequence_dialog/sequence_dialog.h"
+#include "lichii/util/controller_ui_navigation.h"
 
 constexpr int name_column = 0;
 constexpr int hotkey_column = 1;
@@ -51,7 +52,7 @@ ConfigureHotkeys::ConfigureHotkeys(Core::HID::HIDCore& hid_core, QWidget* parent
     model = new QStandardItemModel(this);
     model->setColumnCount(3);
 
-    connect(ui->hotkey_list, &QTreeView::doubleClicked, this, &ConfigureHotkeys::Configure);
+    connect(ui->hotkey_list, &QTreeView::activated, this, &ConfigureHotkeys::Configure);
     connect(ui->hotkey_list, &QTreeView::customContextMenuRequested, this,
             &ConfigureHotkeys::PopupContextMenu);
     ui->hotkey_list->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -74,9 +75,16 @@ ConfigureHotkeys::ConfigureHotkeys(Core::HID::HIDCore& hid_core, QWidget* parent
     });
 
     connect(poll_timer.get(), &QTimer::timeout, [this] {
-        pressed_buttons |= controller->GetNpadButtons().raw;
-        pressed_home_button |= this->controller->GetHomeButtons().home != 0;
-        pressed_capture_button |= this->controller->GetCaptureButtons().capture != 0;
+        const auto buttons = controller->GetNpadButtons().raw;
+        const bool home = controller->GetHomeButtons().home != 0;
+        const bool capture = controller->GetCaptureButtons().capture != 0;
+        if (waiting_for_controller_release) {
+            waiting_for_controller_release = buttons != Core::HID::NpadButton::None || home || capture;
+            return;
+        }
+        pressed_buttons |= buttons;
+        pressed_home_button |= home;
+        pressed_capture_button |= capture;
         if (pressed_buttons != Core::HID::NpadButton::None || pressed_home_button ||
             pressed_capture_button) {
             const QString button_name =
@@ -207,6 +215,8 @@ void ConfigureHotkeys::ConfigureController(QModelIndex index) {
     pressed_buttons = Core::HID::NpadButton::None;
     pressed_home_button = false;
     pressed_capture_button = false;
+    waiting_for_controller_release = true;
+    ControllerUiNavigation::SetInputCapture(this, true);
 
     model->setData(index, tr("[waiting]"));
     timeout_timer->start(2500); // Cancel after 2.5 seconds
@@ -218,6 +228,7 @@ void ConfigureHotkeys::ConfigureController(QModelIndex index) {
 void ConfigureHotkeys::SetPollingResult(const bool cancel) {
     timeout_timer->stop();
     poll_timer->stop();
+    ControllerUiNavigation::SetInputCapture(this, false);
     (*input_setter)(cancel);
     // Re-Enable configuration
     controller->EnableConfiguration();

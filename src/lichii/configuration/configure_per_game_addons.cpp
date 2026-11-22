@@ -30,6 +30,7 @@
 #include "frontend_common/mod_manager.h"
 #include "qt_common/abstract/frontend.h"
 #include "qt_common/config/uisettings.h"
+#include "qt_common/qt_common.h"
 #include "qt_common/util/mod.h"
 #include "ui_configure_per_game_addons.h"
 #include "lichii/configuration/configure_input.h"
@@ -108,10 +109,11 @@ void ConfigurePerGameAddons::OnItemChanged(QStandardItem* item) {
 
 QString ConfigurePerGameAddons::AddonKey(const QStandardItem& item) {
     const auto version = item.data(NUMERIC_VERSION);
-    if (version.isValid() && item.text() == QStringLiteral("Update")) {
+    const auto name = item.data(PATCH_NAME).toString();
+    if (version.isValid() && name == QStringLiteral("Update")) {
         return QStringLiteral("Update@%1").arg(version.toUInt());
     }
-    return item.text();
+    return name;
 }
 
 void ConfigurePerGameAddons::ApplyConfiguration() {
@@ -363,10 +365,13 @@ void ConfigurePerGameAddons::LoadConfiguration() {
         const auto name = QString::fromStdString(patch.name);
 
         auto* const first_item = new QStandardItem;
-        first_item->setText(name);
+        first_item->setText(QtCommon::Mod::TranslatePatchName(patch.name.c_str()));
+        first_item->setData(name, PATCH_NAME);
         first_item->setCheckable(true);
         if (!patch.description.empty()) {
-            first_item->setToolTip(QString::fromStdString(patch.description));
+            const auto description =
+                QtCommon::Mod::TranslatePatchDescription(patch.description.c_str());
+            first_item->setToolTip(QtCommon::WrapToolTip(description));
         }
 
         const bool is_external_update = patch.type == FileSys::PatchType::Update &&

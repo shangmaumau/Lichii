@@ -57,6 +57,8 @@ public:
     ~ConfigureDialog() override;
 
     void ApplyConfiguration();
+    void SelectProfiles();
+    bool HandleControllerNavigation(Qt::Key key);
 
     /// Drop the controller edits that were not applied; the Controls tab changes them live.
     void RestoreInputConfiguration();
@@ -69,6 +71,7 @@ signals:
     void ExternalContentDirsChanged();
 
 private:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void changeEvent(QEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void RetranslateUI();

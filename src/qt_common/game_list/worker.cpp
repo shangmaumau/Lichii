@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -44,6 +43,7 @@
 #include "qt_common/game_list/discovery.h"
 #include "qt_common/game_list/worker.h"
 #include "qt_common/util/game.h"
+#include "qt_common/util/mod.h"
 
 namespace {
 
@@ -254,27 +254,6 @@ QString LooseExeFSName(const std::string& physical_name) {
     return name;
 }
 
-QString TranslatePatchName(const char* name) {
-    static constexpr const char* names[] = {
-        QT_TRANSLATE_NOOP("GameListPatches", "Update"),
-        QT_TRANSLATE_NOOP("GameListPatches", "DLC"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Max Resolution (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Texture Pool x2 (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "FPS Unlock (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Dynamic FPS by Dark (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Text Speed Instant (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Text Speed 4x (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Text Speed 2x (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Texture heap compaction interval (built-in)"),
-        QT_TRANSLATE_NOOP("GameListPatches", "Full Scene Resolution with FXAA (built-in)"),
-    };
-    const auto match = std::ranges::find_if(names, [name](const char* candidate) {
-        return std::strcmp(name, candidate) == 0;
-    });
-    return match == std::ranges::end(names) ? QString::fromUtf8(name)
-                                            : QCoreApplication::translate("GameListPatches", *match);
-}
-
 QString FormatPatchNameVersions(const FileSys::PatchManager& patch_manager,
                                 Loader::AppLoader& loader, bool updatable = true) {
     QString out;
@@ -286,7 +265,7 @@ QString FormatPatchNameVersions(const FileSys::PatchManager& patch_manager,
             continue;
         }
 
-        QString type = TranslatePatchName(patch.name.c_str());
+        QString type = QtCommon::Mod::TranslatePatchName(patch.name.c_str());
         if (!patch.enabled) {
             type.prepend(QCoreApplication::translate("GameListPatches", "[D] "));
         }
@@ -310,7 +289,7 @@ QString FormatPatchNameVersions(const FileSys::PatchManager& patch_manager,
                     ver.size() - replacement_prefix.size() - replacement_suffix.size());
                 version = QCoreApplication::translate("GameListPatches",
                                                        "IPS, replaced by %1 when it applies")
-                              .arg(TranslatePatchName(replacement.c_str()));
+                              .arg(QtCommon::Mod::TranslatePatchName(replacement.c_str()));
             }
             out.append(QStringLiteral("%1 (%2)\n").arg(type, version));
         }
@@ -343,7 +322,7 @@ QList<QStandardItem*> MakeGameListEntry(const std::string& path, const std::stri
             patch_versions += QLatin1Char('\n');
         }
         patch_versions += QStringLiteral("%1 (%2)")
-                              .arg(TranslatePatchName("Update"), QString::fromStdString(version));
+                              .arg(QtCommon::Mod::TranslatePatchName("Update"), QString::fromStdString(version));
     }
 
     u64 play_time = play_time_manager.GetPlayTime(program_id);
@@ -356,12 +335,18 @@ QList<QStandardItem*> MakeGameListEntry(const std::string& path, const std::stri
     }
     // So does the name the user gave the game in Properties.
     const std::string custom_title = QtCommon::Game::ReadCustomTitle(program_id);
+    std::string publisher;
+    auto* game = new GameListItemPath(
+        FormatGameName(path), picture,
+        QString::fromStdString(custom_title.empty() ? name : custom_title), file_type_string,
+        program_id, play_time, patch_versions);
+    if (loader.ReadDeveloper(publisher) == Loader::ResultStatus::Success) {
+        game->setData(QString::fromStdString(publisher).trimmed(), GameListItemPath::PublisherRole);
+    }
     auto* addons = new GameListItem(patch_versions);
     addons->setToolTip(QtCommon::WrapToolTip(patch_versions));
     return QList<QStandardItem*>{
-        new GameListItemPath(FormatGameName(path), picture,
-                             QString::fromStdString(custom_title.empty() ? name : custom_title),
-                             file_type_string, program_id, play_time, patch_versions),
+        game,
         new GameListItem(file_type_string),
         new GameListItemSize(size),
         new GameListItemPlayTime(play_time),

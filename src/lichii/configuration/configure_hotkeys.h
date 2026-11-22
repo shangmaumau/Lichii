@@ -64,6 +64,7 @@ private:
 
     bool pressed_home_button;
     bool pressed_capture_button;
+    bool waiting_for_controller_release = false;
     QModelIndex button_model_index;
     Core::HID::NpadButton pressed_buttons;
 

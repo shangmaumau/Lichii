@@ -34,7 +34,8 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override {
         const auto type = index.data(GameListItem::TypeRole).value<GameListItemType>();
-        if (!IsLichiiTheme() || type == GameListItemType::AddDir) {
+        const bool lichii_theme = IsLichiiTheme();
+        if ((!lichii_theme && type != GameListItemType::Game) || type == GameListItemType::AddDir) {
             QStyledItemDelegate::paint(painter, option, index);
             return;
         }
@@ -105,17 +106,21 @@ public:
 
         const bool selected = item.state & QStyle::State_Selected;
         QFont title_font = item.font;
-        title_font.setWeight(QFont::DemiBold);
+        if (lichii_theme) {
+            title_font.setWeight(QFont::DemiBold);
+        }
 
         painter->save();
         painter->setClipRect(item.rect);
         painter->setFont(title_font);
         const QFontMetrics title_metrics = painter->fontMetrics();
-        const QString title =
-            title_metrics.elidedText(lines.value(0), Qt::ElideRight, rect.width());
-        painter->setPen(selected ? QColor(Qt::white) : QColor(0xec, 0xec, 0xef));
+        painter->setPen(lichii_theme ? (selected ? QColor(Qt::white) : QColor(0xec, 0xec, 0xef))
+                                     : item.palette.color(selected ? QPalette::HighlightedText
+                                                                   : QPalette::Text));
 
         if (type != GameListItemType::Game) {
+            const QString title =
+                title_metrics.elidedText(lines.value(0), Qt::ElideRight, rect.width());
             painter->drawText(rect, Qt::AlignVCenter | Qt::AlignLeft, title);
             const int games = index.model()->rowCount(index);
             const int x = rect.left() + title_metrics.horizontalAdvance(title) + 10;
@@ -136,49 +141,54 @@ public:
         } else {
             id_font.setPointSizeF(item.font.pointSizeF() * 0.85);
         }
-        const bool two_lines = lines.size() > 1;
-        const int middle = rect.top() + rect.height() / 2;
-        const int flags = Qt::AlignLeft | Qt::TextDontClip;
-
-        QRect title_rect;
-        painter->drawText(
-            two_lines ? QRect(rect.left(), rect.top(), rect.width(), middle - rect.top() - 1)
-                      : rect,
-            flags | (two_lines ? Qt::AlignBottom : Qt::AlignVCenter), title, &title_rect);
-
+        const QString subtitle = lines.value(1).trimmed();
+        const QFontMetrics id_metrics(id_font);
+        const int subtitle_height = subtitle.isEmpty() ? 0 : id_metrics.height() + 3;
         const u64 program_id = index.data(GameListItemPath::ProgramIdRole).toULongLong();
-        if (program_id != 0 && UISettings::values.favorited_ids.contains(program_id)) {
-            const int star_x = title_rect.right() + 8;
-            const int star_y = title_rect.center().y() - 7;
+        const bool favorite = lichii_theme && program_id != 0 &&
+                              UISettings::values.favorited_ids.contains(program_id);
+        const int line_height = title_metrics.lineSpacing();
+        const int max_lines = std::max(1, (rect.height() - subtitle_height - 8) / line_height);
+        const int title_width = rect.width() - (favorite ? 22 : 0);
+        const auto title_lines =
+            Lichii::WrapGameTitle(lines.value(0), title_font, title_width, max_lines);
+        const int title_height = static_cast<int>(title_lines.size()) * line_height;
+        const int top = rect.top() + (rect.height() - title_height - subtitle_height) / 2;
+        int y = top;
+        for (const QString& line : title_lines) {
+            painter->drawText(rect.left(), y + title_metrics.ascent(), line);
+            y += line_height;
+        }
+
+        if (favorite && !title_lines.isEmpty()) {
+            const int star_x = rect.left() + title_metrics.horizontalAdvance(title_lines.front()) + 8;
             if (star_x + 14 <= rect.right()) {
                 QPixmap star(QStringLiteral(":/lichii/icons/star_accent@2x.png"));
                 star.setDevicePixelRatio(2.0);
-                painter->drawPixmap(QRect(star_x, star_y, 14, 14), star);
+                painter->drawPixmap(QRect(star_x, top + (line_height - 14) / 2, 14, 14), star);
             }
         }
 
-        if (two_lines) {
+        if (!subtitle.isEmpty()) {
             painter->setFont(id_font);
-            painter->setPen(selected ? QColor(0xc4, 0xc5, 0xca) : QColor(0x6f, 0x71, 0x78));
-            painter->drawText(
-                QRect(rect.left(), middle + 2, rect.width(), rect.bottom() - middle - 2),
-                flags | Qt::AlignTop,
-                painter->fontMetrics().elidedText(lines.at(1).trimmed(), Qt::ElideRight,
-                                                  rect.width()));
+            painter->setPen(lichii_theme ? (selected ? QColor(0xc4, 0xc5, 0xca)
+                                                    : QColor(0x6f, 0x71, 0x78))
+                                         : item.palette.color(selected ? QPalette::HighlightedText
+                                                                       : QPalette::Text));
+            painter->drawText(rect.left(), y + 3 + id_metrics.ascent(),
+                              id_metrics.elidedText(subtitle, Qt::ElideRight, rect.width()));
         }
         painter->restore();
     }
 
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override {
         QSize size = QStyledItemDelegate::sizeHint(option, index);
-        if (!IsLichiiTheme()) {
-            return size;
-        }
         const auto type = index.data(GameListItem::TypeRole).value<GameListItemType>();
         if (type == GameListItemType::Game) {
             const int icon = static_cast<int>(UISettings::values.game_icon_size.GetValue());
-            size.setHeight(std::max(size.height(), icon + 16));
-        } else {
+            const int text_height = QFontMetrics(option.font).lineSpacing() * 3 + 12;
+            size.setHeight(std::max({size.height(), icon + 16, text_height}));
+        } else if (IsLichiiTheme()) {
             size.setHeight(std::max(size.height(), 34));
         }
         return size;

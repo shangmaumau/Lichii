@@ -2693,6 +2693,9 @@
                        <property name="text">
                          <string>Controller navigation</string>
                        </property>
+                       <property name="toolTip">
+                         <string>Use the directional buttons or stick to move, A to confirm, B to go back, L/R to move between controls, X for context actions, and + to open the main menu.</string>
+                       </property>
                      </widget>
                    </item>
                    <item row="5" column="0">

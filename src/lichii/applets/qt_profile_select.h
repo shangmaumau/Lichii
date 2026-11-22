@@ -10,7 +10,6 @@
 #include <QList>
 #include "core/frontend/applets/profile_select.h"
 
-class ControllerNavigation;
 class MainWindow;
 class QDialogButtonBox;
 class QGraphicsScene;
@@ -64,7 +63,6 @@ private:
     QDialogButtonBox* buttons;
 
     Service::Account::ProfileManager& profile_manager;
-    ControllerNavigation* controller_navigation = nullptr;
 };
 
 class QtProfileSelector final : public QObject, public Core::Frontend::ProfileSelectApplet {

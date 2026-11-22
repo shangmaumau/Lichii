@@ -47,6 +47,10 @@ QLabel:disabled {
     color: #55575d;
 }
 
+QLabel#gameLibraryLoading:disabled {
+    color: #c4c5ca;
+}
+
 /* Menus ----------------------------------------------------------------- */
 
 QMenuBar {
@@ -85,6 +89,10 @@ QMenu::item {
 QMenu::item:selected {
     background-color: #f0386b;
     color: #ffffff;
+}
+
+QMenu[controllerMenuFocus="true"]::item:selected {
+    background-color: transparent;
 }
 
 QMenu::item:disabled {
@@ -354,6 +362,13 @@ QRadioButton {
     background-color: transparent;
     spacing: 10px;
     min-height: 24px;
+}
+
+QCheckBox:focus,
+QRadioButton:focus,
+QToolButton:focus {
+    background-color: rgba(240, 56, 107, 0.16);
+    border-radius: 5px;
 }
 
 QCheckBox::indicator,
@@ -637,6 +652,10 @@ QTabBar::tab:selected {
     color: #ffffff;
     border-bottom: 2px solid #f0386b;
     font-weight: 600;
+}
+
+QTabBar::tab:selected:focus {
+    background-color: rgba(240, 56, 107, 0.16);
 }
 
 QTabBar::tab:disabled {

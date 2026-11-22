@@ -20,7 +20,6 @@
 #include "core/hle/service/acc/profile_manager.h"
 #include "lichii/applets/qt_profile_select.h"
 #include "lichii/main_window.h"
-#include "lichii/util/controller_navigation.h"
 #include "qt_common/qt_common.h"
 
 namespace {
@@ -73,7 +72,6 @@ QtProfileSelectionDialog::QtProfileSelectionDialog(
     tree_view = new QTreeView;
     item_model = new QStandardItemModel(tree_view);
     tree_view->setModel(item_model);
-    controller_navigation = new ControllerNavigation(system.HIDCore(), this);
 
     tree_view->setAlternatingRowColors(true);
     tree_view->setSelectionMode(QHeaderView::SingleSelection);
@@ -97,17 +95,13 @@ QtProfileSelectionDialog::QtProfileSelectionDialog(
     layout->setSpacing(0);
     layout->addWidget(tree_view);
 
-    connect(tree_view, &QTreeView::clicked, this, &QtProfileSelectionDialog::SelectUser);
-    connect(tree_view, &QTreeView::doubleClicked, this, &QtProfileSelectionDialog::accept);
-    connect(controller_navigation, &ControllerNavigation::TriggerKeyboardEvent,
-            [this](Qt::Key key) {
-                if (!this->isActiveWindow()) {
-                    return;
+    connect(tree_view->selectionModel(), &QItemSelectionModel::currentChanged, this,
+            [this](const QModelIndex& current) {
+                if (current.isValid()) {
+                    SelectUser(current);
                 }
-                QKeyEvent* event = new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier);
-                QCoreApplication::postEvent(tree_view, event);
-                SelectUser(tree_view->currentIndex());
             });
+    connect(tree_view, &QTreeView::activated, this, &QtProfileSelectionDialog::accept);
 
     const auto& profiles = profile_manager.GetAllUsers();
     for (const auto& user : profiles) {
@@ -125,14 +119,14 @@ QtProfileSelectionDialog::QtProfileSelectionDialog(
     for (const auto& item : list_items)
         item_model->appendRow(item);
 
+    tree_view->setCurrentIndex(item_model->index(0, 0));
+    tree_view->setFocus();
     SetWindowTitle(parameters);
     SetDialogPurpose(parameters);
     resize(550, 400);
 }
 
-QtProfileSelectionDialog::~QtProfileSelectionDialog() {
-    controller_navigation->UnloadController();
-};
+QtProfileSelectionDialog::~QtProfileSelectionDialog() = default;
 
 int QtProfileSelectionDialog::exec() {
     // Skip profile selection when there's only one.

@@ -2786,6 +2786,24 @@ NVIDIA DLSS 帧生成（仅限 Windows）需要 GeForce RTX 40 系列或更新�
         <source>Bounded wait</source>
         <translation>限时等待</translation>
     </message>
+    <message>
+        <source>Carousel View</source>
+        <translation>轮播视图</translation>
+    </message>
+    <message>
+        <source>Home View</source>
+        <translation>游戏主页</translation>
+    </message>
+    <message>
+        <source>Render thread (experimental)</source>
+        <translation>渲染线程（实验性）</translation>
+    </message>
+    <message>
+        <source>The GPU render thread records Vulkan commands off the GPU back thread, so the two run side by side on Switch 2 games. Experimental and off by default.
+Takes effect after restarting the game.</source>
+        <translation>独立的 GPU 渲染线程负责录制 Vulkan 命令，在 Switch 2 游戏中可与 GPU 后端线程并行运行。此功能尚处于实验阶段，默认关闭。
+重启游戏后生效。</translation>
+    </message>
 </context>
 <context>
     <name>ConfigureApplets</name>
@@ -3942,6 +3960,11 @@ Would you like to delete the old save data?</source>
         <source> Hz</source>
         <translation> Hz</translation>
     </message>
+    <message>
+        <source> Hz</source>
+        <comment>Frame rate limit (e.g. 120 Hz)</comment>
+        <translation> Hz</translation>
+    </message>
 </context>
 <context>
     <name>ConfigureGraphicsAdvanced</name>
@@ -4438,6 +4461,10 @@ Would you like to delete the old save data?</source>
         <location filename="../../src/lichii/configuration/configure_input_advanced.ui" line="2694"/>
         <source>Controller navigation</source>
         <translation>控制器导航</translation>
+    </message>
+    <message>
+        <source>Use the directional buttons or stick to move, A to confirm, B to go back, L/R to move between controls, X for context actions, and + to open the main menu.</source>
+        <translation>方向键或摇杆移动，A 确认，B 返回，L/R 切换控件，X 打开当前项目的操作菜单，+ 打开主菜单。</translation>
     </message>
     <message>
         <location filename="../../src/lichii/configuration/configure_input_advanced.ui" line="2710"/>
@@ -6019,6 +6046,10 @@ Once deleted, these can NOT be recovered. Are you 100% sure you want to delete t
         <source>This update is part of the NUP and cannot be disabled here.</source>
         <translation>此更新包含在 NUP 之中，无法在这里禁用。</translation>
     </message>
+    <message>
+        <source>Browse Mods</source>
+        <translation>浏览模组</translation>
+    </message>
 </context>
 <context>
     <name>ConfigurePostProcessing</name>
@@ -7380,6 +7411,10 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>This build doesn&apos;t have OpenGL support.</source>
         <translation>此版本不支持 OpenGL。</translation>
     </message>
+    <message>
+        <source>Lichii has not been compiled with OpenGL support.</source>
+        <translation>此 Lichii 版本在编译时未启用 OpenGL 支持。</translation>
+    </message>
 </context>
 <context>
     <name>GameList</name>
@@ -7729,6 +7764,10 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
 <context>
     <name>GameListPlaceholder</name>
     <message>
+        <source>Add New Game Directory</source>
+        <translation>添加游戏目录</translation>
+    </message>
+    <message>
         <location filename="../../src/lichii/game/game_list.cpp" line="785"/>
         <source>Double-click to add a new folder to the game list</source>
         <translation>双击添加新的游戏文件夹</translation>
@@ -7828,10 +7867,10 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../../src/lichii/multiplayer/host_room.cpp" line="187"/>
         <source>Failed to announce the room to the public lobby. In order to host a room publicly, you must have a valid Eden account configured in Emulation -&gt; Configure -&gt; Web. If you do not want to publish a room in the public lobby, then select Unlisted instead.
 Debug Message: </source>
-        <translation> </translation>
+        <translation>无法在公开大厅发布房间。要公开房间，请在「模拟 → 设置 → 网络」中配置有效的 Eden 账号。若只想通过邀请加入，请选择「不公开」。
+调试信息：</translation>
     </message>
 </context>
 <context>
@@ -10301,6 +10340,39 @@ Remove and sign out those sign-ins? Keep them if the profiles are in another NAN
         <source>Wait for the game library to finish loading before browsing mods.</source>
         <translation>请等待游戏库加载完成，再浏览 Mod。</translation>
     </message>
+    <message>
+        <source> (%1 DOESN'T FIT)</source>
+        <comment>The DLSS mode the user chose</comment>
+        <translation>（%1 不适用）</translation>
+    </message>
+    <message>
+        <source> FlyHigh can't run yet (its model is not downloaded, or the log says why), so Lichii Optical Flow runs instead. Right-click FlyHigh to open its settings.</source>
+        <translation> FlyHigh 目前无法运行（模型尚未下载，或日志中记录了原因），因此暂时使用 Lichii 光流。右键点击 FlyHigh 可打开设置。</translation>
+    </message>
+    <message>
+        <source>%1&lt;br&gt;Dump current keys from your own console and install them with Tools &gt; Install Decryption Keys, then start the game again. The log names the missing key.</source>
+        <comment>%1 signifies an error string.</comment>
+        <translation>%1&lt;br&gt;请从自己的主机导出最新密钥，通过「工具 → 安装解密密钥」安装，然后重新启动游戏。日志会指出缺少的密钥。</translation>
+    </message>
+    <message>
+        <source>&amp;Home View</source>
+        <translation>游戏主页(&amp;H)</translation>
+    </message>
+    <message numerus="yes">
+        <source>Building: %n shader(s), %1 left</source>
+        <translation>
+            <numerusform>正在构建：共 %n 个着色器，剩余 %1 个</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>DLSS %1 %2</source>
+        <comment>NVIDIA DLSS mode and model preset, e.g. DLSS DLAA M</comment>
+        <translation>DLSS %1 %2</translation>
+    </message>
+    <message>
+        <source>FlyHigh</source>
+        <translation>FlyHigh</translation>
+    </message>
 </context>
 <context>
     <name>MigrationWorker</name>
@@ -10343,6 +10415,42 @@ If you wish to clean up the files which were left in the old data location, you 
         <location filename="../../src/lichii/migration_worker.h" line="73"/>
         <source>Data was migrated successfully.</source>
         <translation>数据已成功迁移。</translation>
+    </message>
+    <message>
+        <source>
+
+Data and settings are shared with %1. The source shader cache was not cleared.</source>
+        <translation>
+
+数据和设置与 %1 共用。源着色器缓存已保留。</translation>
+    </message>
+    <message>
+        <source>
+
+The old profile was retained in backup directories at its old location. Keep these backups until you have checked your saves.</source>
+        <translation>
+
+旧配置已保存在原位置旁的备份目录。请在确认存档完整后再清理这些备份。</translation>
+    </message>
+    <message>
+        <source>
+
+The original %1 profile is unchanged. Keep it until you have checked your saves.</source>
+        <translation>
+
+原有 %1 配置已保留。请在确认存档完整后再清理。</translation>
+    </message>
+    <message>
+        <source>Data was imported successfully. Existing Lichii data, if any, was kept in backup directories beside the new profile.</source>
+        <translation>数据导入成功。原有 Lichii 数据（如有）已保存在新配置旁的备份目录。</translation>
+    </message>
+    <message>
+        <source>Import did not complete. Your source and previous destination data have been kept. Close Lichii and launch it again to retry or recover.
+
+%1</source>
+        <translation>导入未完成。源数据和目标位置原有的数据均已保留。请关闭并重新启动 Lichii，以重试或恢复。
+
+%1</translation>
     </message>
 </context>
 <context>
@@ -11826,6 +11934,68 @@ Would you like to manually select a portable folder to use?</source>
         <source>Could not find Ryujinx save data</source>
         <translation>找不到 Ryujinx 的存档数据</translation>
     </message>
+    <message>
+        <source>
+
+Previous save data was kept at:%1</source>
+        <translation>
+
+原有存档已保存在：%1</translation>
+    </message>
+    <message>
+        <source>Choose a Ryujinx save</source>
+        <translation>选择 Ryujinx 存档</translation>
+    </message>
+    <message>
+        <source>Could not find Ryujinx save data in the default or previously used location. Would you like to choose a Ryujinx data folder?</source>
+        <translation>在默认位置和上次使用的位置均未找到 Ryujinx 存档。要选择 Ryujinx 数据文件夹吗？</translation>
+    </message>
+    <message>
+        <source>Could not update the save link:
+%1</source>
+        <translation>更新存档链接失败：
+%1</translation>
+    </message>
+    <message>
+        <source>Failed to unlink Ryujinx save data</source>
+        <translation>解除 Ryujinx 存档链接失败</translation>
+    </message>
+    <message>
+        <source>No committed account or device save for title %1 is available in Ryujinx.</source>
+        <translation>Ryujinx 中没有游戏 %1 已写入的账户存档或设备存档。</translation>
+    </message>
+    <message>
+        <source>One of these saves links to a different location. No saves were changed.</source>
+        <translation>其中一个存档已链接到其他位置。所有存档均保持原样。</translation>
+    </message>
+    <message>
+        <source>Ryujinx Data Folder</source>
+        <translation>Ryujinx 数据文件夹</translation>
+    </message>
+    <message>
+        <source>Save %1 (Ryujinx profile: %2)</source>
+        <translation>存档 %1（Ryujinx 用户：%2）</translation>
+    </message>
+    <message>
+        <source>Save %1 (device save)</source>
+        <translation>存档 %1（设备存档）</translation>
+    </message>
+    <message>
+        <source>Save %1 (last used Ryujinx profile: %2)</source>
+        <translation>存档 %1（上次使用的 Ryujinx 用户：%2）</translation>
+    </message>
+    <message>
+        <source>Save is already linked</source>
+        <translation>存档已链接</translation>
+    </message>
+    <message>
+        <source>Select the Ryujinx save you want to link.</source>
+        <translation>请选择要链接的 Ryujinx 存档。</translation>
+    </message>
+    <message>
+        <source>The saves are now separate copies.</source>
+        <translation>存档现已分别保存为独立副本。</translation>
+    </message>
 </context>
 <context>
     <name>QtCommon::Game</name>
@@ -12042,6 +12212,10 @@ Would you like to manually select a portable folder to use?</source>
         <location filename="../../src/qt_common/util/game.cpp" line="526"/>
         <source>Home Menu is not available. Please reinstall firmware.</source>
         <translation>主页菜单不可用。请重新安装固件。</translation>
+    </message>
+    <message>
+        <source>Failed to remove the saved compiled shaders.</source>
+        <translation>无法删除已编译的着色器缓存。</translation>
     </message>
 </context>
 <context>
@@ -12273,6 +12447,35 @@ This is recommended if you want to share data between emulators.</source>
         <location filename="../../src/qt_common/qt_string_lookup.h" line="134"/>
         <source>Title %1 not found in Ryujinx title database.</source>
         <translation>在 Ryujinx 的标题数据库中找不到标题 %1。</translation>
+    </message>
+    <message>
+        <source>Clearing shader cache is recommended when migrating from another emulator.
+Earlier Lichii builds kept their own cache in Eden's directory.</source>
+        <translation>从其他模拟器迁移时，建议清除着色器缓存。
+早期版本的 Lichii 将自己的缓存保存在 Eden 的目录中。</translation>
+    </message>
+    <message>
+        <source>Copies and verifies the full profile before moving the source aside as a recovery backup.
+Requires enough free space for a full copy. Keep the backup until you have checked your saves.</source>
+        <translation>复制并校验整套配置数据后，将原数据移至备份位置，以便恢复。
+此操作需要足够的空间存放完整副本。请在确认存档完整后再清理备份。</translation>
+    </message>
+    <message>
+        <source>Creates a filesystem link between the old directory and Lichii directory.
+This is recommended if you want to share data between emulators.</source>
+        <translation>为旧目录和 Lichii 目录创建文件系统链接。
+如需在两个模拟器之间共用数据，建议使用此方式。</translation>
+    </message>
+    <message>
+        <source>Lichii has detected user data for the following emulators:</source>
+        <translation>Lichii 检测到以下模拟器的用户数据：</translation>
+    </message>
+    <message>
+        <source>Would you like to migrate your data for use in Lichii?
+Select the corresponding button to migrate data from that emulator.
+This may take a while.</source>
+        <translation>是否要导入数据以便在 Lichii 中使用？
+请点击相应按钮，从所选模拟器迁移数据。此操作可能需要一些时间。</translation>
     </message>
 </context>
 <context>
@@ -13313,6 +13516,20 @@ Restart now?</source>
         <source>Folder size is not calculated during game discovery.</source>
         <translation>游戏扫描期间不计算文件夹大小。</translation>
     </message>
+    <message>
+        <source>%1
+Dump current keys from your own console and install them with Tools &gt; Install Decryption Keys.</source>
+        <translation>%1
+请从自己的主机导出最新密钥，然后通过「工具 → 安装解密密钥」安装。</translation>
+    </message>
+    <message>
+        <source>Decryption keys missing</source>
+        <translation>缺少解密密钥</translation>
+    </message>
+    <message>
+        <source>The folder size is calculated after the game list is shown.</source>
+        <translation>文件夹大小会在游戏列表显示后计算。</translation>
+    </message>
 </context>
 <context>
     <name>IconDropZone</name>
@@ -14055,6 +14272,18 @@ Would you like to manually select a portable folder to use?</source>
         <location line="+1"/>
         <source>Previous</source>
         <translation>上一个</translation>
+    </message>
+    <message>
+        <source>Coming in the next release (preview)</source>
+        <translation>下个版本即将推出（预览）</translation>
+    </message>
+    <message>
+        <source>Got it</source>
+        <translation>知道了</translation>
+    </message>
+    <message>
+        <source>No release highlights were bundled.</source>
+        <translation>此版本未附带更新亮点。</translation>
     </message>
 </context>
 <context>
@@ -15335,6 +15564,388 @@ Try again without the recipe? The game still runs from the NX archive, but the o
     <message>
         <source>IPS, replaced by %1 when it applies</source>
         <translation>IPS，%1 生效时优先使用该补丁</translation>
+    </message>
+    <message>
+        <source>60 FPS (built-in)</source>
+        <translation>60 FPS（内置）</translation>
+    </message>
+    <message>
+        <source>Runs the game at 60 FPS, as on the console. A PC that can't hold 60 FPS plays slow frames in slow motion; turn this off for the game's own 30 FPS mode. Restart the game to apply.</source>
+        <translation>以与主机相同的 60 FPS 运行游戏。如果电脑无法维持 60 FPS，游戏在掉帧时会变慢。可关闭此选项，恢复游戏的 30 FPS 模式。重启游戏后生效。</translation>
+    </message>
+</context>
+<context>
+    <name>ArtworkDialog</name>
+    <message>
+        <source>API Key…</source>
+        <translation>API 密钥…</translation>
+    </message>
+    <message>
+        <source>Artwork %1</source>
+        <translation>图片 %1</translation>
+    </message>
+    <message>
+        <source>Artwork gallery</source>
+        <translation>图片库</translation>
+    </message>
+    <message>
+        <source>Box Art</source>
+        <translation>盒装封面</translation>
+    </message>
+    <message>
+        <source>Browse iiDB Artwork</source>
+        <translation>浏览 iiDB 图片</translation>
+    </message>
+    <message>
+        <source>Cancel or a failed download or decode leaves the original artwork intact. Use Artwork stages the new icon; Apply or OK in Properties saves it.</source>
+        <translation>取消操作、下载失败或解码失败时会保留原有图片。点击「使用此图片」可预选新图标，再在属性中点击「应用」或「确定」保存。</translation>
+    </message>
+    <message>
+        <source>Catalog data from &lt;a href=&quot;https://iidb.iisu.network&quot;&gt;iiDB&lt;/a&gt;, adapted from the &lt;a href=&quot;https://github.com/libretro/libretro-database&quot;&gt;Libretro Database&lt;/a&gt; and its upstream sources (No-Intro and Redump), &lt;a href=&quot;https://creativecommons.org/licenses/by-sa/4.0/&quot;&gt;CC BY-SA 4.0&lt;/a&gt;. &lt;a href=&quot;https://iisu.network/license&quot;&gt;Artwork and catalog licensing&lt;/a&gt;.</source>
+        <translation>目录数据来自 &lt;a href=&quot;https://iidb.iisu.network&quot;&gt;iiDB&lt;/a&gt;，改编自 &lt;a href=&quot;https://github.com/libretro/libretro-database&quot;&gt;Libretro Database&lt;/a&gt; 及其上游来源（No-Intro 和 Redump），依据 &lt;a href=&quot;https://creativecommons.org/licenses/by-sa/4.0/&quot;&gt;CC BY-SA 4.0&lt;/a&gt; 授权。&lt;a href=&quot;https://iisu.network/license&quot;&gt;图片与目录授权说明&lt;/a&gt;。</translation>
+    </message>
+    <message>
+        <source>Choose a search result</source>
+        <translation>选择搜索结果</translation>
+    </message>
+    <message>
+        <source>Choose the matching iiDB game to see its artwork.</source>
+        <translation>选择对应的 iiDB 游戏，即可查看图片。</translation>
+    </message>
+    <message>
+        <source>Downloading original…</source>
+        <translation>正在下载原图…</translation>
+    </message>
+    <message>
+        <source>Game title:</source>
+        <translation>游戏标题：</translation>
+    </message>
+    <message>
+        <source>Icon in Lichii</source>
+        <translation>Lichii 中的图标</translation>
+    </message>
+    <message>
+        <source>Icons</source>
+        <translation>图标</translation>
+    </message>
+    <message>
+        <source>Load More</source>
+        <translation>加载更多</translation>
+    </message>
+    <message>
+        <source>Loading %1…</source>
+        <translation>正在加载 %1…</translation>
+    </message>
+    <message>
+        <source>No artwork in this category.</source>
+        <translation>此分类暂无图片。</translation>
+    </message>
+    <message>
+        <source>No matching games with artwork. Try another title.</source>
+        <translation>未找到有图片的匹配游戏。请尝试其他标题。</translation>
+    </message>
+    <message>
+        <source>No preview</source>
+        <translation>暂无预览</translation>
+    </message>
+    <message>
+        <source>No usable images in this category.</source>
+        <translation>此分类没有可用的图片。</translation>
+    </message>
+    <message>
+        <source>Only the title you search is sent to iiDB, never your game files or ID.</source>
+        <translation>只会向 iiDB 发送搜索的标题，游戏文件和游戏 ID 均不会发送。</translation>
+    </message>
+    <message>
+        <source>Original artwork</source>
+        <translation>原始图片</translation>
+    </message>
+    <message>
+        <source>Original: %1 × %2</source>
+        <translation>原图：%1 × %2</translation>
+    </message>
+    <message>
+        <source>Preview Selected</source>
+        <translation>预览选中图片</translation>
+    </message>
+    <message>
+        <source>Retry Gallery</source>
+        <translation>重新加载图片库</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
+        <source>Search for the game by title.</source>
+        <translation>按游戏标题搜索。</translation>
+    </message>
+    <message>
+        <source>Searching iiDB…</source>
+        <translation>正在搜索 iiDB…</translation>
+    </message>
+    <message>
+        <source>Select an image to preview the original.</source>
+        <translation>选择一张图片以预览原图。</translation>
+    </message>
+    <message>
+        <source>Showing up to %1 pages in this category.</source>
+        <translation>此分类最多显示 %1 页。</translation>
+    </message>
+    <message>
+        <source>Some thumbnails could not load because iiDB asked Lichii to wait.</source>
+        <translation>iiDB 要求稍候，部分缩略图暂时无法加载。</translation>
+    </message>
+    <message>
+        <source>The original is shown in proportion. Lichii crops and scales it to a 256 × 256 icon, just like Upload Icon.</source>
+        <translation>原图按原始比例显示。Lichii 会像「上传图标」一样，将图片裁剪并缩放为 256 × 256 的图标。</translation>
+    </message>
+    <message>
+        <source>Use Artwork</source>
+        <translation>使用此图片</translation>
+    </message>
+    <message>
+        <source>iiDB match:</source>
+        <translation>iiDB 匹配结果：</translation>
+    </message>
+    <message>
+        <source>iiDB repeated a gallery page. No more pages were loaded.</source>
+        <translation>iiDB 返回了重复页面，已停止加载。</translation>
+    </message>
+    <message>
+        <source>iiSU Box Art</source>
+        <translation>iiSU 盒装封面</translation>
+    </message>
+</context>
+<context>
+    <name>FlyHighDialog</name>
+    <message>
+        <source> FPS</source>
+        <translation> FPS</translation>
+    </message>
+    <message>
+        <source>%1x (%2 generated per game frame)</source>
+        <translation>%1 倍（每个游戏帧生成 %2 帧）</translation>
+    </message>
+    <message>
+        <source>A neural network that makes the frames between the game's own, on the same GPU.</source>
+        <translation>在同一块 GPU 上运行神经网络，在游戏原始帧之间生成插帧。</translation>
+    </message>
+    <message>
+        <source>FlyHigh Frame Generation</source>
+        <translation>FlyHigh 帧生成</translation>
+    </message>
+    <message>
+        <source>Generates up to %1 frames per game frame, as many as reach this frame rate.</source>
+        <translation>每个游戏帧最多生成 %1 帧，以达到设定的帧率。</translation>
+    </message>
+    <message>
+        <source>Keep HUD still</source>
+        <translation>保持 HUD 稳定</translation>
+    </message>
+    <message>
+        <source>Multiplier</source>
+        <translation>倍率</translation>
+    </message>
+    <message>
+        <source>Off (use the multiplier)</source>
+        <translation>关闭（使用倍率）</translation>
+    </message>
+    <message>
+        <source>Pixels that have not changed for several frames, such as a HUD, are shown as they are instead of being interpolated.</source>
+        <translation>连续数帧未变化的像素（例如 HUD）会按原样显示，无需插值。</translation>
+    </message>
+    <message>
+        <source>Target frame rate</source>
+        <translation>目标帧率</translation>
+    </message>
+    <message>
+        <source>Use FlyHigh</source>
+        <translation>使用 FlyHigh</translation>
+    </message>
+</context>
+<context>
+    <name>FlyHighTypeMenu</name>
+    <message>
+        <source>FlyHigh settings</source>
+        <translation>FlyHigh 设置</translation>
+    </message>
+</context>
+<context>
+    <name>GameHome</name>
+    <message>
+        <source>Scanning game library…</source>
+        <translation>正在扫描游戏库…</translation>
+    </message>
+    <message>
+        <source>User profile</source>
+        <translation>用户资料</translation>
+    </message>
+    <message>
+        <source>All Games</source>
+        <translation>全部游戏</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+    <message>
+        <source>Connected via Ethernet</source>
+        <translation>已通过以太网连接</translation>
+    </message>
+    <message>
+        <source>Game Library</source>
+        <translation>游戏库</translation>
+    </message>
+    <message>
+        <source>Network disconnected</source>
+        <translation>网络已断开</translation>
+    </message>
+    <message>
+        <source>No matching games</source>
+        <translation>没有匹配的游戏</translation>
+    </message>
+    <message>
+        <source>Play Time (Longest First)</source>
+        <translation>游玩时间（由长至短）</translation>
+    </message>
+    <message>
+        <source>Play Time (Shortest First)</source>
+        <translation>游玩时间（由短至长）</translation>
+    </message>
+    <message>
+        <source>Publisher</source>
+        <translation>按发行商</translation>
+    </message>
+    <message>
+        <source>Recently Played</source>
+        <translation>最近游玩</translation>
+    </message>
+    <message>
+        <source>Software Name</source>
+        <translation>按软件名</translation>
+    </message>
+    <message>
+        <source>Sort</source>
+        <translation>排序</translation>
+    </message>
+    <message>
+        <source>Wi-Fi connected</source>
+        <translation>Wi-Fi 已连接</translation>
+    </message>
+    <message>
+        <source>Wi-Fi status unavailable</source>
+        <translation>无法获取 Wi-Fi 状态</translation>
+    </message>
+</context>
+<context>
+    <name>IiDB</name>
+    <message>
+        <source>Add your iiDB API key to use online artwork.</source>
+        <translation>添加 iiDB API 密钥后即可使用在线图片。</translation>
+    </message>
+    <message>
+        <source>Check or replace your iiDB API key.</source>
+        <translation>请检查或更换 iiDB API 密钥。</translation>
+    </message>
+    <message>
+        <source>Could not connect to iiDB or complete the request.</source>
+        <translation>无法连接到 iiDB 或完成请求。</translation>
+    </message>
+    <message>
+        <source>The iiDB request timed out. Try again when ready.</source>
+        <translation>iiDB 请求超时。请稍后重试。</translation>
+    </message>
+    <message>
+        <source>The iiDB response is too large.</source>
+        <translation>iiDB 返回的数据过大。</translation>
+    </message>
+    <message>
+        <source>The image is unreadable, unsupported or too large to decode.</source>
+        <translation>图片无法读取、格式不受支持或尺寸过大。</translation>
+    </message>
+    <message>
+        <source>Wait for the current iiDB request to finish.</source>
+        <translation>请等待当前 iiDB 请求完成。</translation>
+    </message>
+    <message>
+        <source>iiDB asked Lichii to wait before trying again.</source>
+        <translation>iiDB 要求稍候再试。</translation>
+    </message>
+    <message>
+        <source>iiDB could not find that game or image.</source>
+        <translation>iiDB 未找到该游戏或图片。</translation>
+    </message>
+    <message>
+        <source>iiDB did not allow this request.</source>
+        <translation>iiDB 拒绝了此请求。</translation>
+    </message>
+    <message>
+        <source>iiDB returned an unexpected response.</source>
+        <translation>iiDB 返回了意外的响应。</translation>
+    </message>
+    <message>
+        <source>iiDB returned an untrusted image URL or redirect.</source>
+        <translation>iiDB 返回了不受信任的图片地址或重定向。</translation>
+    </message>
+</context>
+<context>
+    <name>ModStoreClient</name>
+    <message>
+        <source>Could not connect to the server or complete the request.</source>
+        <translation>无法连接到服务器或完成请求。</translation>
+    </message>
+    <message>
+        <source>Could not save the temporary download.</source>
+        <translation>无法保存临时下载文件。</translation>
+    </message>
+    <message>
+        <source>The catalog has no checksum for this file.</source>
+        <translation>目录中没有此文件的校验值。</translation>
+    </message>
+    <message>
+        <source>The file does not match the catalog checksum.</source>
+        <translation>文件校验值与目录记录不符。</translation>
+    </message>
+    <message>
+        <source>The file does not match the catalog size.</source>
+        <translation>文件大小与目录记录不符。</translation>
+    </message>
+    <message>
+        <source>The preview image is unsupported or damaged.</source>
+        <translation>预览图片不受支持或已损坏。</translation>
+    </message>
+    <message>
+        <source>The request failed (HTTP %1).</source>
+        <translation>请求失败（HTTP %1）。</translation>
+    </message>
+    <message>
+        <source>The response exceeds the size limit.</source>
+        <translation>响应超过大小上限。</translation>
+    </message>
+    <message>
+        <source>The store URL is not allowed.</source>
+        <translation>此商店地址不受信任。</translation>
+    </message>
+    <message>
+        <source>The store request is invalid.</source>
+        <translation>商店请求无效。</translation>
+    </message>
+    <message>
+        <source>The store request timed out.</source>
+        <translation>商店请求超时。</translation>
+    </message>
+    <message>
+        <source>The store request was cancelled.</source>
+        <translation>商店请求已取消。</translation>
+    </message>
+    <message>
+        <source>The store sent an invalid response.</source>
+        <translation>商店返回了无效响应。</translation>
+    </message>
+    <message>
+        <source>Too many store requests are already running.</source>
+        <translation>正在处理的商店请求过多。</translation>
     </message>
 </context>
 </TS>

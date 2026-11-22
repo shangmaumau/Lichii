@@ -181,6 +181,7 @@ add_executable(lichii
     game/iidb_client.cpp game/iidb_client.h
     game/game_list.cpp game/game_list.h
     game/game_grid.cpp game/game_grid.h
+    game/game_home.cpp game/game_home.h
 
     game/game_tree.h game/game_tree.cpp
     game/game_card.h game/game_card.cpp
@@ -229,6 +230,8 @@ add_executable(lichii
     util/clickable_label.h
     util/controller_navigation.cpp
     util/controller_navigation.h
+    util/controller_ui_navigation.cpp
+    util/controller_ui_navigation.h
     util/limitable_input_dialog.cpp
     util/limitable_input_dialog.h
     util/overlay_dialog.cpp

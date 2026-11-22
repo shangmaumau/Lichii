@@ -3,6 +3,8 @@
 
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include <QBuffer>
 #include <QByteArray>
 #include <QGraphicsOpacityEffect>
@@ -14,7 +16,6 @@
 #include <QPushButton>
 #include <QStyleOption>
 #include "common/container/unordered_map.h"
-#include "core/frontend/framebuffer_layout.h"
 #include "core/loader/loader.h"
 #include "ui_loading_screen.h"
 #include "video_core/rasterizer_interface.h"
@@ -72,7 +73,7 @@ LoadingScreen::LoadingScreen(QWidget* parent)
     : QWidget(parent), ui(std::make_unique<Ui::LoadingScreen>()),
       previous_stage(VideoCore::LoadCallbackStage::Complete) {
     ui->setupUi(this);
-    setMinimumSize(Layout::MinimumSize::Width, Layout::MinimumSize::Height);
+    setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
     // Create a fade out effect to hide this loading screen widget.
     // When fading opacity, it will fade to the parent widgets background color, which is why we
@@ -226,6 +227,11 @@ void LoadingScreen::paintEvent(QPaintEvent* event) {
     QPainter p(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
     QWidget::paintEvent(event);
+}
+
+void LoadingScreen::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    ui->progress_bar->setMinimumWidth(std::min(width(), ui->progress_bar->maximumWidth()));
 }
 
 void LoadingScreen::Clear() {

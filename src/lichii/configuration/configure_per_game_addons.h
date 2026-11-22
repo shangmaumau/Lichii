@@ -33,7 +33,7 @@ class ConfigurePerGameAddons : public QWidget {
     Q_OBJECT
 
 public:
-    enum PatchData { NUMERIC_VERSION = Qt::UserRole, PATCH_LOCATION };
+    enum PatchData { NUMERIC_VERSION = Qt::UserRole, PATCH_LOCATION, PATCH_NAME };
 
     explicit ConfigurePerGameAddons(Core::System& system_, QWidget* parent = nullptr);
     ~ConfigurePerGameAddons() override;
@@ -63,7 +63,7 @@ protected:
     void showContextMenu(const QPoint& pos);
 
 private:
-    static constexpr int LOADED_CHECK_STATE = PATCH_LOCATION + 1;
+    static constexpr int LOADED_CHECK_STATE = PATCH_NAME + 1;
 
     static QString AddonKey(const QStandardItem& item);
     void changeEvent(QEvent* event) override;

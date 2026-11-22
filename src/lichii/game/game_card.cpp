@@ -3,11 +3,9 @@
 
 #include <algorithm>
 #include <QPainter>
-#include <QPainterPath>
 #include <QStringList>
-#include <QTextLayout>
-#include <QTextOption>
 #include <QtMath>
+#include "lichii/game/common.h"
 #include "game_card.h"
 #include "qt_common/config/uisettings.h"
 
@@ -67,12 +65,7 @@ void GameCard::paint(QPainter* painter, const QStyleOptionViewItem& option,
 
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-        painter->save();
-        QPainterPath clip_path;
-        clip_path.addRoundedRect(iconRect, cardCornerRadius, cardCornerRadius);
-        painter->setClipPath(clip_path);
         painter->drawPixmap(iconRect, scaled);
-        painter->restore();
     } else {
         iconRect = {cardRect.left() + cardMargin, cardRect.top() + cardMargin,
                     static_cast<int>(icon_size), static_cast<int>(icon_size)};
@@ -95,24 +88,7 @@ void GameCard::paint(QPainter* painter, const QStyleOptionViewItem& option,
         painter->setFont(font);
 
         // Words wider than the box break anywhere; what doesn't fit on the second line is elided.
-        const QFontMetrics fm(font);
-        QTextOption text_option;
-        text_option.setWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
-        QTextLayout layout(title, font);
-        layout.setTextOption(text_option);
-        QStringList lines;
-        layout.beginLayout();
-        for (int i = 0; i < 2; ++i) {
-            QTextLine line = layout.createLine();
-            if (!line.isValid()) {
-                break;
-            }
-            line.setLineWidth(textRect.width());
-            lines.append(i == 0 ? title.mid(line.textStart(), line.textLength()).trimmed()
-                                : fm.elidedText(title.mid(line.textStart()).trimmed(),
-                                                Qt::ElideRight, textRect.width()));
-        }
-        layout.endLayout();
+        const auto lines = Lichii::WrapGameTitle(title, font, textRect.width(), 2);
         painter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop,
                           lines.join(QLatin1Char('\n')));
     }

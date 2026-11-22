@@ -7,6 +7,9 @@
 
 namespace QtCommon::Mod {
 
+QString TranslatePatchName(const char* name);
+QString TranslatePatchDescription(const char* description);
+
 QStringList GetModFolders(const QString& root, const QString& fallbackName);
 
 const QString ExtractMod(const QString& path);

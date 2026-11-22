@@ -772,19 +772,22 @@ bool GRenderWindow::InitRenderTarget() {
     // Update the Window System information with the new render target
     window_info = QtCommon::GetWindowSystemInfo(child_widget->windowHandle());
 
-    const auto target_width = Settings::IsDockedMode() ? Layout::ScreenDocked::Width : Layout::ScreenUndocked::Width;
-    const auto target_height = Settings::IsDockedMode() ? Layout::ScreenDocked::Height : Layout::ScreenUndocked::Height;
+    const bool embedded = !isWindow();
+    const QSize native_size = Settings::IsDockedMode()
+                                  ? QSize(Layout::ScreenDocked::Width, Layout::ScreenDocked::Height)
+                                  : QSize(Layout::ScreenUndocked::Width, Layout::ScreenUndocked::Height);
+    const QSize target_size = embedded
+                                  ? parentWidget()->contentsRect().size().expandedTo(QSize(1, 1))
+                                  : native_size;
 
-    child_widget->resize(target_width, target_height);
     layout()->addWidget(child_widget);
-    // Reset minimum required size to avoid resizing issues on the main window after restarting.
-    setMinimumSize(1, 1);
-
-    resize(target_width, target_height);
-
     OnMinimalClientAreaChangeRequest(GetActiveConfig().min_client_area_size);
+    resize(target_size);
+    child_widget->resize(size());
     OnFramebufferSizeChanged();
-    BackupGeometry();
+    if (!embedded) {
+        BackupGeometry();
+    }
 
     if (Settings::values.renderer_backend.GetValue() == Settings::RendererBackend::OpenGL_GLSL ||
         Settings::values.renderer_backend.GetValue() == Settings::RendererBackend::OpenGL_GLASM ||
@@ -847,7 +850,7 @@ bool GRenderWindow::IsLoadingComplete() const {
 }
 
 void GRenderWindow::OnMinimalClientAreaChangeRequest(std::pair<u32, u32> minimal_size) {
-    setMinimumSize(minimal_size.first, minimal_size.second);
+    setMinimumSize(isWindow() ? QSize(minimal_size.first, minimal_size.second) : QSize(1, 1));
 }
 
 bool GRenderWindow::InitializeOpenGL() {

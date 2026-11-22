@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <thread>
 
+#include <QKeyEvent>
 #include "common/assert.h"
 #include "common/settings.h"
 #include "common/settings_enums.h"
@@ -25,7 +26,6 @@
 #include "lichii/configuration/configure_vibration.h"
 #include "lichii/configuration/input_profiles.h"
 #include "lichii/main_window.h"
-#include "lichii/util/controller_navigation.h"
 
 namespace {
 
@@ -148,7 +148,6 @@ QtControllerSelectorDialog::QtControllerSelectorDialog(
 
     LoadConfiguration();
 
-    controller_navigation = new ControllerNavigation(system.HIDCore(), this);
 
     for (std::size_t i = 0; i < NUM_PLAYERS; ++i) {
         SetExplainText(i);
@@ -218,12 +217,6 @@ QtControllerSelectorDialog::QtControllerSelectorDialog(
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this,
             &QtControllerSelectorDialog::ApplyConfiguration);
 
-    connect(controller_navigation, &ControllerNavigation::TriggerKeyboardEvent,
-            [this](Qt::Key key) {
-                QKeyEvent* event = new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier);
-                QCoreApplication::postEvent(this, event);
-            });
-
     // Enhancement: Check if the parameters have already been met before disconnecting controllers.
     // If all the parameters are met AND only allows a single player,
     // stop the constructor here as we do not need to continue.
@@ -242,7 +235,6 @@ QtControllerSelectorDialog::QtControllerSelectorDialog(
 }
 
 QtControllerSelectorDialog::~QtControllerSelectorDialog() {
-    controller_navigation->UnloadController();
     system.HIDCore().DisableAllControllerConfiguration();
 }
 

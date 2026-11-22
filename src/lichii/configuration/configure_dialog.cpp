@@ -8,6 +8,7 @@
 #include <array>
 #include <memory>
 #include <tuple>
+#include <QKeyEvent>
 #include <QPushButton>
 #include <QScreen>
 #include <QScrollArea>
@@ -38,6 +39,7 @@
 #include "lichii/configuration/configure_input.h"
 #include "lichii/configuration/configure_input_player.h"
 #include "lichii/configuration/configure_network.h"
+#include "lichii/configuration/configure_navigation.h"
 #include "lichii/configuration/configure_profile_manager.h"
 #include "lichii/configuration/configure_system.h"
 #include "lichii/configuration/configure_ui.h"
@@ -154,12 +156,40 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
                                                       2 * ui->selectorList->frameWidth() + 32));
     ConfigurationShared::FitToScreen(this, QSize(1040, 760));
     ui->selectorList->setCurrentRow(0);
-
-    // Selects the leftmost button on the bottom bar (Cancel as of writing)
-    ui->buttonBox->setFocus();
+    ui->selectorList->setProperty("controllerHighlightItem", true);
+    ui->selectorList->installEventFilter(this);
+    ui->tabWidget->tabBar()->installEventFilter(this);
+    ui->selectorList->setFocus();
 }
 
 ConfigureDialog::~ConfigureDialog() = default;
+
+bool ConfigureDialog::HandleControllerNavigation(Qt::Key key) {
+    return ConfigurationShared::NavigateSettings(key, *ui->selectorList, *ui->tabWidget,
+                                                 *ui->buttonBox);
+}
+
+bool ConfigureDialog::eventFilter(QObject* watched, QEvent* event) {
+    if (event->type() == QEvent::KeyPress &&
+        (watched == ui->selectorList || watched == ui->tabWidget->tabBar())) {
+        const auto* key = static_cast<QKeyEvent*>(event);
+        switch (key->key()) {
+        case Qt::Key_Right:
+        case Qt::Key_Up:
+        case Qt::Key_Down:
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
+            if (key->modifiers() == Qt::NoModifier &&
+                HandleControllerNavigation(static_cast<Qt::Key>(key->key()))) {
+                return true;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return QDialog::eventFilter(watched, event);
+}
 
 void ConfigureDialog::SetConfiguration() {}
 
@@ -284,6 +314,18 @@ void ConfigureDialog::HandleApplyButtonClicked() {
 }
 
 Q_DECLARE_METATYPE(QList<QWidget*>);
+
+void ConfigureDialog::SelectProfiles() {
+    for (int row = 0; row < ui->selectorList->count(); ++row) {
+        const auto tabs = ui->selectorList->item(row)->data(Qt::UserRole).value<QList<QWidget*>>();
+        if (const auto profile_index = tabs.indexOf(profile_tab.get()); profile_index >= 0) {
+            ui->selectorList->setCurrentRow(row);
+            ui->tabWidget->setCurrentIndex(static_cast<int>(profile_index));
+            ui->tabWidget->tabBar()->setFocus();
+            return;
+        }
+    }
+}
 
 void ConfigureDialog::PopulateSelectionList() {
     const std::array<std::tuple<QString, const char*, QList<QWidget*>>, 6> items{

@@ -78,7 +78,7 @@
 #include "configuration/configure_tas.h"
 
 #include "util/clickable_label.h"
-#include "util/controller_navigation.h"
+#include "lichii/util/controller_ui_navigation.h"
 #include "util/overlay_dialog.h"
 
 #include "multiplayer/state.h"
@@ -214,6 +214,7 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 
 #include <SDL3/SDL.h>
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -517,6 +518,16 @@ MainWindow::MainWindow(bool has_broken_vulkan)
     ConnectWidgetEvents();
 
     QtCommon::SetupHID();
+    controller_ui_navigation =
+        new ControllerUiNavigation(
+            *QtCommon::system, this, [this]() -> QWidget* {
+                if (game_list->isVisible() && game_list->isEnabled()) {
+                    return game_list->NavigationTarget();
+                }
+                return game_list_placeholder->isVisible() ? game_list_placeholder->focusProxy()
+                                                          : nullptr;
+            },
+            [this] { return game_list->ReturnFromCollection(); });
     controller_dialog->refreshConfiguration();
 
     UpdateWindowTitle();
@@ -802,6 +813,7 @@ MainWindow::MainWindow(bool has_broken_vulkan)
 }
 
 MainWindow::~MainWindow() {
+    controller_ui_navigation->Stop();
     if (nup_cancel) {
         nup_cancel->store(true);
     }
@@ -1809,6 +1821,7 @@ void MainWindow::ConnectWidgetEvents() {
         dialog.exec();
     });
     connect(game_list, &GameList::BootGame, this, &MainWindow::BootGameFromList);
+    connect(game_list, &GameList::ProfileRequested, this, [this] { OpenConfiguration(true); });
     connect(game_list, &GameList::GameChosen, this, &MainWindow::OnGameListLoadFile);
     connect(game_list, &GameList::OpenDirectory, this, &MainWindow::OnGameListOpenDirectory);
     connect(game_list, &GameList::OpenFolderRequested, this, &MainWindow::OnGameListOpenFolder);
@@ -1928,6 +1941,8 @@ void MainWindow::ConnectMenuEvents() {
     connect_menu(ui->action_Grid_View, &MainWindow::SetGridView);
     connect_menu(ui->action_Tree_View, &MainWindow::SetTreeView);
     connect_menu(ui->action_Carousel_View, &MainWindow::SetCarouselView);
+    connect(ui->action_Home_View, &QAction::triggered, this,
+            [this] { SetGameListMode(Settings::GameListMode::HomeView); });
 
     game_size_actions = new QActionGroup(this);
     game_size_actions->setExclusive(true);
@@ -2703,8 +2718,8 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
         QtCommon::emu_thread.get(), &EmuThread::ShaderCacheReloadStarted, this,
         [this] {
             loading_screen->Prepare(QtCommon::system->GetAppLoader());
-            loading_screen->show();
             render_window->hide();
+            loading_screen->show();
         },
         Qt::QueuedConnection);
 
@@ -2717,10 +2732,6 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
 
     // Update the GUI
     UpdateStatusButtons();
-    if (ui->action_Single_Window_Mode->isChecked()) {
-        game_list->hide();
-        game_list_placeholder->hide();
-    }
     status_bar_update_timer.start(500);
     renderer_status_button->setDisabled(true);
     frame_gen_status_button->setDisabled(true);
@@ -2777,13 +2788,17 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     UpdateWindowTitle(title_name, title_version, gpu_vendor);
 
     loading_screen->Prepare(QtCommon::system->GetAppLoader());
+    const bool single_window = ui->action_Single_Window_Mode->isChecked();
+    if (single_window) {
+        game_list->hide();
+        game_list_placeholder->hide();
+    }
     loading_screen->show();
 
     emulation_running = true;
     if (ui->action_Fullscreen->isChecked()) {
         ShowFullscreen();
-    } else if (!(ui->action_Single_Window_Mode->isChecked() ? isMaximized()
-                                                            : render_window->isMaximized())) {
+    } else if (!single_window && !render_window->isMaximized()) {
         if (Settings::IsDockedMode()) {
             ResetWindowSize1080();
         } else {
@@ -3049,7 +3064,7 @@ void MainWindow::OnEmulationStopped() {
     } else {
         game_list->show();
     }
-    game_list->SetFilterFocus();
+    game_list->RestoreFocus();
     tas_label->clear();
     input_subsystem->GetTas()->Stop();
     OnTasStateChanged();
@@ -3139,7 +3154,8 @@ void MainWindow::ShutdownGame() {
 void MainWindow::StoreRecentFile(const QString& filename) {
     UISettings::values.recent_files.prepend(filename);
     UISettings::values.recent_files.removeDuplicates();
-    while (UISettings::values.recent_files.size() > max_recent_files_item) {
+    constexpr int game_history_limit = 256;
+    while (UISettings::values.recent_files.size() > game_history_limit) {
         UISettings::values.recent_files.removeLast();
     }
 
@@ -3165,6 +3181,9 @@ void MainWindow::UpdateRecentFiles() {
 
     // Enable the recent files menu if the list isn't empty
     ui->menu_recent_files->setEnabled(num_recent_files != 0);
+    if (game_list) {
+        game_list->RefreshHome();
+    }
 }
 
 void MainWindow::OnGameListLoadFile(QString game_path, u64 program_id) {
@@ -4282,6 +4301,7 @@ void MainWindow::ToggleWindowMode() {
     if (ui->action_Single_Window_Mode->isChecked()) {
         // Render in the main window...
         render_window->BackupGeometry();
+        render_window->setMinimumSize(1, 1);
         ui->horizontalLayout->addWidget(render_window);
         render_window->setFocusPolicy(Qt::StrongFocus);
         if (emulation_running) {
@@ -4366,11 +4386,16 @@ void MainWindow::SetGameListMode(Settings::GameListMode mode) {
     ui->action_Grid_View->setChecked(mode == Settings::GameListMode::GridView);
     ui->action_Tree_View->setChecked(mode == Settings::GameListMode::TreeView);
     ui->action_Carousel_View->setChecked(mode == Settings::GameListMode::CarouselView);
+    const bool home = mode == Settings::GameListMode::HomeView;
+    ui->action_Home_View->setChecked(home);
 
     UISettings::values.game_list_mode = mode;
-    ui->action_Show_Game_Name->setEnabled(mode != Settings::GameListMode::TreeView);
+    ui->action_Show_Game_Name->setEnabled(!home && mode != Settings::GameListMode::TreeView);
+    ui->menuGame_Icon_Size->setEnabled(!home);
 
-    CheckIconSize();
+    if (!home) {
+        CheckIconSize();
+    }
     game_list->ResetViewMode();
 }
 
@@ -4421,6 +4446,10 @@ void MainWindow::ToggleShowGameName() {
 }
 
 void MainWindow::OnConfigure() {
+    OpenConfiguration(false);
+}
+
+void MainWindow::OpenConfiguration(bool profiles) {
     const auto old_theme = UISettings::values.theme;
     const bool old_discord_presence = UISettings::values.enable_discord_presence.GetValue();
     const auto old_language_index = Settings::values.language_index.GetValue();
@@ -4441,6 +4470,9 @@ void MainWindow::OnConfigure() {
     ConfigureDialog configure_dialog(this, hotkey_registry, input_subsystem.get(),
                                      vk_device_records, *QtCommon::system,
                                      !multiplayer_state->IsHostingPublicRoom());
+    if (profiles) {
+        configure_dialog.SelectProfiles();
+    }
     connect(&configure_dialog, &ConfigureDialog::LanguageChanged, this,
             &MainWindow::OnLanguageChanged);
     connect(&configure_dialog, &ConfigureDialog::ExternalContentDirsChanged, this,
@@ -4524,6 +4556,9 @@ void MainWindow::OnConfigure() {
     const auto reload = UISettings::values.is_game_list_reload_pending.exchange(false);
     if (reload || Settings::values.language_index.GetValue() != old_language_index) {
         game_list->PopulateAsync(UISettings::values.game_dirs);
+    }
+    if (Settings::values.current_user.GetValue() != old_current_user) {
+        game_list->RefreshHome();
     }
 
     UISettings::values.configuration_applied = false;
@@ -4982,23 +5017,12 @@ void MainWindow::OnLoadAmiibo() {
 bool MainWindow::question(QWidget* parent, const QString& title, const QString& text,
                           QMessageBox::StandardButtons buttons,
                           QMessageBox::StandardButton defaultButton) {
-    QMessageBox* box_dialog = new QMessageBox(parent);
-    box_dialog->setWindowTitle(title);
-    box_dialog->setText(text);
-    box_dialog->setStandardButtons(buttons);
-    box_dialog->setDefaultButton(defaultButton);
-
-    ControllerNavigation* controller_navigation =
-        new ControllerNavigation(QtCommon::system->HIDCore(), box_dialog);
-    connect(controller_navigation, &ControllerNavigation::TriggerKeyboardEvent,
-            [box_dialog](Qt::Key key) {
-                QKeyEvent* event = new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier);
-                QCoreApplication::postEvent(box_dialog, event);
-            });
-    int res = box_dialog->exec();
-
-    controller_navigation->UnloadController();
-    return res == QMessageBox::Yes;
+    QMessageBox box_dialog(parent);
+    box_dialog.setWindowTitle(title);
+    box_dialog.setText(text);
+    box_dialog.setStandardButtons(buttons);
+    box_dialog.setDefaultButton(defaultButton);
+    return box_dialog.exec() == QMessageBox::Yes;
 }
 
 void MainWindow::LoadAmiibo(const QString& filename) {
@@ -6740,7 +6764,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 
     // Unload controllers early
     controller_dialog->UnloadController();
-    game_list->UnloadController();
+    controller_ui_navigation->Stop();
 
     // Shutdown session if the emu thread is active...
     if (QtCommon::emu_thread != nullptr)
@@ -6890,7 +6914,7 @@ static QPalette LichiiPalette() {
 }
 
 void MainWindow::UpdateMenuIcons() {
-    const std::array<std::pair<QAction*, const char*>, 57> icons{{
+    const auto icons = std::to_array<std::pair<QAction*, const char*>>({
         {ui->action_Install_File_NAND, "download"},
         {ui->action_Load_File, "file"},
         {ui->action_Load_Folder, "folder"},
@@ -6912,6 +6936,7 @@ void MainWindow::UpdateMenuIcons() {
         {ui->menu_Reset_Window_Size->menuAction(), "monitor"},
         {ui->menu_View_Debugging->menuAction(), "bug"},
         {ui->menu_Game_List_Mode->menuAction(), "grid"},
+        {ui->action_Home_View, "gamepad"},
         {ui->menuGame_Icon_Size->menuAction(), "image"},
         {ui->action_View_Lobby, "globe"},
         {ui->action_Start_Room, "plus"},
@@ -6948,7 +6973,7 @@ void MainWindow::UpdateMenuIcons() {
         {ui->action_Whats_New, "sparkles"},
         {ui->action_About, "info"},
         {ui->action_Eden_Dependencies, "list"},
-    }};
+    });
     for (const auto& [action, name] : icons) {
         action->setIcon(MenuIcon(name));
     }

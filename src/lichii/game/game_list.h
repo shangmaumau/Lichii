@@ -19,6 +19,7 @@
 #include <QVector>
 #include <atomic>
 #include <memory>
+#include <utility>
 #include <QWidget>
 
 #include "common/common_types.h"
@@ -34,8 +35,8 @@ class GameCard;
 class GameListModel;
 class GameTree;
 class GameGrid;
+class GameHome;
 class GameListSearchField;
-class ControllerNavigation;
 class GameListWorker;
 class GameListDir;
 class MainWindow;
@@ -74,9 +75,11 @@ public:
                       MainWindow* parent = nullptr);
     ~GameList() override;
 
-    QString GetLastFilterResultItem() const;
+    std::pair<QString, u64> GetLastFilterResultItem() const;
     void ClearFilter();
     void SetFilterFocus();
+    void RestoreFocus();
+    void RefreshHome();
     void SetFilterVisible(bool visibility);
     bool IsEmpty() const;
     bool IsPopulating() const;
@@ -90,8 +93,8 @@ public:
 
     QStandardItemModel* GetModel() const;
 
-    /// Disables events from the emulated controller
-    void UnloadController();
+    QWidget* NavigationTarget() const;
+    bool ReturnFromCollection();
 
     void ResetViewMode();
 
@@ -109,6 +112,7 @@ public slots:
     void OnPopulate();
 
 signals:
+    void ProfileRequested();
     void ReportCompatibilityRequested(u64 program_id);
     void BootGame(const QString& game_path, StartGameType type);
     void GameChosen(const QString& game_path, const u64 title_id = 0);
@@ -187,11 +191,10 @@ private:
 
     GameTree* tree_view = nullptr;
     GameGrid* grid_view = nullptr;
+    GameHome* home_view = nullptr;
     GameCarousel* carousel_view = nullptr;
     GameListModel* item_model = nullptr;
     Settings::GameListMode game_list_mode;
-
-    ControllerNavigation* controller_navigation = nullptr;
 
     QVariantAnimation* vertical_scroll = nullptr;
     QVariantAnimation* horizontal_scroll = nullptr;
@@ -207,6 +210,7 @@ private:
     bool nx_tool_running{};
     u64 reportable_program_id{};
     QAbstractItemView* m_currentView = nullptr;
+    QWidget* current_page = nullptr;
 
     struct ArtworkLookup {
         u64 program_id;
@@ -259,5 +263,5 @@ private:
 
     QVBoxLayout* layout = nullptr;
     QLabel* image = nullptr;
-    QLabel* text = nullptr;
+    QPushButton* add_directory = nullptr;
 };

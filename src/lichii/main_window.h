@@ -59,6 +59,7 @@ class LoadingScreen;
 class OverlayDialog;
 class BugReportDialog;
 class ControllerDialog;
+class ControllerUiNavigation;
 class QLabel;
 class MultiplayerState;
 class QPushButton;
@@ -403,6 +404,7 @@ private slots:
     void OnMenuInstallToNAND();
     void OnMenuRecentFile();
     void OnConfigure();
+    void OpenConfiguration(bool profiles);
     void OnConfigureTas();
     void OnDecreaseVolume();
     void OnIncreaseVolume();
@@ -579,6 +581,7 @@ private:
 
     GRenderWindow* render_window = nullptr;
     GameList* game_list = nullptr;
+    ControllerUiNavigation* controller_ui_navigation = nullptr;
     LoadingScreen* loading_screen = nullptr;
     QTimer shutdown_timer;
     QTimer emu_terminate_timer;

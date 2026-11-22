@@ -48,15 +48,17 @@ Q_DECLARE_METATYPE(GameListItemType);
  * @return QPixmap default icon
  */
 inline constexpr qreal GameIconDpr = 2.0;
+inline constexpr qreal GameIconCornerRatio = 0.055;
+inline constexpr u32 HomeCoverSize = 160;
 
 static bool IsLichiiTheme() {
     return UISettings::values.theme == "lichii";
 }
 
-static QPixmap GetDefaultIcon(u32 size) {
+static QPixmap GetDefaultIcon(u32 size, bool show_glyph = IsLichiiTheme()) {
     // `size` stays the logical tile size; only the backing bitmap is rendered at 2×.
     const int side = static_cast<int>(qRound(size * GameIconDpr));
-    if (size == 0 || !IsLichiiTheme()) {
+    if (size == 0 || !show_glyph) {
         QPixmap icon(side, side);
         icon.fill(Qt::transparent);
         icon.setDevicePixelRatio(GameIconDpr);
@@ -70,7 +72,8 @@ static QPixmap GetDefaultIcon(u32 size) {
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(0x23, 0x24, 0x2a));
-    painter.drawRoundedRect(QRectF(0, 0, side, side), side * 0.18, side * 0.18);
+    const qreal radius = side * GameIconCornerRatio;
+    painter.drawRoundedRect(QRectF(0, 0, side, side), radius, radius);
     const int glyph = side * 3 / 8;
     // This 256 px file is only a high-resolution source glyph; it is scaled to the tile below.
     QImage glyph_image(QStringLiteral(":/lichii/icons/menu_gamepad_256.png"));
@@ -86,7 +89,7 @@ static QPixmap GetDefaultIcon(u32 size) {
 }
 
 static QPixmap RoundedIcon(const QPixmap& picture) {
-    if (!IsLichiiTheme() || picture.isNull()) {
+    if (picture.isNull()) {
         return picture;
     }
     const qreal dpr = picture.devicePixelRatio() > 0.0 ? picture.devicePixelRatio() : 1.0;
@@ -95,7 +98,7 @@ static QPixmap RoundedIcon(const QPixmap& picture) {
     QPainter painter(&icon);
     painter.setRenderHint(QPainter::Antialiasing);
     QPainterPath path;
-    const qreal radius = picture.width() * 0.18;
+    const qreal radius = picture.width() * GameIconCornerRatio;
     path.addRoundedRect(QRectF(icon.rect()), radius, radius);
     painter.setClipPath(path);
     painter.drawPixmap(QRect(QPoint(0, 0), picture.size()), picture);
@@ -158,6 +161,7 @@ public:
     static constexpr int FileTypeRole = SortRole + 4;
     /// True when the picture comes from the game or its custom artwork, not the default art.
     static constexpr int HasIconRole = SortRole + 5;
+    static constexpr int PublisherRole = SortRole + 6;
 
     GameListItemPath() = default;
     GameListItemPath(const QString& game_path, const std::vector<u8>& picture_data,
@@ -195,7 +199,9 @@ public:
 
     /// Shows an image file as a game's picture, or the default art when it is not an image.
     static void SetPicture(QStandardItem* item, const std::vector<u8>& picture_data) {
-        const u32 size = UISettings::CurrentGameIconSize().GetValue();
+        const u32 size = UISettings::values.game_list_mode.GetValue() == Settings::GameListMode::HomeView
+                             ? HomeCoverSize
+                             : UISettings::CurrentGameIconSize().GetValue();
 
         QPixmap picture;
         const bool has_icon =
@@ -207,7 +213,7 @@ public:
             picture = GetDefaultIcon(size);
         }
 
-        item->setData(RoundedIcon(picture), Qt::DecorationRole);
+        item->setData(has_icon ? RoundedIcon(picture) : picture, Qt::DecorationRole);
         item->setData(has_icon, HasIconRole);
     }
 
@@ -254,6 +260,7 @@ public:
             }
             case Settings::GameListMode::GridView:
             case Settings::GameListMode::CarouselView:
+            case Settings::GameListMode::HomeView:
                 return row1;
             default:
                 break;
