@@ -482,6 +482,14 @@ QSlider {
     background-color: transparent;
 }
 
+QSlider:horizontal {
+    min-height: 16px;
+}
+
+QSlider:vertical {
+    min-width: 16px;
+}
+
 QSlider::groove:horizontal {
     height: 4px;
     border-radius: 2px;

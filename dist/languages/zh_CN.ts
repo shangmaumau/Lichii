@@ -2327,7 +2327,7 @@ Loading takes longer and uses more memory, about 0.3 MB per shader, up to a quar
     <message>
         <location line="+5"/>
         <source>Switch 2 draws and compute with unbuilt shaders:</source>
-        <translation>Switch 2 绘制与 compute 使用尚未构建的着色器时：</translation>
+        <translation>遇到尚未构建着色器的 Switch 2 绘制或计算任务时：</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2583,6 +2583,208 @@ Off (accurate): the game waits for every shader, so nothing is ever missing, but
         <location line="+3"/>
         <source>Hypervisor (requires multicore)</source>
         <translation>Hypervisor（需要多核）</translation>
+    </message>
+    <message>
+        <source>Use the game's own DLSS</source>
+        <translation>使用游戏自带的 DLSS</translation>
+    </message>
+    <message>
+        <source>Frame rate limit (Switch 2):</source>
+        <translation>帧率上限（Switch 2）：</translation>
+    </message>
+    <message>
+        <source>RCAS Sharpness:</source>
+        <translation>RCAS 锐化强度：</translation>
+    </message>
+    <message>
+        <source>Use AMD FSR 3.1 upscaling in Ocarina of Time</source>
+        <translation>在《时之笛》中使用 AMD FSR 3.1 超分辨率</translation>
+    </message>
+    <message>
+        <source>Replaces Ocarina of Time's native upscaler using scene depth and camera motion. Works on any supported Vulkan GPU. NVIDIA DLSS takes precedence when enabled and available. RCAS Sharpness controls sharpening. Takes effect when a game starts.</source>
+        <translation>利用场景深度和镜头运动替换《时之笛》原有的超分辨率方案。适用于支持的 Vulkan GPU。启用且可用时优先使用 NVIDIA DLSS。RCAS 锐化强度可调节画面锐度。设置在启动游戏时生效。</translation>
+    </message>
+    <message>
+        <source>Use AMD FSR 4 in place of FSR 3.1</source>
+        <translation>使用 AMD FSR 4 替代 FSR 3.1</translation>
+    </message>
+    <message>
+        <source>Use NVIDIA DLSS in place of a game's DLSS (experimental)</source>
+        <translation>使用 NVIDIA DLSS 替代游戏自带的 DLSS（实验性）</translation>
+    </message>
+    <message>
+        <source>NVIDIA DLSS quality:</source>
+        <translation>NVIDIA DLSS 画质：</translation>
+    </message>
+    <message>
+        <source>NVIDIA DLSS model preset:</source>
+        <translation>NVIDIA DLSS 模型预设：</translation>
+    </message>
+    <message>
+        <source>Ocarina of Time anti-aliasing:</source>
+        <translation>《时之笛》抗锯齿：</translation>
+    </message>
+    <message>
+        <source>FPS Limit</source>
+        <translation>帧率上限</translation>
+    </message>
+    <message>
+        <source>Caps how often the game presents, so the game itself runs at this rate. 0 leaves the frame rate to the game and the display.</source>
+        <translation>限制游戏提交画面的频率，使游戏以该帧率运行。设为 0 时，由游戏和显示器决定帧率。</translation>
+    </message>
+    <message>
+        <source>Enable Frame Generation</source>
+        <translation>启用帧生成</translation>
+    </message>
+    <message>
+        <source>Frame Generation Type</source>
+        <translation>帧生成类型</translation>
+    </message>
+    <message>
+        <source>Lichii Optical Flow Frame Generation is built in and runs on any GPU.
+FlyHigh needs a compatible Vulkan driver and a one-time model download. It falls back to Lichii Optical Flow when unavailable.
+NVIDIA DLSS Frame Generation (Windows only) needs a GeForce RTX 40 series or newer GPU (3x and 4x need an RTX 50 series), Hardware-accelerated GPU scheduling on in Windows' graphics settings, "Use NVIDIA DLSS" on and NVIDIA's files from the NVIDIA DLSS panel. It takes the game's depth and motion vectors from the DLSS evaluation, so it runs in The Legend of Zelda: Ocarina of Time only, docked, with DLSS as its upscaler. Other games, and scRGB HDR output, use Lichii Optical Flow Frame Generation instead.
+VSync is off while it runs. Choosing it takes effect when a game starts.</source>
+        <translation>Lichii 内置的光流帧生成适用于所有 GPU。
+FlyHigh 需要兼容的 Vulkan 驱动程序，并需首次下载模型。不可用时回退到 Lichii 光流。
+NVIDIA DLSS 帧生成（仅限 Windows）需要 GeForce RTX 40 系列或更新的 GPU（三倍和四倍帧生成需要 RTX 50 系列）、在 Windows 图形设置里启用硬件加速 GPU 调度、启用「使用 NVIDIA DLSS」，并从 NVIDIA DLSS 面板安装所需文件。它从 DLSS 获取深度和运动矢量，因此仅在《时之笛》的底座模式使用 DLSS 超分辨率时可用。其他游戏以及 scRGB HDR 输出会使用 Lichii 光流帧生成。
+帧生成运行期间关闭垂直同步。设置在启动游戏时生效。</translation>
+    </message>
+    <message>
+        <source>Frame Generation Multiplier</source>
+        <translation>帧生成倍数</translation>
+    </message>
+    <message>
+        <source>Target Frame Rate</source>
+        <translation>目标帧率</translation>
+    </message>
+    <message>
+        <source>Auto Flow Scale</source>
+        <translation>自动光流缩放</translation>
+    </message>
+    <message>
+        <source>Flow Scale</source>
+        <translation>光流缩放</translation>
+    </message>
+    <message>
+        <source>Queue Target</source>
+        <translation>队列目标</translation>
+    </message>
+    <message>
+        <source>Keep HUD Still (FlyHigh)</source>
+        <translation>保持 HUD 静止（FlyHigh）</translation>
+    </message>
+    <message>
+        <source>Pixels that have not changed for several frames, such as a HUD, are shown as they are instead of being interpolated.</source>
+        <translation>HUD 等连续数帧保持不变的像素会直接显示，免受插帧影响。</translation>
+    </message>
+    <message>
+        <source>Dump Optical Flow</source>
+        <translation>转储光流</translation>
+    </message>
+    <message>
+        <source>Native compute write mark:</source>
+        <translation>原生计算着色器写入标记：</translation>
+    </message>
+    <message>
+        <source>Pin GPU threads to their own cores</source>
+        <translation>将 GPU 线程绑定到独立 CPU 核心</translation>
+    </message>
+    <message>
+        <source>Precache shaders before game start:</source>
+        <translation>启动游戏前预编译着色器：</translation>
+    </message>
+    <message>
+        <source>Pipeline wait per frame (ms):</source>
+        <translation>每帧管线等待上限（毫秒）：</translation>
+    </message>
+    <message>
+        <source>Mario Kart World: 30 FPS mode</source>
+        <translation>马力欧赛车 世界：30 FPS 模式</translation>
+    </message>
+    <message>
+        <source>Forces the game to use its native 30 FPS mode at normal game speed. Takes effect after restarting the game.</source>
+        <translation>强制游戏以正常速度运行在原生 30 FPS 模式。重启游戏后生效。</translation>
+    </message>
+    <message>
+        <source>Mario Kart World: dynamic FPS (experimental)</source>
+        <translation>马力欧赛车 世界：动态帧率（实验性）</translation>
+    </message>
+    <message>
+        <source>Lets the game adjust between 30 and 60 FPS using whole-frame timing to maintain normal game speed. Takes effect after restarting the game and takes precedence over the 30 FPS mode.</source>
+        <translation>让游戏按整帧时序在 30 和 60 FPS 之间调整，以保持正常游戏速度。重启游戏后生效，优先于 30 FPS 模式。</translation>
+    </message>
+    <message>
+        <source>Automatic (game resolution)</source>
+        <translation>自动（游戏分辨率）</translation>
+    </message>
+    <message>
+        <source>Native (DLAA)</source>
+        <translation>原生（DLAA）</translation>
+    </message>
+    <message>
+        <source>M (DLSS 4.5, default)</source>
+        <translation>M（DLSS 4.5，默认）</translation>
+    </message>
+    <message>
+        <source>E (legacy CNN)</source>
+        <translation>E（旧版 CNN）</translation>
+    </message>
+    <message>
+        <source>F (legacy CNN)</source>
+        <translation>F（旧版 CNN）</translation>
+    </message>
+    <message>
+        <source>J (DLSS 4)</source>
+        <translation>J（DLSS 4）</translation>
+    </message>
+    <message>
+        <source>K (DLSS 4)</source>
+        <translation>K（DLSS 4）</translation>
+    </message>
+    <message>
+        <source>L (DLSS 4.5)</source>
+        <translation>L（DLSS 4.5）</translation>
+    </message>
+    <message>
+        <source>Auto (shader extent)</source>
+        <translation>自动（根据着色器使用范围）</translation>
+    </message>
+    <message>
+        <source>Full binding</source>
+        <translation>绑定完整范围</translation>
+    </message>
+    <message>
+        <source>Lossless Scaling (LSFG)</source>
+        <translation>Lossless Scaling（LSFG）</translation>
+    </message>
+    <message>
+        <source>FlyHigh</source>
+        <translation>FlyHigh</translation>
+    </message>
+    <message>
+        <source>AMD FidelityFX Super Resolution 1 (FSR 1)</source>
+        <translation>AMD FidelityFX 超分辨率 1（FSR 1）</translation>
+    </message>
+    <message>
+        <source>AMD FidelityFX Super Resolution 1, softer sharpening</source>
+        <translation>AMD FidelityFX 超分辨率 1（较柔和的锐化）</translation>
+    </message>
+    <message>
+        <source>No sharpening</source>
+        <translation>关闭锐化</translation>
+    </message>
+    <message>
+        <source>Ask</source>
+        <translation>询问</translation>
+    </message>
+    <message>
+        <source>Wait</source>
+        <translation>等待</translation>
+    </message>
+    <message>
+        <source>Bounded wait</source>
+        <translation>限时等待</translation>
     </message>
 </context>
 <context>
@@ -6816,6 +7018,18 @@ Drag points to change position, or double-click table cells to edit values.</sou
         <source>Lichii Web Service</source>
         <translation>Lichii Web 服务</translation>
     </message>
+    <message>
+        <source>Mod Store</source>
+        <translation>Mod 商店</translation>
+    </message>
+    <message>
+        <source>&amp;API base URL:</source>
+        <translation>API 基础地址（&amp;A）：</translation>
+    </message>
+    <message>
+        <source>Leave blank to restore the default Mod Store address.</source>
+        <translation>留空可恢复 Mod 商店的默认地址。</translation>
+    </message>
 </context>
 <context>
     <name>ControllerDialog</name>
@@ -10066,6 +10280,26 @@ Remove and sign out those sign-ins? Keep them if the profiles are in another NAN
         <translation>Lichii 在这个 NAND 里找不到 %n 个账户档案对应的 Nextendo 登录。旧版本删除账户档案时把这些登录留了下来。
 
 要移除并登出这些登录吗？如果这些账户档案在另一个 NAND 文件夹里，请保留它们。</translation>
+    </message>
+    <message>
+        <source>&amp;About Lichii</source>
+        <translation>关于 Lichii (&amp;A)</translation>
+    </message>
+    <message>
+        <source>&amp;Mod Store</source>
+        <translation>Mod 商店 (&amp;M)</translation>
+    </message>
+    <message>
+        <source>Mod Store</source>
+        <translation>Mod 商店</translation>
+    </message>
+    <message>
+        <source>Wait for the NX metadata edit to finish before browsing mods.</source>
+        <translation>请等待 NX 元数据编辑结束，再浏览 Mod。</translation>
+    </message>
+    <message>
+        <source>Wait for the game library to finish loading before browsing mods.</source>
+        <translation>请等待游戏库加载完成，再浏览 Mod。</translation>
     </message>
 </context>
 <context>
@@ -13449,6 +13683,62 @@ or click to browse</source>
 <context>
     <name>NvidiaDlssPanel</name>
     <message>
+        <source>NVIDIA Streamline (%1)</source>
+        <translation>NVIDIA Streamline（%1）</translation>
+    </message>
+    <message>
+        <source>NVIDIA Streamline's files (sl.*) from one release; these are from different ones</source>
+        <translation>需要来自同一发行版的 NVIDIA Streamline 文件（sl.*）。当前文件来自不同的发行版</translation>
+    </message>
+    <message>
+        <source>DLSS Frame Generation also needs %1.</source>
+        <translation>DLSS 帧生成还需要 %1。</translation>
+    </message>
+    <message>
+        <source>DLSS Frame Generation needs NVIDIA's Streamline files (sl.*) from one release; these are from different ones.</source>
+        <translation>DLSS 帧生成需要来自同一发行版的 NVIDIA Streamline 文件（sl.*）。当前文件来自不同的发行版。</translation>
+    </message>
+    <message>
+        <source>DLSS Frame Generation's files are present.</source>
+        <translation>已找到 DLSS 帧生成所需的文件。</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Ready.&lt;/b&gt; Found %1 and %2.&lt;br&gt;DLSS and the settings below apply only when a game uses its own DLSS. While DLSS runs, the status bar shows DLSS, its mode and its preset.</source>
+        <translation>&lt;b&gt;已就绪。&lt;/b&gt;已找到 %1 和 %2。&lt;br&gt;游戏使用自带的 DLSS 时才会应用此处的 DLSS 设置。DLSS 运行时，状态栏会显示其模式和预设。</translation>
+    </message>
+    <message>
+        <source>Download Frame Generation files from NVIDIA</source>
+        <translation>从 NVIDIA 下载帧生成文件</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Files needed:&lt;/b&gt; %1. %2 will be used. Until then, games use AMD FSR 3.1.</source>
+        <translation>&lt;b&gt;需要文件。&lt;/b&gt;请安装 %1。安装后将使用 %2，安装前游戏会使用 AMD FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>Download from NVIDIA</source>
+        <translation>从 NVIDIA 下载</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;NVIDIA's files needed:&lt;/b&gt; %1 and DLSS (nvngx_dlss.dll). Until then, games use AMD FSR 3.1.</source>
+        <translation>&lt;b&gt;需要 NVIDIA 的文件。&lt;/b&gt;请安装 %1 和 DLSS（nvngx_dlss.dll）。安装前游戏会使用 AMD FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>NVIDIA DLSS</source>
+        <translation>NVIDIA DLSS</translation>
+    </message>
+    <message>
+        <source>NVIDIA Streamline</source>
+        <translation>NVIDIA Streamline</translation>
+    </message>
+    <message>
+        <source>NVIDIA Reflex</source>
+        <translation>NVIDIA Reflex</translation>
+    </message>
+    <message>
+        <source>These files failed NVIDIA's signature check, so none of DLSS Frame Generation's files were saved and it stays off: %1</source>
+        <translation>以下文件未通过 NVIDIA 签名校验。DLSS 帧生成文件未保存，该功能仍处于关闭状态：%1</translation>
+    </message>
+    <message>
         <source>Open Folder</source>
         <translation>打开文件夹</translation>
     </message>
@@ -14512,6 +14802,539 @@ Try again without the recipe? The game still runs from the NX archive, but the o
         <location line="+3"/>
         <source>about %n minute(s)</source>
         <translation>约 %n 分钟</translation>
+    </message>
+</context>
+<context>
+    <name>ModStore::Dialog</name>
+    <message>
+        <source>Mod Store</source>
+        <translation>Mod 商店</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>刷新</translation>
+    </message>
+    <message>
+        <source>All games</source>
+        <translation>所有游戏</translation>
+    </message>
+    <message>
+        <source>Installed</source>
+        <translation>已安装</translation>
+    </message>
+    <message>
+        <source>Game:</source>
+        <translation>游戏：</translation>
+    </message>
+    <message>
+        <source>Enter a name, author, or description</source>
+        <translation>输入名称、作者或描述</translation>
+    </message>
+    <message>
+        <source>All types</source>
+        <translation>所有类型</translation>
+    </message>
+    <message>
+        <source>Recently updated</source>
+        <translation>最近更新</translation>
+    </message>
+    <message>
+        <source>Name A–Z</source>
+        <translation>按名称 A–Z</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>筛选：</translation>
+    </message>
+    <message>
+        <source>Type:</source>
+        <translation>类型：</translation>
+    </message>
+    <message>
+        <source>Sort by:</source>
+        <translation>排序方式：</translation>
+    </message>
+    <message>
+        <source>Games</source>
+        <translation>游戏</translation>
+    </message>
+    <message>
+        <source>Mods</source>
+        <translation>Mod</translation>
+    </message>
+    <message>
+        <source>Mod name</source>
+        <translation>Mod 名称</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>类型</translation>
+    </message>
+    <message>
+        <source>Load more</source>
+        <translation>加载更多</translation>
+    </message>
+    <message>
+        <source>Mod preview</source>
+        <translation>Mod 预览</translation>
+    </message>
+    <message>
+        <source>Compatibility</source>
+        <translation>兼容性</translation>
+    </message>
+    <message>
+        <source>Not verified by the catalog</source>
+        <translation>目录尚未验证</translation>
+    </message>
+    <message>
+        <source>Install</source>
+        <translation>安装</translation>
+    </message>
+    <message>
+        <source>View on GameBanana</source>
+        <translation>在 GameBanana 查看</translation>
+    </message>
+    <message>
+        <source>Uninstall</source>
+        <translation>卸载</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>Installing mod</source>
+        <translation>正在安装 Mod</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Show less</source>
+        <translation>收起</translation>
+    </message>
+    <message>
+        <source>Show full description</source>
+        <translation>展开完整描述</translation>
+    </message>
+    <message>
+        <source>Graphics</source>
+        <translation>画面</translation>
+    </message>
+    <message>
+        <source>FPS</source>
+        <translation>帧率</translation>
+    </message>
+    <message>
+        <source>Cheats</source>
+        <translation>金手指</translation>
+    </message>
+    <message>
+        <source>Translation</source>
+        <translation>翻译</translation>
+    </message>
+    <message>
+        <source>Gameplay</source>
+        <translation>玩法</translation>
+    </message>
+    <message>
+        <source>Match</source>
+        <translation>匹配</translation>
+    </message>
+    <message>
+        <source>Unverified</source>
+        <translation>未经验证</translation>
+    </message>
+    <message>
+        <source>Mismatch</source>
+        <translation>不匹配</translation>
+    </message>
+    <message>
+        <source>Loading mods…</source>
+        <translation>正在加载 Mod…</translation>
+    </message>
+    <message>
+        <source>Could not load the catalog: %1. Retry with Refresh; installed mods are still available.</source>
+        <translation>无法加载目录：%1。请点击「刷新」重试。已安装的 Mod 仍然可用。</translation>
+    </message>
+    <message>
+        <source>No matching mods. Change the game, type, or search filter.</source>
+        <translation>没有符合条件的 Mod。请更改游戏、类型或搜索条件。</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n result(s)</source>
+        <translation>
+            <numerusform>%n 项结果</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Game</source>
+        <translation>游戏</translation>
+    </message>
+    <message>
+        <source>No installed store mods match this filter.</source>
+        <translation>没有符合条件的已安装 Mod。</translation>
+    </message>
+    <message>
+        <source>Installed mods are available offline.</source>
+        <translation>已安装的 Mod 可以离线使用。</translation>
+    </message>
+    <message>
+        <source>Select a mod to see its details</source>
+        <translation>选择一个 Mod 查看详情</translation>
+    </message>
+    <message>
+        <source>Installed release: %1</source>
+        <translation>已安装版本：%1</translation>
+    </message>
+    <message>
+        <source>Could not load details: %1</source>
+        <translation>无法加载详情：%1</translation>
+    </message>
+    <message>
+        <source>GameBanana</source>
+        <translation>GameBanana</translation>
+    </message>
+    <message>
+        <source>Sample</source>
+        <translation>示例</translation>
+    </message>
+    <message>
+        <source>Lichii catalog</source>
+        <translation>Lichii 目录</translation>
+    </message>
+    <message>
+        <source>Preview %1</source>
+        <translation>预览 %1</translation>
+    </message>
+    <message>
+        <source>Preview unavailable</source>
+        <translation>预览不可用</translation>
+    </message>
+    <message>
+        <source>%1 · %2 · %3</source>
+        <translation>%1 · %2 · %3</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>未知</translation>
+    </message>
+    <message>
+        <source>Catalog game</source>
+        <translation>目录中的游戏</translation>
+    </message>
+    <message>
+        <source>Title ID</source>
+        <translation>游戏 ID</translation>
+    </message>
+    <message>
+        <source>Target game version</source>
+        <translation>目标游戏版本</translation>
+    </message>
+    <message>
+        <source>Target build ID</source>
+        <translation>目标构建 ID</translation>
+    </message>
+    <message>
+        <source>Minimum Lichii</source>
+        <translation>最低 Lichii 版本</translation>
+    </message>
+    <message>
+        <source>Installed version</source>
+        <translation>已安装版本</translation>
+    </message>
+    <message>
+        <source>Not in your library</source>
+        <translation>不在游戏库中</translation>
+    </message>
+    <message>
+        <source>Installed build ID</source>
+        <translation>已安装的构建 ID</translation>
+    </message>
+    <message>
+        <source>Running Lichii</source>
+        <translation>当前 Lichii 版本</translation>
+    </message>
+    <message>
+        <source>Release number unavailable</source>
+        <translation>无法获取发行编号</translation>
+    </message>
+    <message numerus="yes">
+        <source>%1 and %n more</source>
+        <translation>
+            <numerusform>%1 等 %n 项</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Patch build IDs</source>
+        <translation>补丁构建 ID</translation>
+    </message>
+    <message>
+        <source>Reinstall</source>
+        <translation>重新安装</translation>
+    </message>
+    <message>
+        <source>Update</source>
+        <translation>更新</translation>
+    </message>
+    <message>
+        <source>Disable</source>
+        <translation>停用</translation>
+    </message>
+    <message>
+        <source>Enable</source>
+        <translation>启用</translation>
+    </message>
+    <message>
+        <source>This sample is not available for installation.</source>
+        <translation>该示例无法安装。</translation>
+    </message>
+    <message>
+        <source>This ZIP requires choosing components. Open GameBanana to install it manually.</source>
+        <translation>此 ZIP 需要手动选择组件。请在 GameBanana 查看并手动安装。</translation>
+    </message>
+    <message>
+        <source>This listing does not target the selected game.</source>
+        <translation>此条目不适用于所选游戏。</translation>
+    </message>
+    <message>
+        <source>This release does not match the installed game or Lichii build.</source>
+        <translation>此版本与已安装的游戏或当前 Lichii 构建不匹配。</translation>
+    </message>
+    <message>
+        <source>Only ZIP files up to 64 MiB can be installed. Open GameBanana for this file.</source>
+        <translation>仅支持安装不超过 64 MiB 的 ZIP。请在 GameBanana 查看此文件。</translation>
+    </message>
+    <message>
+        <source>Add this game to your library to install its mods.</source>
+        <translation>请先把游戏加入游戏库，再安装其 Mod。</translation>
+    </message>
+    <message>
+        <source>The installed game or Lichii build could not be verified.</source>
+        <translation>无法验证已安装的游戏或当前 Lichii 构建。</translation>
+    </message>
+    <message>
+        <source>Installed and enabled</source>
+        <translation>已安装并启用</translation>
+    </message>
+    <message>
+        <source>Installed and disabled</source>
+        <translation>已安装并停用</translation>
+    </message>
+    <message>
+        <source>A different release is available.</source>
+        <translation>有其他版本可用。</translation>
+    </message>
+    <message>
+        <source>Could not install the mod</source>
+        <translation>无法安装 Mod</translation>
+    </message>
+    <message>
+        <source>Compatibility unverified</source>
+        <translation>兼容性未经验证</translation>
+    </message>
+    <message>
+        <source>Lichii could not confirm that this file works with your game version. It will check the download's SHA-256 before installing. Continue?</source>
+        <translation>Lichii 无法确认此文件是否适用于你的游戏版本。安装前会校验下载文件的 SHA-256。是否继续？</translation>
+    </message>
+    <message>
+        <source>Downloading %1…</source>
+        <translation>正在下载 %1…</translation>
+    </message>
+    <message>
+        <source>Could not download the mod: %1</source>
+        <translation>无法下载 Mod：%1</translation>
+    </message>
+    <message>
+        <source>Checking the download…</source>
+        <translation>正在检查下载内容…</translation>
+    </message>
+    <message>
+        <source>Verifying SHA-256…</source>
+        <translation>正在校验 SHA-256…</translation>
+    </message>
+    <message>
+        <source>Downloading %1 of %2 KiB…</source>
+        <translation>正在下载 %1 / %2 KiB…</translation>
+    </message>
+    <message>
+        <source>Checking the ZIP and installing the mod…</source>
+        <translation>正在检查 ZIP 并安装 Mod…</translation>
+    </message>
+    <message>
+        <source>Installation complete. The mod is available in Add-Ons.</source>
+        <translation>安装完成。可在「附加内容」中查看此 Mod。</translation>
+    </message>
+    <message>
+        <source>Download canceled. No add-ons were changed.</source>
+        <translation>已取消下载，附加内容未更改。</translation>
+    </message>
+    <message>
+        <source>Could not save the change to this mod.</source>
+        <translation>无法保存对此 Mod 的更改。</translation>
+    </message>
+    <message>
+        <source>Mod disabled.</source>
+        <translation>已停用 Mod。</translation>
+    </message>
+    <message>
+        <source>Mod enabled.</source>
+        <translation>已启用 Mod。</translation>
+    </message>
+    <message>
+        <source>Uninstall mod</source>
+        <translation>卸载 Mod</translation>
+    </message>
+    <message>
+        <source>Uninstall %1?</source>
+        <translation>要卸载 %1 吗？</translation>
+    </message>
+    <message>
+        <source>Mod uninstalled.</source>
+        <translation>已卸载 Mod。</translation>
+    </message>
+    <message>
+        <source>Mod uninstalled, but Lichii could not clear its saved disabled state.</source>
+        <translation>Mod 已卸载，但 Lichii 无法清除其已保存的停用状态。</translation>
+    </message>
+</context>
+<context>
+    <name>AmdFsr4Panel</name>
+    <message>
+        <source>Open Folder</source>
+        <translation>打开文件夹</translation>
+    </message>
+    <message>
+        <source>About fsr4-vk</source>
+        <translation>关于 fsr4-vk</translation>
+    </message>
+    <message>
+        <source>fsr4-vk on GitHub (GPL-3.0). Its licence and AMD's notice ship in the package's share/licenses/fsr4-vk folder.</source>
+        <translation>在 GitHub 上查看 fsr4-vk（GPL-3.0）。其许可证和 AMD 声明位于安装包的 share/licenses/fsr4-vk 文件夹中。</translation>
+    </message>
+    <message>
+        <source>Where do these files come from?</source>
+        <translation>这些文件来自哪里？</translation>
+    </message>
+    <message>
+        <source>AMD's FidelityFX SDK release on GitHub. The files are in Kits\FidelityFX\signedbin.</source>
+        <translation>AMD 在 GitHub 上发布的 FidelityFX SDK。文件位于 Kits\FidelityFX\signedbin。</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Ready.&lt;/b&gt; Found fsr4-vk, the community Vulkan port of FSR 4 (not AMD's official FSR 4). It runs if the GPU and driver support it; otherwise FSR 3.1 does.</source>
+        <translation>&lt;b&gt;已就绪。&lt;/b&gt;已找到社区移植的 Vulkan 版 FSR 4（fsr4-vk）。GPU 和驱动支持时使用 FSR 4，否则使用 FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Not in this build:&lt;/b&gt; Lichii's x86-64 Linux packages include fsr4-vk. For a build without it, put %1 from fsr4-vk in the folder. Until then, FSR 3.1 is used.</source>
+        <translation>&lt;b&gt;当前构建未包含 fsr4-vk。&lt;/b&gt;Lichii 的 x86-64 Linux 安装包包含它。你也可以将 fsr4-vk 的 %1 放入该文件夹。安装前将使用 FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>Folder: %1</source>
+        <translation>文件夹：%1</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;Ready.&lt;/b&gt; Found AMD's FidelityFX runtime from FidelityFX SDK %1. FSR 4 runs if AMD's driver offers it for this GPU; otherwise FSR 3.1 does.</source>
+        <translation>&lt;b&gt;已就绪。&lt;/b&gt;已找到 FidelityFX SDK %1 提供的 AMD FidelityFX 运行库。若 AMD 驱动为此 GPU 提供 FSR 4，则使用 FSR 4，否则使用 FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>&lt;b&gt;AMD's files needed:&lt;/b&gt; the FidelityFX runtime from AMD's FidelityFX SDK %1 (amd_fidelityfx_loader_vk.dll and amd_fidelityfx_upscaler_vk.dll). Until then, FSR 3.1 is used.</source>
+        <translation>&lt;b&gt;需要 AMD 文件。&lt;/b&gt;请安装 AMD FidelityFX SDK %1 的运行库（amd_fidelityfx_loader_vk.dll 和 amd_fidelityfx_upscaler_vk.dll）。安装前将使用 FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>Download from AMD (%1 MB)</source>
+        <translation>从 AMD 下载（%1 MB）</translation>
+    </message>
+    <message>
+        <source>AMD FSR 4</source>
+        <translation>AMD FSR 4</translation>
+    </message>
+    <message>
+        <source>Could not download AMD's files: %1. FSR 3.1 is used.</source>
+        <translation>无法下载 AMD 的文件：%1。将使用 FSR 3.1。</translation>
+    </message>
+    <message>
+        <source>Contacting AMD's download...</source>
+        <translation>正在连接 AMD 下载服务…</translation>
+    </message>
+    <message>
+        <source>Download AMD FSR 4</source>
+        <translation>下载 AMD FSR 4</translation>
+    </message>
+    <message>
+        <source>Lichii will download amd_fidelityfx_loader_vk.dll and amd_fidelityfx_upscaler_vk.dll from AMD's FidelityFX SDK %1 release on GitHub into %2.&lt;br&gt;These files are AMD's, under AMD's licence terms below. Lichii checks AMD's signature before using them.</source>
+        <translation>Lichii 将从 GitHub 上 AMD 发布的 FidelityFX SDK %1 下载 amd_fidelityfx_loader_vk.dll 和 amd_fidelityfx_upscaler_vk.dll，并保存到 %2。&lt;br&gt;这些文件归 AMD 所有，须遵守下方 AMD 许可条款。Lichii 会在使用前验证 AMD 签名。</translation>
+    </message>
+    <message>
+        <source>Accept and Download</source>
+        <translation>接受并下载</translation>
+    </message>
+    <message>
+        <source>Downloading AMD's FSR 4 files...</source>
+        <translation>正在下载 AMD FSR 4 文件…</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>AMD's FSR 4 runtime is ready. It is used the next time a game starts.</source>
+        <translation>AMD FSR 4 运行库已就绪，将在下次启动游戏时使用。</translation>
+    </message>
+</context>
+<context>
+    <name>GameListPatches</name>
+    <message>
+        <source>Update</source>
+        <translation>更新</translation>
+    </message>
+    <message>
+        <source>DLC</source>
+        <translation>追加内容</translation>
+    </message>
+    <message>
+        <source>Max Resolution (built-in)</source>
+        <translation>最高分辨率（内置）</translation>
+    </message>
+    <message>
+        <source>Texture Pool x2 (built-in)</source>
+        <translation>纹理池容量翻倍（内置）</translation>
+    </message>
+    <message>
+        <source>FPS Unlock (built-in)</source>
+        <translation>解除帧率限制（内置）</translation>
+    </message>
+    <message>
+        <source>Dynamic FPS by Dark (built-in)</source>
+        <translation>Dark 的动态帧率（内置）</translation>
+    </message>
+    <message>
+        <source>Text Speed Instant (built-in)</source>
+        <translation>文本即时显示（内置）</translation>
+    </message>
+    <message>
+        <source>Text Speed 4x (built-in)</source>
+        <translation>文本速度 4 倍（内置）</translation>
+    </message>
+    <message>
+        <source>Text Speed 2x (built-in)</source>
+        <translation>文本速度 2 倍（内置）</translation>
+    </message>
+    <message>
+        <source>Texture heap compaction interval (built-in)</source>
+        <translation>纹理堆整理间隔（内置）</translation>
+    </message>
+    <message>
+        <source>Full Scene Resolution with FXAA (built-in)</source>
+        <translation>全场景分辨率与 FXAA（内置）</translation>
+    </message>
+    <message>
+        <source>[D] </source>
+        <translation>[已停用] </translation>
+    </message>
+    <message>
+        <source>IPS, replaced by %1 when it applies</source>
+        <translation>IPS，%1 生效时优先使用该补丁</translation>
     </message>
 </context>
 </TS>

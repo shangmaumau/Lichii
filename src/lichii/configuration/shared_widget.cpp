@@ -50,6 +50,7 @@
 #include "qt_common/config/shared_translation.h"
 #include "lichii/util/util.h"
 #include "qt_common/qt_compat.h"
+#include "qt_common/qt_common.h"
 
 namespace ConfigurationShared {
 
@@ -829,7 +830,7 @@ Widget::Widget(Settings::BasicSetting* setting_, const TranslationMap& translati
 
     this->setEnabled(enable);
 
-    this->setToolTip(tooltip);
+    setToolTip(QtCommon::WrapToolTip(tooltip));
 }
 
 Builder::Builder(QWidget* parent_, bool runtime_lock_)

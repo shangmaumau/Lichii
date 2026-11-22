@@ -52,6 +52,9 @@ const QString tr(const std::string& str);
 /// Convert a size in bytes into a readable format (KiB, MiB, etc.)
 [[nodiscard]] QString ReadableByteSize(qulonglong size);
 
+/// Formats plain tooltip text for a narrow, wrapping popup.
+[[nodiscard]] QString WrapToolTip(const QString& text);
+
 /**
  * Creates a circle pixmap from a specified color
  * @param color The color the pixmap shall have

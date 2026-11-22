@@ -34,6 +34,7 @@
 #include <JlCompress.h>
 #include <QPainter>
 #include <QPointF>
+#include <QTextDocument>
 #include <QtMath>
 
 #if !defined(WIN32) && !defined(__APPLE__)
@@ -344,6 +345,15 @@ QPixmap CreateCirclePixmapFromColor(const QColor& color) {
     // original 16 px circle geometry instead of doubling it.
     painter.drawEllipse(QPointF(8.0, 8.0), 7.0, 7.0);
     return circle_pixmap;
+}
+
+QString WrapToolTip(const QString& text) {
+    if (text.isEmpty()) {
+        return {};
+    }
+    return QStringLiteral("<table width=\"320\" cellspacing=\"0\" cellpadding=\"0\">"
+                          "<tr><td>%1</td></tr></table>")
+        .arg(Qt::convertFromPlainText(text));
 }
 
 QPixmap ScalePixmapForDpr(const QPixmap& source, const QSize& logical_size, qreal dpr) {

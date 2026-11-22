@@ -30,7 +30,9 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QNetworkProxyFactory>
 #include <QPixmap>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QtConcurrent/QtConcurrentRun>
 
@@ -218,6 +220,21 @@ HttpResult HttpGet(const std::string& full_url, std::chrono::steady_clock::time_
     }
     try {
         httplib::Client client(origin);
+        const auto proxies = QNetworkProxyFactory::systemProxyForQuery(
+            QNetworkProxyQuery{QUrl{QString::fromStdString(full_url)}});
+        for (const auto& proxy : proxies) {
+            if (proxy.type() == QNetworkProxy::NoProxy) {
+                break;
+            }
+            if (proxy.type() == QNetworkProxy::HttpProxy) {
+                client.set_proxy(proxy.hostName().toStdString(), proxy.port());
+                if (!proxy.user().isEmpty()) {
+                    client.set_proxy_basic_auth(proxy.user().toStdString(),
+                                                proxy.password().toStdString());
+                }
+                break;
+            }
+        }
         client.set_connection_timeout(std::min(remaining, ConnectTimeout));
         client.set_read_timeout(std::min(remaining, ReadTimeout));
         client.set_write_timeout(std::min(remaining, ConnectTimeout));
@@ -437,13 +454,14 @@ bool ProductMatchesTitleId(const nlohmann::json& product, std::string_view title
     return false;
 }
 
+const nlohmann::json* FindObject(const nlohmann::json& parent, const char* key) {
+    const auto object = parent.find(key);
+    return object != parent.end() && object->is_object() ? &*object : nullptr;
+}
+
 const nlohmann::json* FindPageProps(const nlohmann::json& root) {
-    const auto props = root.find("props");
-    if (props == root.end() || !props->is_object()) {
-        return nullptr;
-    }
-    const auto page = props->find("pageProps");
-    return page != props->end() && page->is_object() ? &*page : nullptr;
+    const auto* props = FindObject(root, "props");
+    return props ? FindObject(*props, "pageProps") : nullptr;
 }
 
 std::string FindMainSku(const nlohmann::json& root) {
@@ -580,31 +598,30 @@ std::string FindOgImage(const std::string& html) {
     return {};
 }
 
-std::string FindNintendoStoreImageUrl(const std::string& html, std::string_view title_id) {
+std::vector<std::string> FindNintendoStoreImageUrls(const std::string& html,
+                                                   std::string_view title_id) {
+    std::vector<std::string> urls;
+    const auto add_image = [&urls](std::string url) {
+        if (!url.empty() && std::ranges::find(urls, url) == urls.end()) {
+            urls.push_back(std::move(url));
+        }
+    };
+
     const auto next_data = ExtractNextData(html);
     if (!next_data.empty()) {
         const auto root = nlohmann::json::parse(next_data, nullptr, false);
         if (!root.is_discarded() && root.is_object()) {
-            if (const auto* page = FindPageProps(root); page != nullptr) {
-                const auto state = page->find("initialApolloState");
-                if (state == page->end() || !state->is_object()) {
-                    if (auto image = FindLinkedImage(root); !image.empty()) {
-                        return image;
-                    }
-                    if (auto image = FindEuMediaImage(html); !image.empty()) {
-                        return image;
-                    }
-                    return FindOgImage(html);
-                }
+            const auto* page = FindPageProps(root);
+            const auto* state = page ? FindObject(*page, "initialApolloState") : nullptr;
+            if (state != nullptr) {
                 const std::string square_key = "productImage({\"shape\":\"square\"})";
                 const auto main_sku = FindMainSku(root);
                 const nlohmann::json* main_product = nullptr;
                 const nlohmann::json* main_square = nullptr;
-                for (auto it = state->begin(); it != state->end(); ++it) {
-                    if (!it.value().is_object()) {
+                for (const auto& product : *state) {
+                    if (!product.is_object()) {
                         continue;
                     }
-                    const auto& product = it.value();
                     const auto square = product.find(square_key);
                     if (!main_sku.empty() && product.contains("sku") &&
                         product["sku"].is_string() &&
@@ -613,34 +630,25 @@ std::string FindNintendoStoreImageUrl(const std::string& html, std::string_view 
                         main_square = square == product.end() ? nullptr : &*square;
                     }
                     if (square != product.end() && ProductMatchesTitleId(product, title_id)) {
-                        if (auto url = NintendoAssetUrl(*square); !url.empty()) {
-                            return url;
-                        }
+                        add_image(NintendoAssetUrl(*square));
                     }
                 }
                 if (main_square != nullptr) {
-                    if (auto url = NintendoAssetUrl(*main_square); !url.empty()) {
-                        return url;
-                    }
+                    add_image(NintendoAssetUrl(*main_square));
                 }
                 if (main_product != nullptr) {
                     const auto image = main_product->find("productImage");
                     if (image != main_product->end()) {
-                        if (auto url = NintendoAssetUrl(*image); !url.empty()) {
-                            return url;
-                        }
+                        add_image(NintendoAssetUrl(*image));
                     }
                 }
             }
-            if (auto image = FindLinkedImage(root); !image.empty()) {
-                return image;
-            }
+            add_image(FindLinkedImage(root));
         }
     }
-    if (auto image = FindEuMediaImage(html); !image.empty()) {
-        return image;
-    }
-    return FindOgImage(html);
+    add_image(FindEuMediaImage(html));
+    add_image(FindOgImage(html));
+    return urls;
 }
 
 int ScoreCandidateTitle(const std::string& candidate, const std::string& query) {
@@ -1011,45 +1019,43 @@ ArtworkLookupResult LookUpSteamGridDbArtwork(const std::string& title, const std
     return out;
 }
 
-static std::vector<std::string> NintendoStoreRegions(int language_index) {
+static std::string_view PreferredNintendoStoreRegion(int language_index) {
     switch (static_cast<Settings::Language>(language_index)) {
     case Settings::Language::EnglishBritish:
-        return {"GB", "US", "HK"};
+        return "GB";
     case Settings::Language::Japanese:
-        return {"JP", "US", "HK"};
+        return "JP";
     case Settings::Language::French:
-        return {"FR", "GB", "US", "HK"};
+        return "FR";
     case Settings::Language::FrenchCanadian:
-        return {"FR", "US", "HK"};
+        return "CA";
     case Settings::Language::German:
-        return {"DE", "GB", "US", "HK"};
+        return "DE";
     case Settings::Language::Spanish:
-        return {"ES", "GB", "US", "HK"};
+        return "ES";
     case Settings::Language::SpanishLatin:
-        return {"ES", "US", "HK"};
+        return "MX";
     case Settings::Language::Italian:
-        return {"IT", "GB", "US", "HK"};
+        return "IT";
     case Settings::Language::Dutch:
-        return {"NL", "GB", "US", "HK"};
+        return "NL";
     case Settings::Language::Portuguese:
-        return {"PT", "GB", "US", "HK"};
+        return "PT";
     case Settings::Language::PortugueseBrazilian:
-        return {"PT", "US", "HK"};
-    case Settings::Language::Russian:
-        return {"US", "HK"};
+        return "BR";
     case Settings::Language::Korean:
-        return {"US", "HK"};
+        return "KR";
     case Settings::Language::Chinese:
     case Settings::Language::ChineseSimplified:
     case Settings::Language::ChineseTraditional:
     case Settings::Language::Taiwanese:
-        return {"HK", "US"};
+        return "HK";
     case Settings::Language::Polish:
-        return {"GB", "US", "HK"};
+        return "PL";
     case Settings::Language::Thai:
-        return {"HK", "US"};
+        return "TH";
     default:
-        return {"US", "HK"};
+        return "US";
     }
 }
 
@@ -1073,12 +1079,19 @@ ArtworkLookupResult LookUpNintendoStoreArtwork(u64 title_id, int language_index,
         ids.push_back(std::move(base));
     }
 
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{30};
     bool network_error = false;
     std::string detail;
-    const auto regions = NintendoStoreRegions(language_index);
-    for (const auto& id : ids) {
-        for (const auto& region : regions) {
+    const auto preferred_region = PreferredNintendoStoreRegion(language_index);
+    std::vector<std::string_view> regions{preferred_region};
+    for (const std::string_view region : {"US", "HK", "JP", "GB", "CA"}) {
+        if (region != preferred_region) {
+            regions.push_back(region);
+        }
+    }
+    for (const auto region : regions) {
+        // A slow local store must leave time for the US lookup.
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{15};
+        for (const auto& id : ids) {
             if (cancel) {
                 out.status = ArtworkLookupStatus::Cancelled;
                 return out;
@@ -1096,43 +1109,38 @@ ArtworkLookupResult LookUpNintendoStoreArtwork(u64 title_id, int language_index,
                 continue;
             }
 
-            const auto image_url = FindNintendoStoreImageUrl(page.body, exact);
-            if (image_url.empty()) {
-                detail = "no store image";
-                continue;
-            }
+            for (const auto& image_url : FindNintendoStoreImageUrls(page.body, exact)) {
+                const auto image = HttpGet(image_url, deadline, cancel);
+                if (image.status == HttpStatus::Cancelled) {
+                    out.status = ArtworkLookupStatus::Cancelled;
+                    return out;
+                }
+                if (image.status != HttpStatus::Ok) {
+                    network_error = network_error || IsNetworkFailure(image);
+                    detail = image.detail;
+                    continue;
+                }
 
-            const auto image = HttpGet(image_url, deadline, cancel);
-            if (image.status == HttpStatus::Cancelled) {
-                out.status = ArtworkLookupStatus::Cancelled;
+                QImage decoded;
+                if (!decoded.loadFromData(reinterpret_cast<const uchar*>(image.body.data()),
+                                          static_cast<int>(image.body.size())) ||
+                    decoded.width() != decoded.height()) {
+                    continue;
+                }
+
+                out.image = std::move(decoded);
+                out.status = ArtworkLookupStatus::Found;
+                out.detail = fmt::format("{} {}", id, region);
+                out.from_official_store = true;
                 return out;
             }
-            if (image.status != HttpStatus::Ok) {
-                network_error = network_error || IsNetworkFailure(image);
-                detail = image.detail;
-                continue;
-            }
-
-            QImage decoded;
-            if (!decoded.loadFromData(reinterpret_cast<const uchar*>(image.body.data()),
-                                      static_cast<int>(image.body.size()))) {
-                detail = "image could not be decoded";
-                continue;
-            }
-
-            if (decoded.width() != decoded.height()) {
-                detail = "store artwork is not square";
-                continue;
-            }
-
-            out.image = std::move(decoded);
-            out.status = ArtworkLookupStatus::Found;
-            out.detail = fmt::format("{} {}", id, region);
-            out.from_official_store = true;
-            return out;
         }
     }
 
+    if (cancel) {
+        out.status = ArtworkLookupStatus::Cancelled;
+        return out;
+    }
     out.status =
         network_error ? ArtworkLookupStatus::NetworkError : ArtworkLookupStatus::NotFound;
     if (detail.empty()) {
