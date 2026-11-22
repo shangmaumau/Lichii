@@ -109,8 +109,6 @@ static QPixmap RoundedIcon(const QPixmap& picture) {
 static QPixmap ThemeIcon(const char* name) {
     if (IsLichiiTheme()) {
         const std::string_view icon{name};
-        // The game-list directory row uses the larger Lucide folder; the other rows keep
-        // the compact 16 px line icons from the theme set.
         if (icon == "folder") {
             QPixmap pixmap(QStringLiteral(":/lichii/icons/tree_folder@2x.png"));
             pixmap.setDevicePixelRatio(2.0);

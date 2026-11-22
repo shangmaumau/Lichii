@@ -8049,8 +8049,8 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/lichii/main.ui" line="62"/>
-        <source>Open &amp;Eden Folders</source>
-        <translation>打开 &amp;Eden 文件夹</translation>
+        <source>Open &amp;Lichii Folders</source>
+        <translation>打开 Lichii 文件夹 (&amp;L)</translation>
     </message>
     <message>
         <location filename="../../src/lichii/main.ui" line="85"/>
