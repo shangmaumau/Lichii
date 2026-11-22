@@ -215,6 +215,7 @@ private slots:
     void PickerStagesOnly();
     void LazyGalleryAndPageLimit();
 #ifdef IIDB_TEST_ARTWORK_FILES
+    void OnlineCoverCacheRequiresSquareArtwork();
     void HomeMenuArtworkUsesExactIdAndRefreshes();
     void InstallWritesOnlyExactLocalId();
 #endif
@@ -629,6 +630,38 @@ void ArtworkTest::LazyGalleryAndPageLimit() {
 }
 
 #ifdef IIDB_TEST_ARTWORK_FILES
+void ArtworkTest::OnlineCoverCacheRequiresSquareArtwork() {
+    using namespace QtCommon::Game;
+    using Common::FS::EdenPath;
+    const QTemporaryDir cache;
+    QVERIFY(cache.isValid());
+    const auto previous = Common::FS::GetEdenPath(EdenPath::CacheDir);
+    const auto cleanup = qScopeGuard([&] { Common::FS::SetEdenPath(EdenPath::CacheDir, previous); });
+    Common::FS::SetEdenPath(EdenPath::CacheDir, std::filesystem::path(cache.path().toStdU16String()));
+
+    constexpr u64 program_id = 0x0400486024DEC000;
+    const auto path = CoverCachePath(program_id);
+    QVERIFY(std::filesystem::create_directories(path.parent_path()));
+    auto legacy = path.stem();
+    legacy.replace_extension(".v2.jpg");
+    QImage square(1200, 1200, QImage::Format_RGB32);
+    square.fill(Qt::blue);
+    const auto legacy_path =
+        QString::fromStdString(Common::FS::PathToUTF8String(path.parent_path() / legacy));
+    QVERIFY(square.save(legacy_path, "JPEG"));
+    QVERIFY(ReadCachedCover(program_id).empty());
+
+    QImage banner(1920, 1080, QImage::Format_RGB32);
+    banner.fill(Qt::red);
+    QVERIFY(!SaveCachedCover(program_id, banner));
+    QVERIFY(ReadCachedCover(program_id).empty());
+
+    QVERIFY(SaveCachedCover(program_id, square));
+    const auto bytes = ReadCachedCover(program_id);
+    QCOMPARE(QImage::fromData(bytes.data(), static_cast<int>(bytes.size()), "JPEG").size(),
+             QSize(1024, 1024));
+}
+
 void ArtworkTest::InstallWritesOnlyExactLocalId() {
     const QTemporaryDir user;
     QVERIFY(user.isValid());

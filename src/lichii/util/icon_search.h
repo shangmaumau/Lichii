@@ -48,7 +48,7 @@ struct ArtworkLookupResult {
 };
 
 // Finds square artwork for a game title on SteamGridDB with the user's API key: the best title
-// match, then its first 512x512 or 1024x1024 grid, else its first icon. A year at the end of the
+// match, then a 512x512 or 1024x1024 grid or a square icon. A year at the end of the
 // title, like "(2026)", picks the entry released that year. prefer_newest picks the newest entry
 // of the best match's name (remakes share the name of the original). Blocking, so run it off the
 // UI thread; it stops within 30 seconds or as soon as cancel is set.

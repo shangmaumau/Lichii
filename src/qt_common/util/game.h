@@ -107,8 +107,8 @@ std::filesystem::path CoverCachePath(u64 program_id, std::string_view language_t
 /// The cached online cover for the program in the configured language, or empty.
 std::vector<u8> ReadCachedCover(u64 program_id);
 
-/// Stores an online cover for `language_tag` (the configured language when empty). The image is
-/// cropped square and stored as JPEG; it is only used when the game file has no icon.
+/// Stores a square online cover for `language_tag` (the configured language when empty) as JPEG.
+/// It is only used when the game file has no icon.
 [[nodiscard]] bool SaveCachedCover(u64 program_id, const QImage& image,
                                    std::string_view language_tag = {});
 

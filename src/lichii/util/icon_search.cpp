@@ -345,23 +345,41 @@ bool EqualsIgnoreCase(std::string_view left, std::string_view right) {
            });
 }
 
+constexpr std::string_view NintendoImageUpload = "https://assets.nintendo.com/image/upload/";
+constexpr std::string_view NintendoImageFetch = "https://assets.nintendo.com/image/fetch/";
+
 std::string NormalizeNintendoImageUrl(std::string url) {
-    if (url.empty() || !url.starts_with("https://")) {
+    if (!url.starts_with("https://")) {
         return {};
     }
-    // Cloudinary's f_auto may answer with a format Qt cannot decode; ask for JPEG instead.
-    boost::replace_all(url, "f_auto", "f_jpg");
-    return url;
+    const auto prefix =
+        url.starts_with(NintendoImageUpload) ? NintendoImageUpload : NintendoImageFetch;
+    if (!url.starts_with(prefix)) {
+        return url;
+    }
+
+    // Cloudinary puts chained transforms before the version and public ID. Keep only JPEG
+    // conversion so the downloaded dimensions still describe the original artwork.
+    std::string_view asset{url};
+    asset.remove_prefix(prefix.size());
+    for (auto slash = asset.find('/'); slash != std::string_view::npos; slash = asset.find('/')) {
+        const auto segment = asset.substr(0, slash);
+        const auto key_end = segment.find('_');
+        const bool parameter = key_end > 0 && key_end <= 3 &&
+                               std::ranges::all_of(segment.substr(0, key_end), [](char ch) {
+                                   return ch >= 'a' && ch <= 'z';
+                               });
+        if (!parameter && !segment.starts_with('$')) {
+            break;
+        }
+        asset.remove_prefix(slash + 1);
+    }
+    return asset.empty() ? std::string{} : fmt::format("{}f_jpg/{}", prefix, asset);
 }
 
 std::string NintendoAssetUrl(const nlohmann::json& asset) {
     if (!asset.is_object()) {
         return {};
-    }
-    if (asset.contains("url") && asset["url"].is_string()) {
-        if (auto url = NormalizeNintendoImageUrl(asset["url"].get<std::string>()); !url.empty()) {
-            return url;
-        }
     }
     if (asset.contains("publicId") && asset["publicId"].is_string()) {
         const auto public_id = asset["publicId"].get<std::string>();
@@ -369,9 +387,11 @@ std::string NintendoAssetUrl(const nlohmann::json& asset) {
             return NormalizeNintendoImageUrl(public_id);
         }
         if (!public_id.empty()) {
-            return "https://assets.nintendo.com/image/upload/c_fill,w_1024,h_1024/q_auto/f_jpg/" +
-                   public_id;
+            return fmt::format("{}f_jpg/{}", NintendoImageUpload, public_id);
         }
+    }
+    if (asset.contains("url") && asset["url"].is_string()) {
+        return NormalizeNintendoImageUrl(asset["url"].get<std::string>());
     }
     return {};
 }
@@ -621,14 +641,6 @@ std::string FindNintendoStoreImageUrl(const std::string& html, std::string_view 
         return image;
     }
     return FindOgImage(html);
-}
-
-QImage CenterSquare(const QImage& image) {
-    if (image.isNull() || image.width() == image.height()) {
-        return image;
-    }
-    const int side = std::min(image.width(), image.height());
-    return image.copy((image.width() - side) / 2, (image.height() - side) / 2, side, side);
 }
 
 int ScoreCandidateTitle(const std::string& candidate, const std::string& query) {
@@ -983,7 +995,8 @@ ArtworkLookupResult LookUpSteamGridDbArtwork(const std::string& title, const std
                 QImage decoded;
                 if (image.status == HttpStatus::Ok &&
                     decoded.loadFromData(reinterpret_cast<const uchar*>(image.body.data()),
-                                         static_cast<int>(image.body.size()))) {
+                                         static_cast<int>(image.body.size())) &&
+                    decoded.width() == decoded.height()) {
                     out.status = ArtworkLookupStatus::Found;
                     out.image = std::move(decoded);
                     return out;
@@ -1063,10 +1076,6 @@ ArtworkLookupResult LookUpNintendoStoreArtwork(u64 title_id, int language_index,
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{30};
     bool network_error = false;
     std::string detail;
-    // Non-square key art is only a last resort. A localized store often serves a 16:9 banner,
-    // while another region has the proper square cover the grid expects.
-    QImage fallback;
-    std::string fallback_detail;
     const auto regions = NintendoStoreRegions(language_index);
     for (const auto& id : ids) {
         for (const auto& region : regions) {
@@ -1111,37 +1120,23 @@ ArtworkLookupResult LookUpNintendoStoreArtwork(u64 title_id, int language_index,
                 continue;
             }
 
-            const auto image_detail = fmt::format("{} {}", id, region);
-            if (decoded.width() == decoded.height()) {
-                out.image = CenterSquare(decoded);
-                if (out.image.isNull()) {
-                    detail = "empty image";
-                    continue;
-                }
-                out.status = ArtworkLookupStatus::Found;
-                out.detail = image_detail;
-                out.from_official_store = true;
-                return out;
+            if (decoded.width() != decoded.height()) {
+                detail = "store artwork is not square";
+                continue;
             }
-            if (fallback.isNull()) {
-                fallback = CenterSquare(decoded);
-                fallback_detail = image_detail;
-            }
-        }
-    }
 
-    if (!fallback.isNull()) {
-        out.image = std::move(fallback);
-        out.status = ArtworkLookupStatus::Found;
-        out.detail = std::move(fallback_detail);
-        out.from_official_store = true;
-        return out;
+            out.image = std::move(decoded);
+            out.status = ArtworkLookupStatus::Found;
+            out.detail = fmt::format("{} {}", id, region);
+            out.from_official_store = true;
+            return out;
+        }
     }
 
     out.status =
         network_error ? ArtworkLookupStatus::NetworkError : ArtworkLookupStatus::NotFound;
     if (detail.empty()) {
-        out.detail = "Nintendo store returned no artwork";
+        out.detail = "Nintendo store returned no square artwork";
     } else {
         out.detail = std::move(detail);
     }

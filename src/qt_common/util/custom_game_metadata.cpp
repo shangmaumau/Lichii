@@ -171,12 +171,11 @@ bool RemoveCustomArtwork(u64 program_id) {
 }
 
 std::filesystem::path CoverCachePath(u64 program_id, std::string_view language_tag) {
-    // v2 marks covers chosen by composition rather than by region order. Older caches can hold a
-    // 16:9 store banner cropped to a square, which cuts off part of the key art.
+    // Older caches can contain cropped banners. v3 only stores originally square artwork.
     const std::string tag =
         language_tag.empty() ? FileSys::GetConfiguredLanguageTag() : std::string(language_tag);
     return Common::FS::GetEdenPath(Common::FS::EdenPath::CacheDir) / "covers" /
-           fmt::format("{:016X}.{}.v2.jpg", program_id, tag);
+           fmt::format("{:016X}.{}.v3.jpg", program_id, tag);
 }
 
 std::vector<u8> ReadCachedCover(u64 program_id) {
@@ -196,16 +195,14 @@ std::vector<u8> ReadCachedCover(u64 program_id) {
 }
 
 bool SaveCachedCover(u64 program_id, const QImage& image, std::string_view language_tag) {
-    if (program_id == 0 || image.isNull()) {
+    if (program_id == 0 || image.isNull() || image.width() != image.height()) {
         return false;
     }
-    const int side = std::min(image.width(), image.height());
-    QImage cover =
-        image.copy((image.width() - side) / 2, (image.height() - side) / 2, side, side);
     constexpr int MaxSide = 1024;
-    if (cover.width() > MaxSide) {
-        cover = cover.scaled(MaxSide, MaxSide, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-    }
+    const QImage cover =
+        image.width() > MaxSide
+            ? image.scaled(MaxSide, MaxSide, Qt::KeepAspectRatio, Qt::SmoothTransformation)
+            : image;
 
     const auto path = CoverCachePath(program_id, language_tag);
     if (!Common::FS::CreateDirs(path.parent_path())) {
