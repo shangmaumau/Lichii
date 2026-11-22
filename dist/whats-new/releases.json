@@ -3,41 +3,56 @@
     "build": 366,
     "date": "2026-11-20",
     "summary": "A third GPU thread, better Switch 2 Edition support, and game fixes.",
+    "summary_zh_CN": "新增第三个 GPU 线程，改进 Switch 2 版支持并修复多项游戏问题。",
     "changes": [
       {
         "icon": "cpu",
         "title": "A third GPU thread",
-        "body": "Eligible Switch 2 Vulkan draws use a third recording thread."
+        "title_zh_CN": "第三个 GPU 线程",
+        "body": "Eligible Switch 2 Vulkan draws use a third recording thread.",
+        "body_zh_CN": "符合条件的 Switch 2 Vulkan 绘制命令可由第三个线程录制。"
       },
       {
         "icon": "clock",
         "title": "Ocarina of Time above 60 FPS",
-        "body": "FPS Unlock fixes Epona's fence jump, the day/night clock and the Deku Tree webs. The game no longer freezes after closing the R1 menu."
+        "title_zh_CN": "《时之笛》超过 60 FPS 时的修复",
+        "body": "FPS Unlock fixes Epona's fence jump, the day/night clock and the Deku Tree webs. The game no longer freezes after closing the R1 menu.",
+        "body_zh_CN": "解锁帧率的补丁修复了 Epona 跳栅栏、昼夜计时和德库树内的蛛网问题。关闭 R1 菜单后，游戏也不再卡死。"
       },
       {
         "icon": "apps",
         "title": "Switch 2 games in HOME and better Edition support",
-        "body": "Launch games from HOME without installing them. Lichii better detects and launches Switch 2 Editions, applies matching upgrade packs, and keeps update information in NUPs."
+        "title_zh_CN": "从 HOME 启动游戏并改进 Switch 2 版支持",
+        "body": "Launch games from HOME without installing them. Lichii better detects and launches Switch 2 Editions, applies matching upgrade packs, and keeps update information in NUPs.",
+        "body_zh_CN": "可直接从 HOME 菜单启动游戏，无需安装。Lichii 改进了 Nintendo Switch 2 Edition 的识别和启动，能应用匹配的升级包，并保留 NUP 中的更新信息。"
       },
       {
         "icon": "download",
         "title": "Precompile All Shaders",
-        "body": "Turn it on for individual games in their right-click menu. Precompilation can now find compute shaders in asset packs such as Kirby Air Riders' packs."
+        "title_zh_CN": "预编译所有着色器",
+        "body": "Turn it on for individual games in their right-click menu. Precompilation can now find compute shaders in asset packs such as Kirby Air Riders' packs.",
+        "body_zh_CN": "可在单款游戏的右键菜单中启用。预编译现在也能找到《卡比的驭天飞行者》等游戏资源包中的计算着色器。"
       },
       {
         "icon": "bug",
         "title": "Xenoblade DE and Yoshi fixes",
-        "body": "Fixes Xenoblade DE's title-screen textures and docked/handheld crash. Yoshi no longer crashes when Vulkan rejects a texture-buffer view."
+        "title_zh_CN": "《异度神剑 终极版》和耀西游戏的修复",
+        "body": "Fixes Xenoblade DE's title-screen textures and docked/handheld crash. Yoshi no longer crashes when Vulkan rejects a texture-buffer view.",
+        "body_zh_CN": "修复《异度神剑 终极版》的标题画面纹理，以及切换主机和掌机模式时的崩溃。Vulkan 拒绝纹理缓冲区视图时，耀西游戏也不再崩溃。"
       },
       {
         "icon": "globe",
         "title": "Multiplayer room connections",
-        "body": "The room proxy keeps the right player address and port and drops packets left over from earlier connections."
+        "title_zh_CN": "多人游戏房间连接",
+        "body": "The room proxy keeps the right player address and port and drops packets left over from earlier connections.",
+        "body_zh_CN": "房间代理会保留正确的玩家地址和端口，并丢弃先前连接遗留的数据包。"
       },
       {
         "icon": "sparkles",
         "title": "What's New in Lichii",
-        "body": "See the highlights after an update or reopen them anytime from Help, even offline."
+        "title_zh_CN": "Lichii 新功能",
+        "body": "See the highlights after an update or reopen them anytime from Help, even offline.",
+        "body_zh_CN": "更新后可查看版本亮点，也可以随时通过「帮助」菜单重新打开，离线也能查看。"
       }
     ]
   },

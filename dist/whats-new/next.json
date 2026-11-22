@@ -1,45 +1,62 @@
 {
   "summary": "Browse mods in Lichii, get back the FPS lost in build 366, and try new frame generation options.",
+  "summary_zh_CN": "在 Lichii 内浏览模组，恢复第 366 版损失的帧率，并试用新的插帧选项。",
   "changes": [
     {
       "icon": "apps",
       "title": "Mod Store",
-      "body": "Open Tools → Mod Store or Add-Ons → Browse Mods. Find GameBanana mods and over 11,000 Switch 1 listings for 60 FPS and ultrawide patches and cheats. Lichii checks patch build IDs against your game."
+      "title_zh_CN": "Mod 商店",
+      "body": "Open Tools → Mod Store or Add-Ons → Browse Mods. Find GameBanana mods and over 11,000 Switch 1 listings for 60 FPS and ultrawide patches and cheats. Lichii checks patch build IDs against your game.",
+      "body_zh_CN": "从「工具 → Mod 商店」或「附加项 → 浏览模组」进入。可浏览 GameBanana 模组，以及超过 11,000 个 Switch 1 条目，包括 60 FPS 补丁、超宽屏补丁和金手指。Lichii 会核对补丁的构建 ID 是否与游戏匹配。"
     },
     {
       "icon": "cpu",
       "title": "FPS recovery after build 366",
-      "body": "Build 366's third GPU thread cut FPS by about 70% in one Ocarina of Time test. It's back off by default. To try the reworked version, go to Graphics → Advanced → Render thread (experimental)."
+      "title_zh_CN": "恢复第 366 版损失的帧率",
+      "body": "Build 366's third GPU thread cut FPS by about 70% in one Ocarina of Time test. It's back off by default. To try the reworked version, go to Graphics → Advanced → Render thread (experimental).",
+      "body_zh_CN": "在一次《时之笛》测试中，第 366 版的第三个 GPU 线程使帧率下降了约 70%。此功能已恢复为默认关闭。要试用改进后的版本，可前往「图形 → 高级 → 渲染线程（实验性）」。"
     },
     {
       "icon": "sparkles",
       "title": "FlyHigh on Windows",
-      "body": "FlyHigh is an optional neural frame generator for Vulkan games in SDR on x86-64 Windows. Choose it in the frame generation menu and accept the model license to download it."
+      "title_zh_CN": "Windows 上的 FlyHigh",
+      "body": "FlyHigh is an optional neural frame generator for Vulkan games in SDR on x86-64 Windows. Choose it in the frame generation menu and accept the model license to download it.",
+      "body_zh_CN": "FlyHigh 是可选的神经网络插帧功能，适用于 x86-64 Windows 上以 SDR 运行的 Vulkan 游戏。在插帧菜单中选中它，接受模型许可协议后即可下载。"
     },
     {
       "icon": "clock",
       "title": "Better Lichii Optical Flow",
-      "body": "Optical Flow tracks faster camera pans and small sprite movements more accurately. Generated frames show less ghosting around moving outlines."
+      "title_zh_CN": "改进 Lichii 光流插帧",
+      "body": "Optical Flow tracks faster camera pans and small sprite movements more accurately. Generated frames show less ghosting around moving outlines.",
+      "body_zh_CN": "光流插帧能更准确地跟踪快速平移的镜头和精灵图的细微移动，减少生成帧中运动物体边缘的重影。"
     },
     {
       "icon": "gamepad",
       "title": "Wonder, Pokopia, and Ori",
-      "body": "Mario Wonder's Switch 2 Edition gets a built-in 60 FPS patch. Pokopia 2.0.1 boots again, and Ori and the Will of the Wisps can replace Spirit Trial ghosts without freezing on Windows."
+      "title_zh_CN": "《惊奇》、Pokopia 与《奥日》",
+      "body": "Mario Wonder's Switch 2 Edition gets a built-in 60 FPS patch. Pokopia 2.0.1 boots again, and Ori and the Will of the Wisps can replace Spirit Trial ghosts without freezing on Windows.",
+      "body_zh_CN": "《超级马力欧兄弟 惊奇》Switch 2 版新增内置 60 FPS 补丁。Pokopia 2.0.1 恢复正常启动，《奥日与鬼火意志》在 Windows 上替换精灵试炼的幽灵记录时不再卡死。"
     },
     {
       "icon": "bug",
       "title": "Game graphics fixes",
-      "body": "Fixes broken battle sprites in Final Fantasy Resonance on AMD, missing gloom in Hyrule Warriors: Age of Imprisonment, and black or flickering trims in Ocarina of Time."
+      "title_zh_CN": "游戏画面修复",
+      "body": "Fixes broken battle sprites in Final Fantasy Resonance on AMD, missing gloom in Hyrule Warriors: Age of Imprisonment, and black or flickering trims in Ocarina of Time.",
+      "body_zh_CN": "修复 Final Fantasy Resonance 在 AMD 显卡上的战斗精灵图异常，修复《塞尔达无双 封印战记》的瘴气缺失，以及《时之笛》中装饰边缘发黑或闪烁的问题。"
     },
     {
       "icon": "layers",
       "title": "Less texture spill on low-VRAM GPUs",
-      "body": "Lichii decodes large ASTC texture arrays in smaller batches so their temporary images don't spill into system RAM."
+      "title_zh_CN": "减少低显存显卡的纹理溢出",
+      "body": "Lichii decodes large ASTC texture arrays in smaller batches so their temporary images don't spill into system RAM.",
+      "body_zh_CN": "Lichii 将大型 ASTC 纹理数组拆成较小的批次解码，避免临时图像占用系统内存。"
     },
     {
       "icon": "download",
       "title": "Better shader precompilation",
-      "body": "Precompile All Shaders remembers your choice for that game. Lichii reuses pipelines built earlier in the same session and shows how many shader builds remain."
+      "title_zh_CN": "改进着色器预编译",
+      "body": "Precompile All Shaders remembers your choice for that game. Lichii reuses pipelines built earlier in the same session and shows how many shader builds remain.",
+      "body_zh_CN": "「预编译所有着色器」会保存每款游戏的设置。Lichii 会复用同一会话中已构建的管线，并显示剩余的着色器构建数量。"
     }
   ]
 }

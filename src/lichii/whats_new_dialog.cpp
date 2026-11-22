@@ -24,6 +24,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include "qt_common/config/uisettings.h"
 #include "qt_common/qt_common.h"
 #include "lichii/util/util.h"
 #include "lichii/whats_new_dialog.h"
@@ -141,13 +142,25 @@ WhatsNewDialog::StartupAction WhatsNewDialog::OnStartup(quint32 build, quint32 l
 
 QList<WhatsNewDialog::Release> WhatsNewDialog::LoadReleases(quint32 build, QDate date,
                                                             bool include_pending) {
-    const auto read = [](const QJsonObject& object, quint32 number, QDate release_date) {
-        Release release{
-            number, release_date, object.value(QStringLiteral("summary")).toString(), {}};
+    const auto& language = UISettings::values.language.GetValue();
+    const QLocale locale = language.empty() ? QLocale{} : QLocale(QString::fromStdString(language));
+    const bool simplified_chinese = locale.language() == QLocale::Chinese &&
+                                    locale.script() == QLocale::SimplifiedHanScript;
+    const auto text = [simplified_chinese](const QJsonObject& object, const QString& key) {
+        if (simplified_chinese) {
+            const auto localized = object.value(key + QStringLiteral("_zh_CN")).toString().trimmed();
+            if (!localized.isEmpty()) {
+                return localized;
+            }
+        }
+        return object.value(key).toString().trimmed();
+    };
+    const auto read = [&text](const QJsonObject& object, quint32 number, QDate release_date) {
+        Release release{number, release_date, text(object, QStringLiteral("summary")), {}};
         for (const auto& item : object.value(QStringLiteral("changes")).toArray()) {
             const auto change = item.toObject();
-            auto title = change.value(QStringLiteral("title")).toString().trimmed();
-            auto body = change.value(QStringLiteral("body")).toString().trimmed();
+            auto title = text(change, QStringLiteral("title"));
+            auto body = text(change, QStringLiteral("body"));
             if (!title.isEmpty() && !body.isEmpty()) {
                 release.changes.append({change.value(QStringLiteral("icon")).toString(),
                                         std::move(title), std::move(body)});

@@ -15034,7 +15034,144 @@ Try again without the recipe? The game still runs from the NX archive, but the o
     </message>
 </context>
 <context>
+    <name>ModStore::Install</name>
+    <message>
+        <source>patch</source>
+        <translation>补丁</translation>
+    </message>
+    <message>
+        <source>ZIP</source>
+        <translation>ZIP 压缩包</translation>
+    </message>
+    <message>
+        <source>The downloaded %1 exceeds the %2 MiB limit.</source>
+        <translation>下载的 %1 超过了 %2 MiB 的大小上限。</translation>
+    </message>
+    <message>
+        <source>Could not open the downloaded %1.</source>
+        <translation>无法打开下载的 %1。</translation>
+    </message>
+    <message>
+        <source>Could not read the downloaded %1.</source>
+        <translation>无法读取下载的 %1。</translation>
+    </message>
+    <message>
+        <source>Could not stage the downloaded %1.</source>
+        <translation>无法暂存下载的 %1。</translation>
+    </message>
+    <message>
+        <source>The downloaded %1 does not match its expected SHA-256.</source>
+        <translation>下载的 %1 与预期的 SHA-256 校验值不一致。</translation>
+    </message>
+    <message>
+        <source>The mods directory is unavailable or is a link.</source>
+        <translation>模组目录不可用，或该目录是一个链接。</translation>
+    </message>
+    <message>
+        <source>An existing mod folder is not owned by the Lichii Mod Store.</source>
+        <translation>已有的模组文件夹不归 Lichii Mod 商店管理。</translation>
+    </message>
+    <message>
+        <source>Could not create a staging folder in the mods directory.</source>
+        <translation>无法在模组目录中创建暂存文件夹。</translation>
+    </message>
+    <message>
+        <source>Could not write the mod ownership manifest.</source>
+        <translation>无法写入模组归属清单。</translation>
+    </message>
+    <message>
+        <source>Could not move the previous mod out of the way.</source>
+        <translation>无法移走旧版模组文件。</translation>
+    </message>
+    <message>
+        <source>Could not install or restore the mod. The previous files are in %1.</source>
+        <translation>无法安装或恢复模组。原有文件位于 %1。</translation>
+    </message>
+    <message>
+        <source>Could not move the staged mod into the mods directory.</source>
+        <translation>无法将暂存的模组移入模组目录。</translation>
+    </message>
+    <message>
+        <source>The mod installation information is invalid.</source>
+        <translation>模组安装信息无效。</translation>
+    </message>
+    <message>
+        <source>The ZIP is malformed or contains unsafe entries.</source>
+        <translation>ZIP 压缩包格式有误，或包含不安全的条目。</translation>
+    </message>
+    <message>
+        <source>The ZIP does not contain a single supported mod layout for this title.</source>
+        <translation>ZIP 压缩包中未找到此游戏支持的唯一模组目录结构。</translation>
+    </message>
+    <message>
+        <source>Could not extract the mod ZIP safely.</source>
+        <translation>无法安全地解压模组的 ZIP 压缩包。</translation>
+    </message>
+    <message>
+        <source>Could not read the downloaded patch.</source>
+        <translation>无法读取下载的补丁。</translation>
+    </message>
+    <message>
+        <source>The ZIP does not contain the expected safe patch member.</source>
+        <translation>ZIP 压缩包未包含符合要求的安全补丁文件。</translation>
+    </message>
+    <message>
+        <source>The downloaded patch is malformed or targets another build.</source>
+        <translation>下载的补丁格式有误，或适用于另一个游戏构建版本。</translation>
+    </message>
+    <message>
+        <source>The downloaded cheat has no unambiguous standalone section for this mod.</source>
+        <translation>下载的金手指文件中没有可明确归属于此模组的独立条目。</translation>
+    </message>
+    <message>
+        <source>Could not stage the downloaded patch safely.</source>
+        <translation>无法安全地暂存下载的补丁。</translation>
+    </message>
+    <message>
+        <source>Could not remove the mod from the mods directory.</source>
+        <translation>无法从模组目录中移除该模组。</translation>
+    </message>
+</context>
+<context>
     <name>ModStore::Dialog</name>
+    <message>
+        <source>GitHub</source>
+        <translation>GitHub</translation>
+    </message>
+    <message>
+        <source>View on GitHub</source>
+        <translation>在 GitHub 查看</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Main build ID prefix</source>
+        <translation>主程序构建 ID 前缀</translation>
+    </message>
+    <message>
+        <source>Main build ID</source>
+        <translation>主程序构建 ID</translation>
+    </message>
+    <message>
+        <source>Patch build ID</source>
+        <translation>补丁构建 ID</translation>
+    </message>
+    <message>
+        <source>Source: %1 @ %2
+License: Not declared</source>
+        <translation>来源：%1 @ %2
+许可证：未声明</translation>
+    </message>
+    <message>
+        <source>No verified download is available for this patch. Open GitHub for the files and instructions.</source>
+        <translation>此补丁暂无经过验证的下载。请前往 GitHub 获取文件和安装说明。</translation>
+    </message>
+    <message>
+        <source>Checking and installing the patch…</source>
+        <translation>正在验证并安装补丁…</translation>
+    </message>
     <message>
         <source>Mod Store</source>
         <translation>Mod 商店</translation>

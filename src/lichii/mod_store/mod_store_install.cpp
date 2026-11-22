@@ -12,6 +12,7 @@
 #include <utility>
 
 #include <QBuffer>
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QDirIterator>
@@ -35,6 +36,10 @@ namespace ModStore {
 namespace {
 
 using namespace Qt::StringLiterals;
+
+struct InstallText {
+    Q_DECLARE_TR_FUNCTIONS(ModStore::Install)
+};
 
 constexpr qint64 MaxArchiveBytes = 64 * 1024 * 1024;
 constexpr qint64 MaxPatchBytes = 2 * 1024 * 1024;
@@ -531,12 +536,14 @@ bool ExtractArchive(QuaZip& zip, const QList<ZipEntry>& entries, const QDir& sta
 QString SnapshotSource(QTemporaryFile& snapshot, const QString& path, const QByteArray& sha256,
                        bool raw_patch) {
     const qint64 limit = raw_patch ? MaxPatchBytes : MaxArchiveBytes;
-    const QString kind = raw_patch ? u"patch"_s : u"ZIP"_s;
+    const QString kind = raw_patch ? InstallText::tr("patch") : InstallText::tr("ZIP");
     const QString limit_error =
-        u"The downloaded %1 exceeds the %2 MiB limit."_s.arg(kind).arg(limit / (1024 * 1024));
+        InstallText::tr("The downloaded %1 exceeds the %2 MiB limit.")
+            .arg(kind)
+            .arg(limit / (1024 * 1024));
     QFile source(path);
     if (!IsRegularFile(path) || !source.open(QIODevice::ReadOnly) || !snapshot.open()) {
-        return u"Could not open the downloaded %1."_s.arg(kind);
+        return InstallText::tr("Could not open the downloaded %1.").arg(kind);
     }
     if (source.size() > limit) {
         return limit_error;
@@ -545,7 +552,7 @@ QString SnapshotSource(QTemporaryFile& snapshot, const QString& path, const QByt
     for (qint64 total = 0;;) {
         const QByteArray block = source.read(ChunkSize);
         if (source.error() != QFileDevice::NoError) {
-            return u"Could not read the downloaded %1."_s.arg(kind);
+            return InstallText::tr("Could not read the downloaded %1.").arg(kind);
         }
         if (block.isEmpty()) {
             break;
@@ -556,14 +563,14 @@ QString SnapshotSource(QTemporaryFile& snapshot, const QString& path, const QByt
         }
         hash.addData(block);
         if (snapshot.write(block) != block.size()) {
-            return u"Could not stage the downloaded %1."_s.arg(kind);
+            return InstallText::tr("Could not stage the downloaded %1.").arg(kind);
         }
     }
     if (hash.result() != sha256) {
-        return u"The downloaded %1 does not match its expected SHA-256."_s.arg(kind);
+        return InstallText::tr("The downloaded %1 does not match its expected SHA-256.").arg(kind);
     }
     if (!snapshot.flush() || !snapshot.seek(0)) {
-        return u"Could not stage the downloaded %1."_s.arg(kind);
+        return InstallText::tr("Could not stage the downloaded %1.").arg(kind);
     }
     return {};
 }
@@ -802,9 +809,9 @@ QString InstallPreparedMod(const QString& root, const QString& title, const QStr
     QDir mods_dir(QDir(root).absolutePath());
     const QDir title_dir(mods_dir.filePath(title));
     const QString destination = title_dir.filePath(mod_id);
-    const QString root_error = u"The mods directory is unavailable or is a link."_s;
+    const QString root_error = InstallText::tr("The mods directory is unavailable or is a link.");
     const QString conflict_error =
-        u"An existing mod folder is not owned by the Lichii Mod Store."_s;
+        InstallText::tr("An existing mod folder is not owned by the Lichii Mod Store.");
     if (!IsDirectory(mods_dir.path()) &&
         (!IsAbsent(mods_dir.path()) || !QDir().mkpath(mods_dir.path()) ||
          !IsDirectory(mods_dir.path()))) {
@@ -812,7 +819,7 @@ QString InstallPreparedMod(const QString& root, const QString& title, const QStr
     }
     QTemporaryDir transaction(mods_dir.filePath(StagingTemplate));
     if (!transaction.isValid()) {
-        return u"Could not create a staging folder in the mods directory."_s;
+        return InstallText::tr("Could not create a staging folder in the mods directory.");
     }
     const QDir stage(transaction.filePath(u"new"_s));
     if (!QDir().mkdir(stage.path()) || !stage_payload(stage)) {
@@ -829,7 +836,7 @@ QString InstallPreparedMod(const QString& root, const QString& title, const QStr
     };
     if (!WriteNewFile(stage.filePath(ManifestName),
                       QJsonDocument(object).toJson(QJsonDocument::Compact))) {
-        return u"Could not write the mod ownership manifest."_s;
+        return InstallText::tr("Could not write the mod ownership manifest.");
     }
 
     const std::scoped_lock lock(install_mutex);
@@ -849,16 +856,17 @@ QString InstallPreparedMod(const QString& root, const QString& title, const QStr
             return conflict_error;
         }
         if (!mods_dir.rename(destination, backup)) {
-            return u"Could not move the previous mod out of the way."_s;
+            return InstallText::tr("Could not move the previous mod out of the way.");
         }
     }
     if (!mods_dir.rename(stage.path(), destination)) {
         if (updating && !mods_dir.rename(backup, destination)) {
             transaction.setAutoRemove(false);
-            return u"Could not install or restore the mod. The previous files are in %1."_s.arg(
-                backup);
+            return InstallText::tr(
+                       "Could not install or restore the mod. The previous files are in %1.")
+                .arg(backup);
         }
-        return u"Could not move the staged mod into the mods directory."_s;
+        return InstallText::tr("Could not move the staged mod into the mods directory.");
     }
     return {};
 }
@@ -882,7 +890,7 @@ QString InstallMod(const QString& root, const QString& title_id, const QString& 
                    const QString& name, const QString& version, const QString& archive_path,
                    const QByteArray& sha256, bool external) {
     if (!IsInstallInfo(root, title_id, mod_id, name, version, sha256)) {
-        return u"The mod installation information is invalid."_s;
+        return InstallText::tr("The mod installation information is invalid.");
     }
     QTemporaryFile snapshot;
     if (const QString error = SnapshotSource(snapshot, archive_path, sha256, false);
@@ -892,14 +900,15 @@ QString InstallMod(const QString& root, const QString& title_id, const QString& 
     QuaZip zip(&snapshot);
     QList<ZipEntry> entries = ReadArchive(snapshot, zip, external);
     if (entries.isEmpty()) {
-        return u"The ZIP is malformed or contains unsafe entries."_s;
+        return InstallText::tr("The ZIP is malformed or contains unsafe entries.");
     }
     const QString title = title_id.toUpper();
     if (!PlanExtraction(entries, title, external)) {
-        return u"The ZIP does not contain a single supported mod layout for this title."_s;
+        return InstallText::tr(
+            "The ZIP does not contain a single supported mod layout for this title.");
     }
     return InstallPreparedMod(root, title, mod_id, name, version, sha256,
-                              u"Could not extract the mod ZIP safely."_s,
+                              InstallText::tr("Could not extract the mod ZIP safely."),
                               [&](const QDir& stage) { return ExtractArchive(zip, entries, stage); });
 }
 
@@ -912,7 +921,7 @@ QString InstallGitHubPatch(const QString& root, const QString& title_id, const Q
         patch.member.size() > 512 || patch.member.toUtf8().size() > 512 ||
         (cheat && !patch.member.isEmpty() && patch.tag.isEmpty()) ||
         (!patch.tag.isEmpty() && (!cheat || !IsCheatTag(patch.tag)))) {
-        return u"The mod installation information is invalid."_s;
+        return InstallText::tr("The mod installation information is invalid.");
     }
 
     const QString title = title_id.toUpper();
@@ -926,17 +935,18 @@ QString InstallGitHubPatch(const QString& root, const QString& title_id, const Q
     if (raw_patch) {
         bytes = snapshot.readAll();
         if (snapshot.error() != QFileDevice::NoError || bytes.size() != snapshot.size()) {
-            return u"Could not read the downloaded patch."_s;
+            return InstallText::tr("Could not read the downloaded patch.");
         }
     } else {
         QuaZip zip(&snapshot);
         const auto entries = ReadArchive(snapshot, zip, true);
         if (!ReadPatchMember(zip, entries, patch, build_id, title, bytes)) {
-            return u"The ZIP does not contain the expected safe patch member."_s;
+            return InstallText::tr("The ZIP does not contain the expected safe patch member.");
         }
     }
 
-    const QString invalid_patch = u"The downloaded patch is malformed or targets another build."_s;
+    const QString invalid_patch =
+        InstallText::tr("The downloaded patch is malformed or targets another build.");
     QString extension;
     switch (patch.kind) {
     case GitHubPatchKind::Pchtxt:
@@ -953,18 +963,19 @@ QString InstallGitHubPatch(const QString& root, const QString& title_id, const Q
         break;
     case GitHubPatchKind::Cheat:
         if (!ScopeCheat(bytes, patch.tag)) {
-            return u"The downloaded cheat has no unambiguous standalone section for this mod."_s;
+            return InstallText::tr(
+                "The downloaded cheat has no unambiguous standalone section for this mod.");
         }
         extension = u".txt"_s;
         break;
     default:
-        return u"The mod installation information is invalid."_s;
+        return InstallText::tr("The mod installation information is invalid.");
     }
 
     const QString folder = cheat ? u"cheats"_s : u"exefs"_s;
     const QString filename = patch.build_id.toUpper() + extension;
     return InstallPreparedMod(root, title, mod_id, name, version, sha256,
-                              u"Could not stage the downloaded patch safely."_s,
+                              InstallText::tr("Could not stage the downloaded patch safely."),
                               [&](const QDir& stage) {
                                   return stage.mkdir(folder) &&
                                          WriteNewFile(stage.filePath(folder + u'/' + filename),
@@ -974,7 +985,7 @@ QString InstallGitHubPatch(const QString& root, const QString& title_id, const Q
 
 QString UninstallMod(const QString& root, const QString& title_id, const QString& mod_id) {
     if (root.isEmpty() || !IsTitleId(title_id) || !IsModId(mod_id)) {
-        return u"The mod installation information is invalid."_s;
+        return InstallText::tr("The mod installation information is invalid.");
     }
     std::unique_lock lock(install_mutex);
     QDir mods_dir(QDir(root).absolutePath());
@@ -984,20 +995,20 @@ QString UninstallMod(const QString& root, const QString& title_id, const QString
         return {};
     }
     if (!IsDirectory(mods_dir.path()) || HasNameConflict(mods_dir, title)) {
-        return u"The mods directory is unavailable or is a link."_s;
+        return InstallText::tr("The mods directory is unavailable or is a link.");
     }
     if (IsAbsent(title_dir.path())) {
         return {};
     }
     if (!IsDirectory(title_dir.path())) {
-        return u"The mods directory is unavailable or is a link."_s;
+        return InstallText::tr("The mods directory is unavailable or is a link.");
     }
     RestoreInterruptedUpdates(mods_dir, title_dir, title);
     const QString destination = title_dir.filePath(mod_id);
     if (HasNameConflict(title_dir, mod_id) ||
         (!IsAbsent(destination) &&
          (!ReadOwnedMod(destination, title, mod_id) || !HasSafeContents(destination)))) {
-        return u"An existing mod folder is not owned by the Lichii Mod Store."_s;
+        return InstallText::tr("An existing mod folder is not owned by the Lichii Mod Store.");
     }
     if (IsAbsent(destination)) {
         return {};
@@ -1006,7 +1017,7 @@ QString UninstallMod(const QString& root, const QString& title_id, const QString
     QTemporaryDir transaction(mods_dir.filePath(StagingTemplate));
     if (!transaction.isValid() ||
         !mods_dir.rename(destination, transaction.filePath(u"removed"_s))) {
-        return u"Could not remove the mod from the mods directory."_s;
+        return InstallText::tr("Could not remove the mod from the mods directory.");
     }
     lock.unlock();
     return {};
