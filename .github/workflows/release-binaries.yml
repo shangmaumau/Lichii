@@ -15,27 +15,6 @@ on:
         description: Build Windows with Nsight Aftermath GPU crash dumps (test builds only, no NVIDIA files shipped)
         type: boolean
         default: false
-  push:
-    branches:
-      - nx2-experimental
-    # A binary only changes when build inputs change; docs-only pushes skip the build.
-    paths:
-      - "src/**"
-      # Test-only changes cannot change a binary: the build configures with BUILD_TESTING=OFF and
-      # LICHII_TESTS=OFF below, so a push that only touches src/tests has nothing to rebuild.
-      - "!src/tests/**"
-      - "CMakeLists.txt"
-      - "CMakeModules/**"
-      - "externals/**"
-      - "dist/**"
-      - "tools/**"
-      - ".patch/**"
-      - "cpmfile.json"
-      - "*.profdata"
-      - ".github/workflows/release-binaries.yml"
-  # Refreshes nx2's compiler caches, which every branch's build restores (see docs/CI.md).
-  schedule:
-    - cron: "17 3 * * *"
 
 permissions:
   contents: read
@@ -46,8 +25,7 @@ permissions:
 env:
   PGO_LLVM_VERSION: "23"
 
-# A running build is never cancelled: it finishes and publishes. A push meanwhile queues one build;
-# a later push replaces it, so the newest commit builds as soon as the running one is done.
+# Let a running build finish before starting the next request for the same ref.
 concurrency:
   group: release-binaries-${{ github.ref }}
   cancel-in-progress: false
@@ -58,20 +36,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      actions: read
-    outputs:
-      build: ${{ steps.nightly.outputs.build || 'true' }}
     steps:
-      - name: Skip a nightly run for a commit nx2 already built
-        id: nightly
-        if: github.event_name == 'schedule'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          built=$(gh run list -R "$GITHUB_REPOSITORY" -w release-binaries.yml -b nx2 -s success -L 1 \
-            --json headSha --jq '.[0].headSha // ""')
-          echo "build=$([ "$built" = "$GITHUB_SHA" ] && echo false || echo true)" >> "$GITHUB_OUTPUT"
-
       - name: Refuse to publish an Aftermath build
         if: inputs.nsight_aftermath && inputs.publish_release
         run: |
@@ -79,7 +44,7 @@ jobs:
           exit 1
 
       - name: Prepare release tag
-        if: github.event_name == 'push' || inputs.publish_release
+        if: inputs.publish_release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -99,7 +64,6 @@ jobs:
   build:
     name: ${{ matrix.platform }} binary
     needs: prepare-release
-    if: needs.prepare-release.outputs.build == 'true'
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -760,13 +724,11 @@ jobs:
           compression-level: 0
           retention-days: 7
 
-  # Publishes every binary as a GitHub pre-release once every platform built: on pushes to
-  # nx2-experimental, and on manual runs unless "Publish the binaries as a GitHub release" is
-  # unticked.
+  # Publish a GitHub pre-release after every platform builds when requested.
   release:
     name: Publish release
     needs: build
-    if: github.event_name == 'push' || inputs.publish_release
+    if: inputs.publish_release
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -849,7 +811,7 @@ jobs:
           commit_message=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | sed 's/^/> /')
 
           cat > notes.md <<EOF
-          Automatic build of \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA}.
+          Build of \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA}.
 
           ## 本次构建 / This build
 

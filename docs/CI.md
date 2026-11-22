@@ -1,6 +1,8 @@
 # Eglantine CI and release guide
 
-This document describes the split GitHub Actions pipeline added with this change. It is not yet a live workflow until the files have been merged to the required branches and the repository settings below have been applied.
+The current `release-binaries` workflow runs on request. On GitHub, open **Actions → release-binaries → Run workflow**, then select the branch. Clear **Publish the binaries as a GitHub release** to keep the packages as workflow artifacts. `build-check` runs independently.
+
+The rest of this guide describes the proposed split GitHub Actions pipeline. It requires the corresponding workflows and repository settings before it goes live.
 
 ## What runs when
 
@@ -92,8 +94,6 @@ Build artifacts are retained for seven days. Published GitHub Release assets rem
 `build-check.yml` and `release-binaries.yml` cache compiler objects (ccache on every platform, plus lld's ThinLTO cache for the Windows release builds), CPM downloads, the x86-64 release jobs' apt packages and fsr4-vk. A run can restore caches saved on its own ref and on `nx2`, the default branch, and the repository holds 10 GB of caches before GitHub evicts the least recently used.
 
 So only `nx2` saves compiler, CPM and apt caches. Pull requests and branch release builds restore `nx2`'s entries and save none: their own entries helped only that ref, and with one per pull request push they filled the 10 GB and evicted the release caches, whose builds then compiled from scratch. After each save, `tools/ci/prune-caches.sh` deletes the older `nx2` entries of the same family, and each build evicts the ccache entries it didn't use, so a family's entry stays one build's size. A run on `nx2` doesn't save when it was cancelled.
-
-The nightly `release-binaries` run (03:17 UTC) builds `nx2` without publishing to keep those caches close to `nx2`'s head. It skips a commit that already has a successful `nx2` build.
 
 ## Windows PGO profile
 
