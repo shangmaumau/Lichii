@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <numbers>
 #include <utility>
 #include <QAbstractButton>
 #include <QAbstractItemView>
@@ -20,12 +23,15 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMouseEvent>
+#include <QPersistentModelIndex>
 #include <QRadioButton>
 #include <QScopedValueRollback>
 #include <QScrollArea>
 #include <QStyle>
 #include <QTabBar>
 #include <QTreeView>
+#include <SDL3/SDL_audio.h>
+#include <SDL3/SDL_init.h>
 
 #include "common/scope_exit.h"
 #include "common/settings.h"
@@ -38,6 +44,17 @@
 namespace {
 
 constexpr auto InputCaptureProperty = "lichiiControllerInputCapture";
+constexpr int FocusSoundSampleRate = 48000;
+constexpr int FocusSoundDurationMs = 8;
+
+struct NavigationFocus {
+    QPointer<QWidget> widget{};
+    QPointer<QAction> action{};
+    QPersistentModelIndex item{};
+    int tab = -1;
+
+    bool operator==(const NavigationFocus&) const = default;
+};
 
 bool SendKey(QWidget* target, Qt::Key key) {
     QPointer<QWidget> guard(target);
@@ -135,6 +152,9 @@ void ControllerUiNavigation::Stop() {
     if (halo) {
         halo->hide();
     }
+    if (focus_sound) {
+        SDL_DestroyAudioStream(std::exchange(focus_sound, nullptr));
+    }
     controller->UnloadController();
 }
 
@@ -175,6 +195,47 @@ void ControllerUiNavigation::SetHeldDirection(Qt::Key key) {
     repeat_target = popup ? popup : repeat_window.data();
     if (repeat_window && IsDirection(key)) {
         repeat.start(325);
+    }
+}
+
+void ControllerUiNavigation::PlayFocusSound() {
+    const float volume = Settings::Volume();
+    if (volume <= 0.0f) {
+        return;
+    }
+    if (!focus_sound_open_attempted) {
+        focus_sound_open_attempted = true;
+        if (SDL_WasInit(SDL_INIT_AUDIO) || SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+            const SDL_AudioSpec format{
+                .format = SDL_AUDIO_F32, .channels = 1, .freq = FocusSoundSampleRate};
+            focus_sound = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &format,
+                                                   nullptr, nullptr);
+            if (focus_sound && !SDL_ResumeAudioStreamDevice(focus_sound)) {
+                SDL_DestroyAudioStream(std::exchange(focus_sound, nullptr));
+            }
+        }
+    }
+    if (!focus_sound) {
+        return;
+    }
+
+    static const auto click = [] {
+        std::array<float, FocusSoundSampleRate * FocusSoundDurationMs / 1000> samples{};
+        for (size_t i = 0; i < samples.size(); ++i) {
+            const float time = static_cast<float>(i) / FocusSoundSampleRate;
+            const float remaining = 1.0f - static_cast<float>(i) / (samples.size() - 1);
+            const float envelope = std::min(time / 0.0008f, 1.0f) * remaining * remaining;
+            const float phase = 2.0f * std::numbers::pi_v<float> * time;
+            samples[i] = 0.12f * envelope *
+                         (std::sin(phase * 680.0f) + 0.26f * std::sin(phase * 1100.0f));
+        }
+        return samples;
+    }();
+
+    // Preserve every focus change when several inputs arrive in one audio buffer.
+    SDL_SetAudioStreamGain(focus_sound, std::min(volume, 1.0f));
+    if (SDL_PutAudioStreamData(focus_sound, click.data(), static_cast<int>(sizeof(click)))) {
+        SDL_FlushAudioStream(focus_sound);
     }
 }
 
@@ -418,6 +479,35 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
     controller_active = true;
     controller_mouse_position = QCursor::pos();
     focus_update.start();
+
+    const bool navigation_key = IsDirection(key) || key == Qt::Key_Tab || key == Qt::Key_Backtab ||
+                                key == Qt::Key_PageUp || key == Qt::Key_PageDown || key == Qt::Key_F10;
+    const auto selection = [this] {
+        if (menu_action && (menu_focus == MenuFocus::Bar || menu_focus == MenuFocus::Preview)) {
+            return NavigationFocus{main_window->menuBar(), menu_action};
+        }
+        if (auto* menu = qobject_cast<QMenu*>(QApplication::activePopupWidget())) {
+            return NavigationFocus{menu, menu->activeAction()};
+        }
+
+        auto* widget = QApplication::focusWidget();
+        NavigationFocus focus{widget};
+        if (auto* view = qobject_cast<QAbstractItemView*>(widget)) {
+            focus.item = view->currentIndex();
+        } else if (auto* tabs = qobject_cast<QTabBar*>(widget)) {
+            focus.tab = tabs->currentIndex();
+        }
+        return focus;
+    };
+    const auto previous = navigation_key ? selection() : NavigationFocus{};
+    SCOPE_EXIT {
+        if (navigation_key && controller_active && ActiveWindow()) {
+            const auto current = selection();
+            if (current.widget && current != previous) {
+                PlayFocusSound();
+            }
+        }
+    };
 
     // File dialogs opened by a controller action need a Qt focus chain.
     const bool qt_dialogs = QApplication::testAttribute(Qt::AA_DontUseNativeDialogs);

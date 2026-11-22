@@ -16,6 +16,7 @@ class QDialog;
 class QMainWindow;
 class QMenu;
 class QWidget;
+struct SDL_AudioStream;
 
 namespace Core {
 class System;
@@ -38,6 +39,7 @@ private:
     QWidget* ActiveWindow() const;
     void Dispatch(Qt::Key key);
     void SetHeldDirection(Qt::Key key);
+    void PlayFocusSound();
     bool NavigateMainMenu(Qt::Key key, QWidget* window, QWidget* popup);
     void FocusMenuBar(int step = 0);
     void ShowMenu(MenuFocus focus);
@@ -62,10 +64,12 @@ private:
     QList<QPointer<QMenu>> outlined_menus;
     QTimer focus_update;
     QTimer repeat;
+    SDL_AudioStream* focus_sound = nullptr;
     QPointer<QWidget> repeat_window;
     QPointer<QWidget> repeat_target;
     Qt::Key held_direction = Qt::Key_unknown;
     QPoint controller_mouse_position;
     bool stopped = false;
     bool controller_active = false;
+    bool focus_sound_open_attempted = false;
 };
