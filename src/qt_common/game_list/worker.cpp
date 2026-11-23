@@ -357,7 +357,7 @@ QList<QStandardItem*> MakeGameListEntry(const std::string& path, const std::stri
 
 GameListWorker::GameListWorker(FileSys::VirtualFilesystem vfs_,
                                FileSys::ManualContentProvider* provider_,
-                               QVector<UISettings::GameDir>& game_dirs_,
+                               const QVector<UISettings::GameDir>& game_dirs_,
                                const PlayTime::PlayTimeManager& play_time_manager_,
                                Core::System& system_)
     : vfs{std::move(vfs_)}, provider{provider_}, game_dirs{game_dirs_},
@@ -655,27 +655,28 @@ void GameListWorker::run() {
         RecordEvent([=](GameListModel* model) { model->AddDirEntry(pending->release()); });
     };
 
-    for (UISettings::GameDir& game_dir : game_dirs) {
+    for (int i = 0; i < game_dirs.size(); ++i) {
         if (stop_requested) {
             break;
         }
+        const auto& game_dir = game_dirs[i];
 
         GameListDir* game_list_dir;
         bool scan = false;
 
         if (game_dir.path == std::string("SDMC")) {
-            game_list_dir = new GameListDir(game_dir, GameListItemType::SdmcDir);
+            game_list_dir = new GameListDir(game_dir, i, GameListItemType::SdmcDir);
         } else if (game_dir.path == std::string("UserNAND")) {
-            game_list_dir = new GameListDir(game_dir, GameListItemType::UserNandDir);
+            game_list_dir = new GameListDir(game_dir, i, GameListItemType::UserNandDir);
         } else if (game_dir.path == std::string("SysNAND")) {
-            game_list_dir = new GameListDir(game_dir, GameListItemType::SysNandDir);
+            game_list_dir = new GameListDir(game_dir, i, GameListItemType::SysNandDir);
         } else {
             const QString qpath = QString::fromStdString(game_dir.path);
             if (QDir(qpath).exists()) {
                 watch_list.append(qpath);
             }
 
-            game_list_dir = new GameListDir(game_dir);
+            game_list_dir = new GameListDir(game_dir, i);
             scan = true;
         }
 

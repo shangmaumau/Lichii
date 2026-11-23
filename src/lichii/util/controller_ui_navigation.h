@@ -10,6 +10,7 @@
 #include <QTimer>
 
 class ControllerNavigation;
+class ConfigureDialog;
 class FocusHalo;
 class QAction;
 class QDialog;
@@ -26,7 +27,8 @@ class ControllerUiNavigation final : public QObject {
 public:
     ControllerUiNavigation(Core::System& system, QMainWindow* window,
                            std::function<QWidget*()> default_focus,
-                           std::function<bool()> navigate_back = {});
+                           std::function<bool()> navigate_back,
+                           std::function<bool()> open_game_menu);
     ~ControllerUiNavigation() override;
 
     void Stop();
@@ -34,12 +36,13 @@ public:
 
 private:
     enum class MenuFocus { None, Bar, Preview, Items };
+    enum class SoundEffect { Move, Confirm, Back };
 
     bool eventFilter(QObject* watched, QEvent* event) override;
     QWidget* ActiveWindow() const;
     void Dispatch(Qt::Key key);
-    void SetHeldDirection(Qt::Key key);
-    void PlayFocusSound();
+    void SetHeldNavigation(Qt::Key direction, Qt::Key shoulder);
+    void PlaySound(SoundEffect effect);
     bool NavigateMainMenu(Qt::Key key, QWidget* window, QWidget* popup);
     void FocusMenuBar(int step = 0);
     void ShowMenu(MenuFocus focus);
@@ -51,6 +54,7 @@ private:
     QMainWindow* main_window;
     std::function<QWidget*()> default_focus;
     std::function<bool()> navigate_back;
+    std::function<bool()> open_game_menu;
     ControllerNavigation* controller;
     MenuFocus menu_focus = MenuFocus::None;
     QPointer<QAction> menu_action;
@@ -61,13 +65,14 @@ private:
     QPointer<QAction> dialog_origin;
     QPointer<QAction> dialog_item;
     QPointer<FocusHalo> halo;
+    QPointer<ConfigureDialog> controller_settings;
     QList<QPointer<QMenu>> outlined_menus;
     QTimer focus_update;
     QTimer repeat;
     SDL_AudioStream* focus_sound = nullptr;
     QPointer<QWidget> repeat_window;
     QPointer<QWidget> repeat_target;
-    Qt::Key held_direction = Qt::Key_unknown;
+    Qt::Key held_key = Qt::Key_unknown;
     QPoint controller_mouse_position;
     bool stopped = false;
     bool controller_active = false;

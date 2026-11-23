@@ -95,6 +95,7 @@ public:
 
     QWidget* NavigationTarget() const;
     bool ReturnFromCollection();
+    bool OpenSelectedGameMenu();
 
     void ResetViewMode();
 
@@ -163,6 +164,8 @@ private:
     void ToggleFavorite(u64 program_id);
 
     void PopupContextMenu(const QPoint& menu_location);
+    void ShowContextMenu(const QModelIndex& item, const QPoint& global_position);
+    void RefreshLibraryView();
     void AddGamePopup(QMenu& context_menu, u64 program_id, const std::string& path);
     void AddCustomDirPopup(QMenu& context_menu, QModelIndex selected);
     void AddPermDirPopup(QMenu& context_menu, QModelIndex selected);
@@ -206,6 +209,10 @@ private:
 
     bool m_isTreeMode = true;
     bool m_populating = false;
+    bool library_loading = false;
+    QString refreshing_game_path;
+    u64 refreshing_game_id{};
+    QPoint refreshing_scroll;
     bool nup_conversion_running{};
     bool nx_tool_running{};
     u64 reportable_program_id{};

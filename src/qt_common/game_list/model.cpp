@@ -1,16 +1,24 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
+#include <utility>
+#include <QDataStream>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QIcon>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSaveFile>
 #include <QThreadPool>
 
+#include "common/fs/path_util.h"
 #include "common/logging.h"
 #include "common/settings.h"
 #include "core/core.h"
+#include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
 #include "core/file_sys/registered_cache.h"
 #include "core/hle/service/filesystem/filesystem.h"
@@ -21,6 +29,33 @@
 #include "qt_common/game_list/game_list_p.h"
 #include "qt_common/game_list/model.h"
 #include "qt_common/game_list/worker.h"
+
+namespace {
+
+constexpr quint32 SnapshotVersion = 1;
+constexpr qint64 MaximumSnapshotBytes = 128 * 1024 * 1024;
+
+QString SnapshotPath() {
+    const auto path = Common::FS::GetEdenPath(Common::FS::EdenPath::CacheDir) / "game_list" /
+                      "library.snapshot";
+    return QString::fromStdString(Common::FS::PathToUTF8String(path));
+}
+
+QString SnapshotContext(const QVector<UISettings::GameDir>& game_dirs) {
+    QJsonArray context{QString::fromStdString(FileSys::GetConfiguredLanguageTag()),
+                       QString::fromStdString(UISettings::values.language.GetValue())};
+    for (const auto& dir : game_dirs) {
+        context.append(QJsonArray{QString::fromStdString(dir.path), dir.deep_scan});
+    }
+    return QString::fromUtf8(QJsonDocument(context).toJson(QJsonDocument::Compact));
+}
+
+bool IsDirectoryItem(int type) {
+    return type >= static_cast<int>(GameListItemType::CustomDir) &&
+           type <= static_cast<int>(GameListItemType::SysNandDir);
+}
+
+} // namespace
 
 GameListModel::GameListModel(std::shared_ptr<FileSys::VfsFilesystem> vfs_,
                              FileSys::ManualContentProvider* provider_,
@@ -42,10 +77,22 @@ GameListModel::GameListModel(std::shared_ptr<FileSys::VfsFilesystem> vfs_,
     RetranslateUI();
 
     setSortRole(GameListItemPath::SortRole);
+
+    snapshot_timer.setSingleShot(true);
+    snapshot_timer.setInterval(400);
+    connect(&snapshot_timer, &QTimer::timeout, this, &GameListModel::SaveSnapshot);
+    connect(this, &QStandardItemModel::dataChanged, this, [this] {
+        if (!snapshot_context.isEmpty() && UISettings::values.cache_game_list) {
+            snapshot_timer.start();
+        }
+    });
 }
 
 GameListModel::~GameListModel() {
     StopWorker();
+    if (snapshot_timer.isActive()) {
+        SaveSnapshot();
+    }
 }
 
 void GameListModel::SetScanEnabled(bool enabled, bool stop_worker) {
@@ -59,10 +106,13 @@ void GameListModel::PopulateAsync(QVector<UISettings::GameDir>& game_dirs) {
     if (!scan_enabled || system.IsPoweredOn()) {
         return;
     }
-    emit PopulatingStarted();
-
+    if (!snapshot_attempted) {
+        snapshot_attempted = true;
+        RestoreSnapshot(game_dirs);
+    }
     StopWorker();
-    removeRows(0, rowCount());
+    scanning_context = SnapshotContext(game_dirs);
+    emit PopulatingStarted();
 
     current_worker = std::make_unique<GameListWorker>(vfs, provider, game_dirs,
                                                       play_time_manager, system);
@@ -80,33 +130,26 @@ void GameListModel::WorkerEvent() {
 }
 
 void GameListModel::AddDirEntry(GameListDir* entry_items) {
-    if (m_flat) {
-        delete entry_items;
-        return;
-    }
-    invisibleRootItem()->appendRow(entry_items);
+    scanned_directories.emplace_back(entry_items);
 }
 
 void GameListModel::AddEntry(const QList<QStandardItem*>& entry_items, GameListDir* parent) {
-    if (m_flat) {
-        invisibleRootItem()->appendRow(entry_items);
-    } else {
-        parent->appendRow(entry_items);
-    }
+    parent->appendRow(entry_items);
 }
 
 void GameListModel::DonePopulating(const QStringList& watch_list) {
-    emit ShowList(!IsEmpty());
-
-    if (!m_flat) {
-        invisibleRootItem()->appendRow(new GameListAddDir());
-        invisibleRootItem()->insertRow(0, new GameListFavorites());
-
-        for (const auto id : std::as_const(UISettings::values.favorited_ids)) {
-            AddFavorite(id);
-        }
+    if (scanning_context != SnapshotContext(UISettings::values.game_dirs)) {
+        PopulateAsync(UISettings::values.game_dirs);
+        return;
     }
-
+    std::erase_if(scanned_directories, [](const auto& directory) {
+        return !directory->hasChildren() &&
+               directory->type() != static_cast<int>(GameListItemType::CustomDir);
+    });
+    emit ScanResultsReady();
+    ShowDirectories(std::exchange(scanned_directories, {}));
+    snapshot_context = scanning_context;
+    snapshot_timer.start();
     emit PopulatingCompleted(watch_list);
 }
 
@@ -138,28 +181,32 @@ void GameListModel::SetFolderSize(const QString& game_path, u64 size_bytes) {
 }
 
 bool GameListModel::IsEmpty() const {
-    for (int i = 0; i < rowCount(); i++) {
-        const QStandardItem* child = invisibleRootItem()->child(i);
-        const auto type = static_cast<GameListItemType>(child->type());
+    return m_flat ? rowCount() == 0 : rowCount() <= 2;
+}
 
-        if (!child->hasChildren() &&
-            (type == GameListItemType::SdmcDir || type == GameListItemType::UserNandDir ||
-             type == GameListItemType::SysNandDir)) {
-            invisibleRootItem()->removeRow(child->row());
-            i--;
+bool GameListModel::HasGames() const {
+    if (m_flat) {
+        return rowCount() > 0;
+    }
+    for (int row = 0; row < rowCount(); ++row) {
+        if (const auto* folder = item(row); IsDirectoryItem(folder->type()) && folder->hasChildren()) {
+            return true;
         }
     }
-
-    return !invisibleRootItem()->hasChildren();
+    return false;
 }
 
 void GameListModel::ToggleFavorite(u64 program_id) {
     if (!UISettings::values.favorited_ids.contains(program_id)) {
         UISettings::values.favorited_ids.append(program_id);
-        AddFavorite(program_id);
+        if (!m_flat && rowCount() > 0) {
+            AddFavorite(program_id);
+        }
     } else {
         UISettings::values.favorited_ids.removeOne(program_id);
-        RemoveFavorite(program_id);
+        if (!m_flat && rowCount() > 0) {
+            RemoveFavorite(program_id);
+        }
     }
     emit SaveConfig();
 }
@@ -209,6 +256,7 @@ void GameListModel::StopWorker() {
     current_worker->disconnect();
     current_worker->Stop();
     current_worker.release()->deleteLater();
+    scanned_directories.clear();
 }
 
 void GameListModel::Repopulate() {
@@ -264,5 +312,167 @@ QFileSystemWatcher* GameListModel::GetWatcher() const {
 }
 
 void GameListModel::SetFlat(bool flat) {
+    if (m_flat == flat) {
+        return;
+    }
+    std::vector<std::unique_ptr<GameListDir>> directories;
+    if (m_flat) {
+        directories = std::move(flat_directories);
+        while (rowCount() > 0) {
+            auto row = takeRow(0);
+            const int directory = row.front()->data(GameListItemPath::DirectoryRole).toInt();
+            directories.at(directory)->appendRow(row);
+        }
+    } else {
+        while (rowCount() > 0) {
+            const auto row = takeRow(0);
+            if (IsDirectoryItem(row.front()->type())) {
+                directories.emplace_back(static_cast<GameListDir*>(row.front()));
+            } else {
+                delete row.front();
+            }
+        }
+    }
     m_flat = flat;
+    ShowDirectories(std::move(directories));
+}
+
+void GameListModel::ShowDirectories(std::vector<std::unique_ptr<GameListDir>> directories) {
+    removeRows(0, rowCount());
+    flat_directories.clear();
+    if (m_flat) {
+        flat_directories = std::move(directories);
+        for (int i = 0; i < static_cast<int>(flat_directories.size()); ++i) {
+            auto& folder = flat_directories[i];
+            while (folder->hasChildren()) {
+                auto row = folder->takeRow(0);
+                row.front()->setData(i, GameListItemPath::DirectoryRole);
+                invisibleRootItem()->appendRow(row);
+            }
+        }
+        return;
+    }
+    invisibleRootItem()->appendRow(new GameListFavorites());
+    for (auto& directory : directories) {
+        invisibleRootItem()->appendRow(directory.release());
+    }
+    invisibleRootItem()->appendRow(new GameListAddDir());
+    for (const auto id : std::as_const(UISettings::values.favorited_ids)) {
+        AddFavorite(id);
+    }
+}
+
+void GameListModel::RestoreSnapshot(QVector<UISettings::GameDir>& game_dirs) {
+    if (!UISettings::values.cache_game_list) {
+        return;
+    }
+    QFile file(SnapshotPath());
+    if (!file.open(QIODevice::ReadOnly) || file.size() > MaximumSnapshotBytes) {
+        return;
+    }
+    QDataStream input(&file);
+    input.setVersion(QDataStream::Qt_6_0);
+    quint32 version{};
+    quint32 folder_count{};
+    QString context;
+    input >> version >> context >> folder_count;
+    if (input.status() != QDataStream::Ok || version != SnapshotVersion ||
+        context != SnapshotContext(game_dirs) || folder_count > game_dirs.size()) {
+        return;
+    }
+
+    std::vector<std::unique_ptr<GameListDir>> directories;
+    for (quint32 folder = 0; folder < folder_count; ++folder) {
+        qint32 index{};
+        qint32 type{};
+        quint32 count{};
+        input >> index >> type >> count;
+        if (input.status() != QDataStream::Ok || index < 0 || index >= game_dirs.size() ||
+            !IsDirectoryItem(type) || count > 100000) {
+            return;
+        }
+        auto dir = std::make_unique<GameListDir>(game_dirs[index], index,
+                                                 static_cast<GameListItemType>(type), true);
+        for (quint32 row = 0; row < count; ++row) {
+            auto game = std::make_unique<GameListItemPath>();
+            auto file_type = std::make_unique<GameListItem>();
+            auto size = std::make_unique<GameListItemSize>();
+            auto play_time = std::make_unique<GameListItemPlayTime>();
+            auto addons = std::make_unique<GameListItem>();
+            input >> *game >> *file_type >> *size >> *play_time >> *addons;
+            if (input.status() != QDataStream::Ok ||
+                game->data(GameListItemPath::FullPathRole).toString().isEmpty()) {
+                return;
+            }
+            auto picture = game->data(Qt::DecorationRole).value<QPixmap>();
+            if (!picture.isNull()) {
+                picture.setDevicePixelRatio(GameIconDpr);
+                game->setData(picture, Qt::DecorationRole);
+            }
+            dir->appendRow({game.release(), file_type.release(), size.release(),
+                            play_time.release(), addons.release()});
+        }
+        directories.push_back(std::move(dir));
+    }
+    if (!input.atEnd()) {
+        return;
+    }
+    ShowDirectories(std::move(directories));
+    emit SnapshotRestored();
+}
+
+void GameListModel::SaveSnapshot() const {
+    if (!UISettings::values.cache_game_list || snapshot_context.isEmpty() ||
+        snapshot_context != SnapshotContext(UISettings::values.game_dirs)) {
+        return;
+    }
+    const QString path = SnapshotPath();
+    if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
+        return;
+    }
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return;
+    }
+    QDataStream output(&file);
+    output.setVersion(QDataStream::Qt_6_0);
+
+    struct SnapshotFolder {
+        const QStandardItem* directory;
+        QList<QModelIndex> games;
+    };
+    QList<SnapshotFolder> folders;
+    if (m_flat) {
+        for (const auto& directory : flat_directories) {
+            folders.append(SnapshotFolder{directory.get(), {}});
+        }
+        for (int row = 0; row < rowCount(); ++row) {
+            const auto game = index(row, 0);
+            folders[game.data(GameListItemPath::DirectoryRole).toInt()].games.append(game);
+        }
+    } else {
+        for (int row = 0; row < rowCount(); ++row) {
+            if (const auto* directory = item(row); IsDirectoryItem(directory->type())) {
+                SnapshotFolder folder{directory, {}};
+                for (int game = 0; game < directory->rowCount(); ++game) {
+                    folder.games.append(directory->child(game)->index());
+                }
+                folders.append(std::move(folder));
+            }
+        }
+    }
+
+    output << SnapshotVersion << snapshot_context << static_cast<quint32>(folders.size());
+    for (const auto& folder : folders) {
+        output << folder.directory->data(GameListDir::GameDirRole).toInt()
+               << folder.directory->type() << static_cast<quint32>(folder.games.size());
+        for (const auto& game : folder.games) {
+            for (int column = 0; column < COLUMN_COUNT; ++column) {
+                output << *itemFromIndex(game.siblingAtColumn(column));
+            }
+        }
+    }
+    if (output.status() == QDataStream::Ok && file.size() <= MaximumSnapshotBytes) {
+        file.commit();
+    }
 }

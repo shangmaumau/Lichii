@@ -4,9 +4,11 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include <QFileSystemWatcher>
 #include <QStandardItemModel>
 #include <QStringList>
+#include <QTimer>
 #include <QVector>
 
 #include "common/common_types.h"
@@ -56,6 +58,7 @@ public:
     void SetScanEnabled(bool enabled, bool stop_worker = true);
 
     bool IsEmpty() const;
+    bool HasGames() const;
 
     void ToggleFavorite(u64 program_id);
 
@@ -73,6 +76,8 @@ signals:
     void ShowList(bool show);
     void PopulatingCompleted(const QStringList& watch_list);
     void PopulatingStarted();
+    void SnapshotRestored();
+    void ScanResultsReady();
     void SaveConfig();
 
 private:
@@ -82,9 +87,18 @@ private:
     void RemoveFavorite(u64 program_id);
     void Repopulate();
     void StopWorker();
+    void RestoreSnapshot(QVector<UISettings::GameDir>& game_dirs);
+    void SaveSnapshot() const;
+    void ShowDirectories(std::vector<std::unique_ptr<GameListDir>> directories);
 
     bool m_flat = false;
     bool scan_enabled = true;
+    bool snapshot_attempted = false;
+    QString snapshot_context;
+    QString scanning_context;
+    QTimer snapshot_timer;
+    std::vector<std::unique_ptr<GameListDir>> scanned_directories;
+    std::vector<std::unique_ptr<GameListDir>> flat_directories;
 
     std::shared_ptr<FileSys::VfsFilesystem> vfs;
     FileSys::ManualContentProvider* provider;

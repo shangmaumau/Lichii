@@ -30,7 +30,7 @@ public:
 
 signals:
     void TriggerKeyboardEvent(Qt::Key key);
-    void DirectionChanged(Qt::Key key);
+    void HeldNavigationChanged(Qt::Key direction, Qt::Key shoulder);
 
 private:
     void TriggerButton(Settings::NativeButton::Values native_button, Qt::Key key);
@@ -39,12 +39,15 @@ private:
     void ControllerUpdateButton();
 
     void ControllerUpdateStick();
-    void UpdateHeldDirection(Core::HID::NpadStyleIndex style);
+    void UpdateHeldNavigation(Core::HID::NpadStyleIndex style);
+    Qt::Key UpdateShoulder(Core::HID::NpadStyleIndex style);
 
     Core::HID::ButtonValues button_values{};
     Core::HID::SticksValues stick_values{};
     Qt::Key stick_direction = Qt::Key_unknown;
+    Qt::Key shoulder_key = Qt::Key_unknown;
     Qt::Key held_direction = Qt::Key_unknown;
+    Qt::Key held_shoulder = Qt::Key_unknown;
 
     int player1_callback_key{};
     int handheld_callback_key{};

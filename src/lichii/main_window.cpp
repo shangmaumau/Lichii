@@ -527,7 +527,8 @@ MainWindow::MainWindow(bool has_broken_vulkan)
                 return game_list_placeholder->isVisible() ? game_list_placeholder->focusProxy()
                                                           : nullptr;
             },
-            [this] { return game_list->ReturnFromCollection(); });
+            [this] { return game_list->ReturnFromCollection(); },
+            [this] { return game_list->OpenSelectedGameMenu(); });
     controller_dialog->refreshConfiguration();
 
     UpdateWindowTitle();

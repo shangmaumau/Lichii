@@ -533,6 +533,7 @@ GameHome::GameHome(GameListModel* library_, Core::System& system_, QWidget* pare
     });
     connect(back_button, &QPushButton::clicked, this, [this] { ShowCollection(false); });
     back_button->setProperty("controllerMenuAbove", true);
+    back_button->setProperty("controllerBackButton", true);
     connect(view, &QListView::clicked, this, [this](const QModelIndex& index) {
         if (!collection && !SourceIndex(index).isValid()) {
             Activate(index);
@@ -582,6 +583,27 @@ bool GameHome::ReturnToShelf() {
     }
     mouse_navigation = false;
     ShowCollection(false);
+    return true;
+}
+
+bool GameHome::OpenSelectedGameMenu() {
+    if (loading || !view->hasFocus()) {
+        return false;
+    }
+    const auto tile = view->currentIndex();
+    const auto source = SourceIndex(tile);
+    if (!source.isValid()) {
+        return false;
+    }
+
+    mouse_navigation = false;
+    hover_position.reset();
+    auto* viewport = view->viewport();
+    const QRect area = viewport->rect();
+    const QRect visible = area.intersected(view->visualRect(tile));
+    const QPoint anchor = visible.isEmpty() ? area.center() : visible.center();
+    emit GameMenuRequested(source, viewport->mapToGlobal(anchor));
+    UpdateTileFocus();
     return true;
 }
 
@@ -851,7 +873,7 @@ bool GameHome::HandleKey(Qt::Key key) {
     if (key == Qt::Key_Escape && ReturnToShelf()) {
         return true;
     }
-    if (collection && (key == Qt::Key_F || key == Qt::Key_Menu)) {
+    if (collection && key == Qt::Key_F) {
         sort_button->click();
         return true;
     }
@@ -897,9 +919,17 @@ bool GameHome::HandleKey(Qt::Key key) {
     }
 
     const int row = view->currentIndex().row();
-    if (key == Qt::Key_Enter || key == Qt::Key_Return) {
-        Activate(view->currentIndex());
+    if (key == Qt::Key_Menu && view->hasFocus()) {
+        OpenSelectedGameMenu();
         return true;
+    }
+    if (key == Qt::Key_Enter || key == Qt::Key_Return) {
+        const auto tile = view->currentIndex();
+        if (tile.isValid()) {
+            Activate(tile);
+            return true;
+        }
+        return false;
     }
     if (collection && key == Qt::Key_Left && (row < 0 || row % columns == 0)) {
         sort_button->setFocus();
@@ -1023,12 +1053,11 @@ void GameHome::UpdateTileFocus() {
     const auto index = mouse_navigation
                            ? (hover_position ? view->indexAt(*hover_position) : QModelIndex{})
                            : (view->hasFocus() ? view->currentIndex() : QModelIndex{});
-    const auto tile = view->visualRect(index);
+    const auto tile = index.isValid() ? view->visualRect(index) : QRect{};
     const auto cover = TileCoverRect(tile, index.data(Qt::DecorationRole).value<QPixmap>());
     const auto visible = cover.intersected(viewport->rect());
     if (visible.isEmpty() ||
-        (mouse_navigation &&
-         (!hover_position || !SourceIndex(index).isValid() || !visible.contains(*hover_position)))) {
+        (mouse_navigation && (!hover_position || !visible.contains(*hover_position)))) {
         tile_halo->hide();
         title_bubble->hide();
         return;

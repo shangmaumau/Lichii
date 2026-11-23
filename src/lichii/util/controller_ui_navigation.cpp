@@ -6,6 +6,7 @@
 #include <cmath>
 #include <numbers>
 #include <utility>
+#include <vector>
 #include <QAbstractButton>
 #include <QAbstractItemView>
 #include <QAbstractSlider>
@@ -16,6 +17,7 @@
 #include <QContextMenuEvent>
 #include <QCursor>
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
 #include <QLineEdit>
@@ -45,7 +47,6 @@ namespace {
 
 constexpr auto InputCaptureProperty = "lichiiControllerInputCapture";
 constexpr int FocusSoundSampleRate = 48000;
-constexpr int FocusSoundDurationMs = 8;
 
 struct NavigationFocus {
     QPointer<QWidget> widget{};
@@ -114,13 +115,15 @@ void SelectFirstAction(QMenu* menu) {
 
 ControllerUiNavigation::ControllerUiNavigation(Core::System& system_, QMainWindow* window,
                                                std::function<QWidget*()> default_focus_,
-                                               std::function<bool()> navigate_back_)
+                                               std::function<bool()> navigate_back_,
+                                               std::function<bool()> open_game_menu_)
     : QObject(window), system(system_), main_window(window), default_focus(std::move(default_focus_)),
-      navigate_back(std::move(navigate_back_)), controller(new ControllerNavigation(system.HIDCore(), this)) {
+      navigate_back(std::move(navigate_back_)), open_game_menu(std::move(open_game_menu_)),
+      controller(new ControllerNavigation(system.HIDCore(), this)) {
     connect(controller, &ControllerNavigation::TriggerKeyboardEvent, this,
             &ControllerUiNavigation::Dispatch, Qt::QueuedConnection);
-    connect(controller, &ControllerNavigation::DirectionChanged, this,
-            &ControllerUiNavigation::SetHeldDirection, Qt::QueuedConnection);
+    connect(controller, &ControllerNavigation::HeldNavigationChanged, this,
+            &ControllerUiNavigation::SetHeldNavigation, Qt::QueuedConnection);
     qApp->installEventFilter(this);
     focus_update.setSingleShot(true);
     connect(&focus_update, &QTimer::timeout, this, &ControllerUiNavigation::UpdateFocusHalo);
@@ -136,7 +139,7 @@ ControllerUiNavigation::ControllerUiNavigation(Core::System& system_, QMainWindo
         if (repeat.interval() != 75) {
             repeat.setInterval(75);
         }
-        Dispatch(held_direction);
+        Dispatch(held_key);
     });
 }
 
@@ -187,18 +190,26 @@ QWidget* ControllerUiNavigation::ActiveWindow() const {
     return window;
 }
 
-void ControllerUiNavigation::SetHeldDirection(Qt::Key key) {
-    held_direction = key;
-    repeat.stop();
-    repeat_window = ActiveWindow();
+void ControllerUiNavigation::SetHeldNavigation(Qt::Key direction, Qt::Key shoulder) {
+    auto* window = ActiveWindow();
     auto* popup = QApplication::activePopupWidget();
-    repeat_target = popup ? popup : repeat_window.data();
-    if (repeat_window && IsDirection(key)) {
+    auto* target = popup ? popup : window;
+    const bool repeat_shoulder =
+        shoulder != Qt::Key_unknown && !popup && qobject_cast<ConfigureDialog*>(window);
+    const auto key = repeat_shoulder ? shoulder : direction;
+    if (key == held_key && window == repeat_window && target == repeat_target) {
+        return;
+    }
+    held_key = key;
+    repeat.stop();
+    repeat_window = window;
+    repeat_target = target;
+    if (window && key != Qt::Key_unknown) {
         repeat.start(325);
     }
 }
 
-void ControllerUiNavigation::PlayFocusSound() {
+void ControllerUiNavigation::PlaySound(SoundEffect effect) {
     const float volume = Settings::Volume();
     if (volume <= 0.0f) {
         return;
@@ -219,22 +230,29 @@ void ControllerUiNavigation::PlayFocusSound() {
         return;
     }
 
-    static const auto click = [] {
-        std::array<float, FocusSoundSampleRate * FocusSoundDurationMs / 1000> samples{};
+    const auto make_sound = [](int duration, float first, float last, float attack = 0.0008f,
+                               float overtone = 0.26f, float ratio = 1100.0f / 680.0f) {
+        std::vector<float> samples(FocusSoundSampleRate * duration / 1000);
         for (size_t i = 0; i < samples.size(); ++i) {
             const float time = static_cast<float>(i) / FocusSoundSampleRate;
-            const float remaining = 1.0f - static_cast<float>(i) / (samples.size() - 1);
-            const float envelope = std::min(time / 0.0008f, 1.0f) * remaining * remaining;
-            const float phase = 2.0f * std::numbers::pi_v<float> * time;
-            samples[i] = 0.12f * envelope *
-                         (std::sin(phase * 680.0f) + 0.26f * std::sin(phase * 1100.0f));
+            const float position = static_cast<float>(i) / (samples.size() - 1);
+            const float remaining = 1.0f - position;
+            const float envelope = std::min(time / attack, 1.0f) * remaining * remaining;
+            const float phase =
+                2.0f * std::numbers::pi_v<float> * time * std::lerp(first, last, position / 2.0f);
+            samples[i] = 0.12f * envelope * (std::sin(phase) + overtone * std::sin(phase * ratio));
         }
         return samples;
-    }();
+    };
+    static const std::array sounds{make_sound(8, 680.0f, 680.0f),
+                                   make_sound(19, 1020.0f, 1660.0f, 0.00035f, 0.37f, 2.12f),
+                                   make_sound(21, 1190.0f, 580.0f, 0.00035f, 0.37f, 2.12f)};
+    const auto& sound = sounds[static_cast<size_t>(effect)];
 
     // Preserve every focus change when several inputs arrive in one audio buffer.
     SDL_SetAudioStreamGain(focus_sound, std::min(volume, 1.0f));
-    if (SDL_PutAudioStreamData(focus_sound, click.data(), static_cast<int>(sizeof(click)))) {
+    const auto bytes = static_cast<int>(sound.size() * sizeof(float));
+    if (SDL_PutAudioStreamData(focus_sound, sound.data(), bytes)) {
         SDL_FlushAudioStream(focus_sound);
     }
 }
@@ -252,7 +270,7 @@ bool ControllerUiNavigation::eventFilter(QObject* watched, QEvent* event) {
     const bool moved_mouse = event->type() == QEvent::MouseMove &&
                              static_cast<QMouseEvent*>(event)->globalPosition().toPoint() !=
                                  controller_mouse_position;
-    if (moved_mouse || event->type() == QEvent::MouseButtonPress ||
+    if (moved_mouse || event->type() == QEvent::MouseButtonPress || event->type() == QEvent::Wheel ||
         (event->type() == QEvent::KeyPress && event->spontaneous())) {
         if (controller_active) {
             controller_active = false;
@@ -389,7 +407,18 @@ bool ControllerUiNavigation::NavigateMainMenu(Qt::Key key, QWidget* window, QWid
 }
 
 void ControllerUiNavigation::UpdateFocusHalo() {
-    if (!controller_active || !ActiveWindow()) {
+    auto* window = controller_active ? ActiveWindow() : nullptr;
+    auto* settings = qobject_cast<ConfigureDialog*>(window);
+    if (settings != controller_settings) {
+        if (controller_settings) {
+            controller_settings->SetControllerInputActive(false);
+        }
+        controller_settings = settings;
+        if (settings) {
+            settings->SetControllerInputActive(true);
+        }
+    }
+    if (!window) {
         UpdateOutlinedMenus(nullptr);
         if (halo) {
             halo->hide();
@@ -480,6 +509,13 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
     controller_mouse_position = QCursor::pos();
     focus_update.start();
 
+    auto* popup = QApplication::activePopupWidget();
+    if (key == Qt::Key_F10 && window == main_window && !popup && open_game_menu()) {
+        SelectFirstAction(qobject_cast<QMenu*>(QApplication::activePopupWidget()));
+        PlaySound(SoundEffect::Confirm);
+        return;
+    }
+
     const bool navigation_key = IsDirection(key) || key == Qt::Key_Tab || key == Qt::Key_Backtab ||
                                 key == Qt::Key_PageUp || key == Qt::Key_PageDown || key == Qt::Key_F10;
     const auto selection = [this] {
@@ -504,7 +540,7 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
         if (navigation_key && controller_active && ActiveWindow()) {
             const auto current = selection();
             if (current.widget && current != previous) {
-                PlayFocusSound();
+                PlaySound(SoundEffect::Move);
             }
         }
     };
@@ -520,8 +556,10 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
         }
     };
 
-    auto* popup = QApplication::activePopupWidget();
     if (NavigateMainMenu(key, window, popup)) {
+        if (key == Qt::Key_Enter || key == Qt::Key_Escape) {
+            PlaySound(key == Qt::Key_Enter ? SoundEffect::Confirm : SoundEffect::Back);
+        }
         return;
     }
     if (popup) {
@@ -529,6 +567,14 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
             popup->close();
         } else if (key != Qt::Key_Tab && key != Qt::Key_Backtab && key != Qt::Key_Menu) {
             auto* focus = QApplication::focusWidget();
+            if (key == Qt::Key_Escape) {
+                PlaySound(SoundEffect::Back);
+            } else if (key == Qt::Key_Enter) {
+                auto* menu = qobject_cast<QMenu*>(popup);
+                if (!menu || (menu->activeAction() && menu->activeAction()->isEnabled())) {
+                    PlaySound(SoundEffect::Confirm);
+                }
+            }
             const auto origin = key == Qt::Key_Enter && window == main_window && top_menu &&
                                         top_menu->isVisible() && menu_focus == MenuFocus::Items
                                     ? menu_action
@@ -551,19 +597,25 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
     }
     if (auto* settings = qobject_cast<ConfigureDialog*>(window);
         settings && settings->HandleControllerNavigation(key)) {
+        if (key == Qt::Key_Enter || key == Qt::Key_Escape) {
+            PlaySound(key == Qt::Key_Enter ? SoundEffect::Confirm : SoundEffect::Back);
+        }
         return;
     }
     if (key == Qt::Key_PageUp || key == Qt::Key_PageDown) {
         return;
     }
     if (key == Qt::Key_Escape && window == main_window && navigate_back && navigate_back()) {
+        PlaySound(SoundEffect::Back);
         return;
     }
     if (key == Qt::Key_Escape && menu_dialog && window == menu_dialog) {
         const auto dialog = menu_dialog;
         const auto origin = dialog_origin;
         const auto item = dialog_item;
-        SendKey(dialog, key);
+        if (SendKey(dialog, key)) {
+            PlaySound(SoundEffect::Back);
+        }
         if (!dialog || !dialog->isVisible()) {
             menu_dialog.clear();
             dialog_origin.clear();
@@ -620,25 +672,43 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
         MoveFocus(target, window, key == Qt::Key_Right || key == Qt::Key_Down);
     } else if (key == Qt::Key_Enter) {
         if (auto* button = qobject_cast<QAbstractButton*>(target)) {
+            auto* box = qobject_cast<QDialogButtonBox*>(button->parentWidget());
+            const bool back = button->property("controllerBackButton").toBool() ||
+                              (box && box->buttonRole(button) == QDialogButtonBox::RejectRole);
+            PlaySound(back ? SoundEffect::Back : SoundEffect::Confirm);
             SendKey(button, Qt::Key_Space);
         } else if (auto* combo = qobject_cast<QComboBox*>(target)) {
+            PlaySound(SoundEffect::Confirm);
             combo->showPopup();
         } else if (auto* tree = qobject_cast<QTreeView*>(view);
                    tree && tree->currentIndex().isValid() &&
                    tree->model()->hasChildren(tree->currentIndex())) {
             const auto index = tree->currentIndex();
+            PlaySound(SoundEffect::Confirm);
             tree->setExpanded(index, !tree->isExpanded(index));
         } else if (view && (view->currentIndex().flags() & Qt::ItemIsUserCheckable)) {
+            PlaySound(SoundEffect::Confirm);
             SendKey(view, Qt::Key_Space);
+        } else if (view && view->currentIndex().isValid()) {
+            PlaySound(SoundEffect::Confirm);
+            SendKey(view, key);
         } else {
-            SendKey(target, key);
+            if (SendKey(target, key)) {
+                PlaySound(SoundEffect::Confirm);
+            }
         }
     } else if (key == Qt::Key_Menu) {
         QPointer<QAbstractItemView> current_view(view);
         if (!SendKey(target, key) && current_view) {
             OpenContextMenu(current_view);
         }
+        if (auto* menu = qobject_cast<QMenu*>(QApplication::activePopupWidget())) {
+            SelectFirstAction(menu);
+            PlaySound(SoundEffect::Confirm);
+        }
     } else {
-        SendKey(target, key);
+        if (SendKey(target, key) && key == Qt::Key_Escape) {
+            PlaySound(SoundEffect::Back);
+        }
     }
 }

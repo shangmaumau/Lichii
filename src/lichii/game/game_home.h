@@ -37,6 +37,7 @@ class GameHome final : public QWidget {
     QListView* View() const;
     QWidget* NavigationTarget() const;
     bool ReturnToShelf();
+    bool OpenSelectedGameMenu();
     QModelIndex SourceIndex(const QModelIndex& index) const;
     void FocusLibrary();
     void Refresh(bool reset_position = false);
@@ -46,6 +47,7 @@ class GameHome final : public QWidget {
 
   signals:
     void GameActivated(const QModelIndex& source_index);
+    void GameMenuRequested(const QModelIndex& source_index, const QPoint& global_position);
     void FilterResultReady(int visible, int total);
     void ProfileRequested();
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <tuple>
 #include <utility>
 
 #include "common/settings_input.h"
@@ -72,11 +73,9 @@ void ControllerNavigation::ControllerUpdateEvent(Core::HID::ControllerTriggerTyp
     case Core::HID::ControllerTriggerType::Disconnected:
     case Core::HID::ControllerTriggerType::Type:
         stick_direction = Qt::Key_unknown;
+        shoulder_key = Qt::Key_unknown;
         button_values = {};
-        if (held_direction != Qt::Key_unknown) {
-            held_direction = Qt::Key_unknown;
-            emit DirectionChanged(held_direction);
-        }
+        UpdateHeldNavigation(player1_controller->GetNpadStyleIndex());
         break;
     default:
         break;
@@ -114,28 +113,49 @@ void ControllerNavigation::ControllerUpdateButton() {
         TriggerButton(Settings::NativeButton::DRight, Qt::Key_Right);
         TriggerButton(Settings::NativeButton::DUp, Qt::Key_Up);
         TriggerButton(Settings::NativeButton::X, Qt::Key_Menu);
-        TriggerButton(Settings::NativeButton::L, Qt::Key_Backtab);
-        TriggerButton(Settings::NativeButton::R, Qt::Key_Tab);
-        TriggerButton(Settings::NativeButton::ZL, Qt::Key_PageUp);
-        TriggerButton(Settings::NativeButton::ZR, Qt::Key_PageDown);
         TriggerButton(Settings::NativeButton::Plus, Qt::Key_F10);
         break;
     case Core::HID::NpadStyleIndex::JoyconLeft:
         TriggerButton(Settings::NativeButton::DDown, Qt::Key_Enter);
         TriggerButton(Settings::NativeButton::DLeft, Qt::Key_Escape);
-        TriggerButton(Settings::NativeButton::L, Qt::Key_Backtab);
-        TriggerButton(Settings::NativeButton::ZL, Qt::Key_PageUp);
         break;
     case Core::HID::NpadStyleIndex::JoyconRight:
         TriggerButton(Settings::NativeButton::X, Qt::Key_Enter);
         TriggerButton(Settings::NativeButton::A, Qt::Key_Escape);
-        TriggerButton(Settings::NativeButton::R, Qt::Key_Tab);
-        TriggerButton(Settings::NativeButton::ZR, Qt::Key_PageDown);
+        TriggerButton(Settings::NativeButton::Plus, Qt::Key_F10);
         break;
     default:
         break;
     }
-    UpdateHeldDirection(controller_type);
+    shoulder_key = UpdateShoulder(controller_type);
+    UpdateHeldNavigation(controller_type);
+}
+
+Qt::Key ControllerNavigation::UpdateShoulder(Core::HID::NpadStyleIndex style) {
+    using enum Core::HID::NpadStyleIndex;
+    const bool both = style == Fullkey || style == JoyconDual || style == Handheld ||
+                      style == GameCube;
+    const bool left = both || style == JoyconLeft;
+    const bool right = both || style == JoyconRight;
+    Qt::Key pressed = Qt::Key_unknown;
+    Qt::Key held = Qt::Key_unknown;
+    for (const auto& [button, key, supported] :
+         {std::tuple{Settings::NativeButton::L, Qt::Key_Backtab, left},
+          std::tuple{Settings::NativeButton::R, Qt::Key_Tab, right},
+          std::tuple{Settings::NativeButton::ZL, Qt::Key_PageUp, left},
+          std::tuple{Settings::NativeButton::ZR, Qt::Key_PageDown, right}}) {
+        if (!supported || !button_values[button].value) {
+            continue;
+        }
+        if (!button_values[button].locked) {
+            emit TriggerKeyboardEvent(key);
+            pressed = key;
+        }
+        if (held == Qt::Key_unknown || key == shoulder_key) {
+            held = key;
+        }
+    }
+    return pressed != Qt::Key_unknown ? pressed : held;
 }
 
 void ControllerNavigation::ControllerUpdateStick() {
@@ -179,11 +199,11 @@ void ControllerNavigation::ControllerUpdateStick() {
         if (direction != Qt::Key_unknown) {
             emit TriggerKeyboardEvent(direction);
         }
-        UpdateHeldDirection(controller_type);
+        UpdateHeldNavigation(controller_type);
     }
 }
 
-void ControllerNavigation::UpdateHeldDirection(Core::HID::NpadStyleIndex style) {
+void ControllerNavigation::UpdateHeldNavigation(Core::HID::NpadStyleIndex style) {
     Qt::Key key = stick_direction;
     switch (style) {
     case Core::HID::NpadStyleIndex::Fullkey:
@@ -204,8 +224,9 @@ void ControllerNavigation::UpdateHeldDirection(Core::HID::NpadStyleIndex style) 
     default:
         break;
     }
-    if (key != held_direction) {
+    if (key != held_direction || shoulder_key != held_shoulder) {
         held_direction = key;
-        emit DirectionChanged(key);
+        held_shoulder = shoulder_key;
+        emit HeldNavigationChanged(held_direction, held_shoulder);
     }
 }

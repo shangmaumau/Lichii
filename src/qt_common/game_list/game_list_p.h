@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <map>
 #include <string>
@@ -162,6 +163,7 @@ public:
     /// True when the picture comes from the game or its custom artwork, not the default art.
     static constexpr int HasIconRole = SortRole + 5;
     static constexpr int PublisherRole = SortRole + 6;
+    static constexpr int DirectoryRole = SortRole + 7;
 
     GameListItemPath() = default;
     GameListItemPath(const QString& game_path, const std::vector<u8>& picture_data,
@@ -199,9 +201,8 @@ public:
 
     /// Shows an image file as a game's picture, or the default art when it is not an image.
     static void SetPicture(QStandardItem* item, const std::vector<u8>& picture_data) {
-        const u32 size = UISettings::values.game_list_mode.GetValue() == Settings::GameListMode::HomeView
-                             ? HomeCoverSize
-                             : UISettings::CurrentGameIconSize().GetValue();
+        const u32 size = std::max({HomeCoverSize, UISettings::values.game_cover_size.GetValue(),
+                                   UISettings::values.game_icon_size.GetValue()});
 
         QPixmap picture;
         const bool has_icon =
@@ -392,13 +393,11 @@ class GameListDir : public GameListItem {
 public:
     static constexpr int GameDirRole = Qt::UserRole + 2;
 
-    explicit GameListDir(UISettings::GameDir& directory,
-                         GameListItemType dir_type_ = GameListItemType::CustomDir)
+    GameListDir(const UISettings::GameDir& directory, int directory_index,
+                GameListItemType dir_type_ = GameListItemType::CustomDir, bool cached = false)
         : dir_type{dir_type_} {
         setData(type(), TypeRole);
-
-        UISettings::GameDir* game_dir = &directory;
-        setData(QVariant(UISettings::values.game_dirs.indexOf(directory)), GameDirRole);
+        setData(directory_index, GameDirRole);
 
         const char* icon_name = nullptr;
 
@@ -416,8 +415,8 @@ public:
             setData(QObject::tr("System Titles"), Qt::DisplayRole);
             break;
         case GameListItemType::CustomDir: {
-            const QString path = QString::fromStdString(game_dir->path);
-            icon_name = QFileInfo::exists(path) ? "folder" : "bad_folder";
+            const QString path = QString::fromStdString(directory.path);
+            icon_name = cached || QFileInfo::exists(path) ? "folder" : "bad_folder";
             setData(path, Qt::DisplayRole);
             break;
         }
