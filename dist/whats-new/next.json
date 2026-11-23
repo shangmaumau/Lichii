@@ -55,8 +55,8 @@
       "icon": "download",
       "title": "Better shader precompilation",
       "title_zh_CN": "改进着色器预编译",
-      "body": "Precompile All Shaders remembers your choice for that game. Lichii reuses pipelines built earlier in the same session and shows how many shader builds remain.",
-      "body_zh_CN": "「预编译所有着色器」会保存每款游戏的设置。Lichii 会复用同一会话中已构建的管线，并显示剩余的着色器构建数量。"
+      "body": "Turning on Precompile All Shaders sets shader precache to Always for that game. Lichii reuses pipelines built earlier in the same session and shows how many shader builds remain.",
+      "body_zh_CN": "启用「预编译所有着色器」后，该游戏的「启动游戏前预编译着色器」会设为「总是」。Lichii 会复用本次会话中已构建的管线，并显示仍需构建的着色器数量。"
     }
   ]
 }
