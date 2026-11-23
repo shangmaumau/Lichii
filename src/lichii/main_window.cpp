@@ -2419,6 +2419,10 @@ bool MainWindow::ConfirmLowRamBoot(const QString& filename,
 
 void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletParameters params,
                           StartGameType type) {
+    if (shutdown_game_in_progress) {
+        return;
+    }
+
 #ifdef HAS_FLYHIGH
     // Frame generation was turned on in the settings, where nothing offers the model: offer it
     // once before the first game.
@@ -3121,9 +3125,14 @@ void MainWindow::OnEmulationStopped() {
 }
 
 void MainWindow::ShutdownGame() {
-    if (!emulation_running) {
+    if (!emulation_running || shutdown_game_in_progress) {
         return;
     }
+
+    shutdown_game_in_progress = true;
+    SCOPE_EXIT {
+        shutdown_game_in_progress = false;
+    };
 
     if (bug_report_dialog) {
         bug_report_dialog->StopCapture();
@@ -4006,6 +4015,10 @@ void MainWindow::OnPauseContinueGame() {
 }
 
 void MainWindow::OnStopGame() {
+    if (!emulation_running || shutdown_game_in_progress || shutdown_dialog) {
+        return;
+    }
+
     if (ConfirmShutdownGame()) {
         play_time_manager->Stop();
         if (OnShutdownBegin()) {
@@ -4050,6 +4063,12 @@ void MainWindow::OnLoadComplete() {
 }
 
 void MainWindow::OnExecuteProgram(std::size_t program_index) {
+    if (!emulation_running || shutdown_game_in_progress || shutdown_dialog) {
+        LOG_WARNING(Frontend, "Dropping ExecuteProgram of index {}: no active session",
+                    program_index);
+        return;
+    }
+
     const u64 previous_program_id = QtCommon::system->GetApplicationProcessProgramID();
 
     const auto current_path =
@@ -4125,6 +4144,9 @@ void MainWindow::OnLaunchInNewSession(u64 program_id) {
 }
 
 void MainWindow::OnExit() {
+    if (shutdown_dialog) {
+        return;
+    }
     ShutdownGame();
 }
 
