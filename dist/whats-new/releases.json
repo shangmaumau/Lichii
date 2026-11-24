@@ -60,31 +60,42 @@
     "build": 341,
     "date": "2026-11-17",
     "summary": "Fewer shader stalls, fixes for Cyberpunk 2077 and Ocarina of Time, and Switch 2 Pro Controller support.",
+    "summary_zh_CN": "减少着色器编译卡顿，修复《赛博朋克 2077》和《时之笛》的问题，并支持 Nintendo Switch 2 Pro 手柄。",
     "changes": [
       {
         "icon": "cpu",
         "title": "Fewer shader stalls",
-        "body": "Async shaders now use the Bounded setting by default, with an 8 ms wait. If you chose a setting yourself, Lichii keeps it."
+        "title_zh_CN": "减少着色器编译卡顿",
+        "body": "Async shaders now use the Bounded setting by default, with an 8 ms wait. If you chose a setting yourself, Lichii keeps it.",
+        "body_zh_CN": "异步着色器编译现在默认使用「限时等待」，等待上限为 8 毫秒。Lichii 会保留你手动选择的设置。"
       },
       {
         "icon": "layers",
         "title": "Cyberpunk 2077",
-        "body": "Lichii can now translate the 64 shaders that previously failed in this game."
+        "title_zh_CN": "《赛博朋克 2077》",
+        "body": "Lichii can now translate the 64 shaders that previously failed in this game.",
+        "body_zh_CN": "Lichii 现在可以正确转换这款游戏中此前转换失败的 64 个着色器。"
       },
       {
         "icon": "clock",
         "title": "Ocarina of Time",
-        "body": "Choose 2×, 4×, or instant text with the new add-ons. Unlocked frame rates are also presented more smoothly."
+        "title_zh_CN": "《时之笛》",
+        "body": "Choose 2×, 4×, or instant text with the new add-ons. Unlocked frame rates are also presented more smoothly.",
+        "body_zh_CN": "新增的附加项可让文字以 2 倍速、4 倍速或瞬间显示。解锁帧率后，画面也更流畅。"
       },
       {
         "icon": "gamepad",
         "title": "Switch 2 Pro Controller",
-        "body": "Connect over USB on Windows or Linux, or over Bluetooth in the Windows desktop app."
+        "title_zh_CN": "Nintendo Switch 2 Pro 手柄",
+        "body": "Connect over USB on Windows or Linux, or over Bluetooth in the Windows desktop app.",
+        "body_zh_CN": "Windows 和 Linux 支持通过 USB 连接，Windows 桌面版还支持蓝牙连接。"
       },
       {
         "icon": "bug",
         "title": "Star Fox",
-        "body": "The floor in the Venom mission renders again."
+        "title_zh_CN": "《Star Fox》",
+        "body": "The floor in the Venom mission renders again.",
+        "body_zh_CN": "修复 Venom 关卡地面不显示的问题。"
       }
     ]
   },
@@ -92,31 +103,42 @@
     "build": 316,
     "date": "2026-11-16",
     "summary": "Nextendo online play, fixes for Ocarina of Time and Donkey Kong Bananza, and better frame pacing with frame generation.",
+    "summary_zh_CN": "支持通过 Nextendo 联机，修复《时之笛》和《咚奇刚 蕉力全开》的问题，并改善插帧开启时的帧间隔。",
     "changes": [
       {
         "icon": "globe",
         "title": "Online play through Nextendo",
-        "body": "Turn on Nextendo in Configure → Network. Sign in separately for each user profile."
+        "title_zh_CN": "通过 Nextendo 联机",
+        "body": "Turn on Nextendo in Configure → Network. Sign in separately for each user profile.",
+        "body_zh_CN": "在「设置 → 网络」中启用 Nextendo。每个用户档案需要单独登录。"
       },
       {
         "icon": "clock",
         "title": "Frame generation and online races",
-        "body": "Frame pacing now counts game frames rather than generated frames, fixing a cause of online race disconnects."
+        "title_zh_CN": "插帧与在线竞速",
+        "body": "Frame pacing now counts game frames rather than generated frames, fixing a cause of online race disconnects.",
+        "body_zh_CN": "帧间隔现在按游戏原始帧计算，修复了插帧导致在线竞速断开连接的一种情况。"
       },
       {
         "icon": "globe",
         "title": "IPv6 support",
-        "body": "Games can open IPv6 connections and look up IPv6 addresses. IPv4 behavior is unchanged."
+        "title_zh_CN": "支持 IPv6",
+        "body": "Games can open IPv6 connections and look up IPv6 addresses. IPv4 behavior is unchanged.",
+        "body_zh_CN": "游戏现在可以建立 IPv6 连接并查询 IPv6 地址，同时继续支持原有的 IPv4 连接。"
       },
       {
         "icon": "gamepad",
         "title": "Ocarina of Time",
-        "body": "FPS Unlock works alongside code cheats and warns about conflicts. Castle Town no longer loses the Vulkan device on AMD at 1.5× or 2×."
+        "title_zh_CN": "《时之笛》",
+        "body": "FPS Unlock works alongside code cheats and warns about conflicts. Castle Town no longer loses the Vulkan device on AMD at 1.5× or 2×.",
+        "body_zh_CN": "帧率解锁补丁可与金手指同时使用，检测到冲突时会提示。修复 AMD 显卡在 1.5 倍或 2 倍分辨率下进入城堡镇时的 Vulkan 设备丢失问题。"
       },
       {
         "icon": "bug",
         "title": "Donkey Kong Bananza",
-        "body": "The tutorial panel no longer appears black or flashes, and looping videos no longer stall."
+        "title_zh_CN": "《咚奇刚 蕉力全开》",
+        "body": "The tutorial panel no longer appears black or flashes, and looping videos no longer stall.",
+        "body_zh_CN": "修复教程面板发黑或闪烁，以及视频循环播放时卡住的问题。"
       }
     ]
   }
