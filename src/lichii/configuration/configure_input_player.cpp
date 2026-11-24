@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <memory>
 #include <utility>
+#include <QComboBox>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
@@ -38,6 +39,11 @@ const std::array<std::string, ConfigureInputPlayer::ANALOG_SUB_BUTTONS_NUM>
     }};
 
 namespace {
+
+void AddNamedItem(QComboBox& combo, const QString& name) {
+    combo.addItem(name);
+    combo.setItemData(combo.count() - 1, name, Qt::ToolTipRole);
+}
 
 QString GetKeyName(int key_code) {
     switch (key_code) {
@@ -320,6 +326,10 @@ ConfigureInputPlayer::ConfigureInputPlayer(QWidget* parent, std::size_t player_i
         emulated_controller->EnableConfiguration();
     }
     ui->setupUi(this);
+
+    for (auto* combo : {ui->comboDevices, ui->comboProfiles}) {
+        connect(combo, &QComboBox::currentTextChanged, combo, &QWidget::setToolTip);
+    }
 
     setFocusPolicy(Qt::ClickFocus);
 
@@ -1185,7 +1195,7 @@ void ConfigureInputPlayer::UpdateInputDevices() {
     input_devices = input_subsystem->GetInputDevices();
     ui->comboDevices->clear();
     for (const auto& device : input_devices) {
-        ui->comboDevices->addItem(QString::fromStdString(device.Get("display", "Unknown")), {});
+        AddNamedItem(*ui->comboDevices, QString::fromStdString(device.Get("display", "Unknown")));
     }
 }
 
@@ -1634,7 +1644,7 @@ void ConfigureInputPlayer::CreateProfile() {
 
     emit RefreshInputProfiles(player_index);
 
-    ui->comboProfiles->addItem(profile_name);
+    AddNamedItem(*ui->comboProfiles, profile_name);
     ui->comboProfiles->setCurrentIndex(ui->comboProfiles->count() - 1);
 }
 
@@ -1715,7 +1725,7 @@ void ConfigureInputPlayer::UpdateInputProfiles() {
     std::string profile_name;
     for (size_t i = 0; i < profile_names.size(); i++) {
         profile_name = profile_names[i];
-        ui->comboProfiles->addItem(QString::fromStdString(profile_name));
+        AddNamedItem(*ui->comboProfiles, QString::fromStdString(profile_name));
         if (current_profile == profile_name) {
             profile_index = (int)i;
         }

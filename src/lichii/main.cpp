@@ -232,6 +232,10 @@ int main(int argc, char* argv[]) {
 
     QApplication app(argc, argv);
 
+#ifdef Q_OS_MACOS
+    QCoreApplication::setAttribute(Qt::AA_DontShowIconsInMenus, false);
+#endif
+
 #ifdef _WIN32
     OverrideWindowsFont();
 #endif

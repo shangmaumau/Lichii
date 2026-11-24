@@ -13,6 +13,14 @@
   <property name="windowTitle">
    <string>Configure Input</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">/* Size mapping buttons to their labels in every theme. */
+QPushButton {
+    min-width: -1px;
+    padding-left: 4px;
+    padding-right: 4px;
+}</string>
+  </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <property name="spacing">
     <number>0</number>
@@ -117,8 +125,11 @@
           </property>
           <item>
            <widget class="QComboBox" name="comboDevices">
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::SizeAdjustPolicy::AdjustToMinimumContentsLengthWithIcon</enum>
+            </property>
             <property name="minimumContentsLength">
-             <number>60</number>
+             <number>15</number>
             </property>
            </widget>
           </item>
@@ -160,19 +171,16 @@
               <height>21</height>
              </size>
             </property>
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::SizeAdjustPolicy::AdjustToMinimumContentsLengthWithIcon</enum>
+            </property>
+            <property name="minimumContentsLength">
+             <number>8</number>
+            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="buttonProfilesSave">
-            <property name="maximumSize">
-             <size>
-              <width>68</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">min-width: 68px;</string>
-            </property>
             <property name="text">
              <string>Save</string>
             </property>
@@ -180,15 +188,6 @@
           </item>
           <item>
            <widget class="QPushButton" name="buttonProfilesNew">
-            <property name="maximumSize">
-             <size>
-              <width>68</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">min-width: 68px;</string>
-            </property>
             <property name="text">
              <string>New</string>
             </property>
@@ -196,15 +195,6 @@
           </item>
           <item>
            <widget class="QPushButton" name="buttonProfilesDelete">
-            <property name="maximumSize">
-             <size>
-              <width>68</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">min-width: 68px;</string>
-            </property>
             <property name="text">
              <string>Delete</string>
             </property>
@@ -353,21 +343,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonLStickDown">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Down</string>
                       </property>
@@ -402,21 +377,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonLStickRight">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Right</string>
                       </property>
@@ -451,21 +411,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonLStickLeft">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Left</string>
                       </property>
@@ -503,21 +448,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonLStickUp">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Up</string>
                       </property>
@@ -560,21 +490,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonLStick">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>Pressed</string>
                      </property>
@@ -609,21 +524,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonLStickMod">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>Modifier</string>
                      </property>
@@ -655,18 +555,6 @@
                    </property>
                    <item>
                     <widget class="QSpinBox" name="spinboxLStickRange">
-                     <property name="minimumSize">
-                      <size>
-                       <width>68</width>
-                       <height>21</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
                      <property name="suffix">
                       <string>%</string>
                      </property>
@@ -836,21 +724,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonDpadDown">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Down</string>
                       </property>
@@ -885,21 +758,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonDpadLeft">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Left</string>
                       </property>
@@ -934,21 +792,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonDpadRight">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Right</string>
                       </property>
@@ -983,21 +826,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonDpadUp">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Up</string>
                       </property>
@@ -1095,21 +923,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonSRLeft">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>SR</string>
                      </property>
@@ -1144,21 +957,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonSLLeft">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>SL</string>
                      </property>
@@ -1254,21 +1052,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonZL">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>ZL</string>
                      </property>
@@ -1319,21 +1102,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonL">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>L</string>
                      </property>
@@ -1375,104 +1143,6 @@
                    </size>
                   </property>
                  </spacer>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="buttonMiscButtonsMinusGroup">
-               <property name="title">
-                <string>Minus</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignmentFlag::AlignCenter</set>
-               </property>
-               <layout class="QVBoxLayout" name="buttonMiscMinusVerticalLayout">
-                <property name="spacing">
-                 <number>3</number>
-                </property>
-                <property name="leftMargin">
-                 <number>3</number>
-                </property>
-                <property name="topMargin">
-                 <number>3</number>
-                </property>
-                <property name="rightMargin">
-                 <number>3</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>3</number>
-                </property>
-                <item>
-                 <widget class="QPushButton" name="buttonMinus">
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>68</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">min-width: 68px;</string>
-                  </property>
-                  <property name="text">
-                   <string>Minus</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QGroupBox" name="buttonMiscButtonsPlusGroup">
-               <property name="title">
-                <string>Plus</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignmentFlag::AlignCenter</set>
-               </property>
-               <layout class="QVBoxLayout" name="buttonMiscPlusVerticalLayout">
-                <property name="spacing">
-                 <number>3</number>
-                </property>
-                <property name="leftMargin">
-                 <number>3</number>
-                </property>
-                <property name="topMargin">
-                 <number>3</number>
-                </property>
-                <property name="rightMargin">
-                 <number>3</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>3</number>
-                </property>
-                <item>
-                 <widget class="QPushButton" name="buttonPlus">
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>68</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">min-width: 68px;</string>
-                  </property>
-                  <property name="text">
-                   <string>Plus</string>
-                  </property>
-                 </widget>
                 </item>
                </layout>
               </widget>
@@ -1561,21 +1231,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonZR">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>ZR</string>
                      </property>
@@ -1626,21 +1281,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonR">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>R</string>
                      </property>
@@ -1730,21 +1370,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonSRRight">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>SR</string>
                      </property>
@@ -1779,21 +1404,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonSLRight">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>SL</string>
                      </property>
@@ -1820,9 +1430,6 @@
                <bold>true</bold>
               </font>
              </property>
-             <property name="styleSheet">
-              <string notr="true">image: url(:/controller/pro);</string>
-             </property>
              <layout class="QVBoxLayout" name="verticalLayout_4">
               <property name="leftMargin">
                <number>0</number>
@@ -1847,6 +1454,74 @@
              <property name="topMargin">
               <number>0</number>
              </property>
+             <item>
+              <widget class="QGroupBox" name="buttonMiscButtonsMinusGroup">
+               <property name="title">
+                <string>Minus</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignCenter</set>
+               </property>
+               <layout class="QVBoxLayout" name="buttonMiscMinusVerticalLayout">
+                <property name="spacing">
+                 <number>3</number>
+                </property>
+                <property name="leftMargin">
+                 <number>1</number>
+                </property>
+                <property name="topMargin">
+                 <number>3</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>3</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="buttonMinus">
+                  <property name="text">
+                   <string>Minus</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="buttonMiscButtonsPlusGroup">
+               <property name="title">
+                <string>Plus</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignCenter</set>
+               </property>
+               <layout class="QVBoxLayout" name="buttonMiscPlusVerticalLayout">
+                <property name="spacing">
+                 <number>3</number>
+                </property>
+                <property name="leftMargin">
+                 <number>1</number>
+                </property>
+                <property name="topMargin">
+                 <number>3</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>3</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="buttonPlus">
+                  <property name="text">
+                   <string>Plus</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
              <item>
               <spacer name="horizontalSpacerMiscButtons1">
                <property name="orientation">
@@ -1873,34 +1548,19 @@
                  <number>3</number>
                 </property>
                 <property name="leftMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="topMargin">
                  <number>3</number>
                 </property>
                 <property name="rightMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="bottomMargin">
                  <number>3</number>
                 </property>
                 <item>
                  <widget class="QPushButton" name="buttonMotionLeft">
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>68</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">min-width: 68px;</string>
-                  </property>
                   <property name="text">
                    <string>Left</string>
                   </property>
@@ -1922,34 +1582,19 @@
                  <number>3</number>
                 </property>
                 <property name="leftMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="topMargin">
                  <number>3</number>
                 </property>
                 <property name="rightMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="bottomMargin">
                  <number>3</number>
                 </property>
                 <item>
                  <widget class="QPushButton" name="buttonMotionRight">
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>68</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">min-width: 68px;</string>
-                  </property>
                   <property name="text">
                    <string>Right</string>
                   </property>
@@ -1971,34 +1616,19 @@
                  <number>3</number>
                 </property>
                 <property name="leftMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="topMargin">
                  <number>3</number>
                 </property>
                 <property name="rightMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="bottomMargin">
                  <number>3</number>
                 </property>
                 <item>
                  <widget class="QPushButton" name="buttonScreenshot">
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>68</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">min-width: 68px;</string>
-                  </property>
                   <property name="text">
                    <string>Capture</string>
                   </property>
@@ -2020,34 +1650,19 @@
                  <number>3</number>
                 </property>
                 <property name="leftMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="topMargin">
                  <number>3</number>
                 </property>
                 <property name="rightMargin">
-                 <number>3</number>
+                 <number>1</number>
                 </property>
                 <property name="bottomMargin">
                  <number>3</number>
                 </property>
                 <item>
                  <widget class="QPushButton" name="buttonHome">
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>68</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">min-width: 68px;</string>
-                  </property>
                   <property name="text">
                    <string>Home</string>
                   </property>
@@ -2156,21 +1771,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonX">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>X</string>
                       </property>
@@ -2205,21 +1805,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonB">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>B</string>
                       </property>
@@ -2254,21 +1839,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonA">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>A</string>
                       </property>
@@ -2303,21 +1873,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonY">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Y</string>
                       </property>
@@ -2412,21 +1967,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonRStickRight">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Right</string>
                       </property>
@@ -2461,21 +2001,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonRStickDown">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Down</string>
                       </property>
@@ -2510,21 +2035,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonRStickLeft">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Left</string>
                       </property>
@@ -2559,21 +2069,6 @@
                     </property>
                     <item>
                      <widget class="QPushButton" name="buttonRStickUp">
-                      <property name="minimumSize">
-                       <size>
-                        <width>70</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>68</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="styleSheet">
-                       <string notr="true">min-width: 68px;</string>
-                      </property>
                       <property name="text">
                        <string>Up</string>
                       </property>
@@ -2637,21 +2132,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonRStick">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>Pressed</string>
                      </property>
@@ -2686,21 +2166,6 @@
                    </property>
                    <item>
                     <widget class="QPushButton" name="buttonRStickMod">
-                     <property name="minimumSize">
-                      <size>
-                       <width>70</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true">min-width: 68px;</string>
-                     </property>
                      <property name="text">
                       <string>Modifier</string>
                      </property>
@@ -2732,18 +2197,6 @@
                    </property>
                    <item>
                     <widget class="QSpinBox" name="spinboxRStickRange">
-                     <property name="minimumSize">
-                      <size>
-                       <width>68</width>
-                       <height>21</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>68</width>
-                       <height>16777215</height>
-                      </size>
-                     </property>
                      <property name="suffix">
                       <string>%</string>
                      </property>

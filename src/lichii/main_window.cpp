@@ -7013,11 +7013,31 @@ void MainWindow::UpdateRefreshButtonIcon() {
 }
 
 void MainWindow::UpdateUITheme() {
-    const QString default_theme = QString::fromUtf8(UISettings::themes[size_t(UISettings::default_theme)].second);
+    const QString default_theme =
+        QString::fromUtf8(UISettings::themes[size_t(UISettings::default_theme)].second);
     QString current_theme = QString::fromStdString(UISettings::values.theme);
 
-    if (current_theme.isEmpty())
+    if (current_theme.isEmpty()) {
         current_theme = default_theme;
+    }
+
+    QString stylesheet_theme = current_theme;
+#ifndef _WIN32
+    if ((current_theme == QStringLiteral("default") || current_theme == QStringLiteral("colorful")) &&
+        isDarkMode()) {
+        stylesheet_theme = QStringLiteral("default_dark");
+    }
+#endif
+
+    QFile stylesheet(QStringLiteral(":/%1/style.qss").arg(stylesheet_theme));
+    if (!stylesheet.open(QFile::ReadOnly | QFile::Text) && stylesheet_theme != default_theme) {
+        LOG_ERROR(Frontend, "Unable to open style \"{}\", fallback to the default theme",
+                  stylesheet_theme.toStdString());
+        stylesheet.setFileName(QStringLiteral(":/%1/style.qss").arg(default_theme));
+        stylesheet.open(QFile::ReadOnly | QFile::Text);
+        current_theme = default_theme;
+    }
+    UISettings::values.theme = current_theme.toStdString();
 
     static bool lichii_palette = false;
     if (current_theme == QStringLiteral("lichii")) {
@@ -7033,11 +7053,9 @@ void MainWindow::UpdateUITheme() {
     AdjustLinkColor();
 #else
     if (current_theme == QStringLiteral("default") || current_theme == QStringLiteral("colorful")) {
-        QIcon::setThemeName(current_theme == QStringLiteral("colorful") ? current_theme : startup_icon_theme);
+        QIcon::setThemeName(current_theme == QStringLiteral("colorful") ? current_theme
+                                                                       : startup_icon_theme);
         QIcon::setThemeSearchPaths(QStringList(default_theme_paths));
-        if (isDarkMode()) {
-            current_theme = QStringLiteral("default_dark");
-        }
     } else {
         QIcon::setThemeName(current_theme);
         QIcon::setThemeSearchPaths(QStringList(QStringLiteral(":/icons")));
@@ -7045,27 +7063,12 @@ void MainWindow::UpdateUITheme() {
     }
 #endif
 
-    if (current_theme != default_theme) {
-        QString theme_uri{QStringLiteral(":%1/style.qss").arg(current_theme)};
-        QFile f(theme_uri);
-        if (!f.open(QFile::ReadOnly | QFile::Text)) {
-            LOG_ERROR(Frontend, "Unable to open style \"{}\", fallback to the default theme",
-                      UISettings::values.theme);
-            current_theme = default_theme;
-        }
-    }
-
-    QString theme_uri{QStringLiteral(":%1/style.qss").arg(current_theme)};
-    QFile f(theme_uri);
-    if (f.open(QFile::ReadOnly | QFile::Text)) {
-        QTextStream ts(&f);
-        qApp->setStyleSheet(ts.readAll());
-        setStyleSheet(ts.readAll());
+    if (stylesheet.isOpen()) {
+        qApp->setStyleSheet(QTextStream(&stylesheet).readAll());
     } else {
         LOG_ERROR(Frontend, "Unable to set style \"{}\", stylesheet file not found",
                   UISettings::values.theme);
         qApp->setStyleSheet({});
-        setStyleSheet({});
     }
 
     UpdateMenuIcons();

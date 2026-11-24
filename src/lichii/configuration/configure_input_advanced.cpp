@@ -12,6 +12,16 @@
 #include "ui_configure_input_advanced.h"
 #include "lichii/configuration/configure_input_advanced.h"
 
+namespace {
+
+void SetColorSwatch(QPushButton& button, const QColor& color) {
+    button.setStyleSheet(
+        QStringLiteral("background-color: %1; min-width: 36px; padding-left: 0; padding-right: 0;")
+            .arg(color.name()));
+}
+
+} // namespace
+
 ConfigureInputAdvanced::ConfigureInputAdvanced(Core::HID::HIDCore& hid_core_, QWidget* parent)
     : QWidget(parent), ui(std::make_unique<Ui::ConfigureInputAdvanced>()), hid_core{hid_core_} {
     ui->setupUi(this);
@@ -113,9 +123,7 @@ void ConfigureInputAdvanced::OnControllerButtonClick(std::size_t player_idx,
         return;
     }
     controllers_colors[player_idx][button_idx] = new_bg_color;
-    controllers_color_buttons[player_idx][button_idx]->setStyleSheet(
-        QStringLiteral("background-color: %1; min-width: 60px;")
-            .arg(controllers_colors[player_idx][button_idx].name()));
+    SetColorSwatch(*controllers_color_buttons[player_idx][button_idx], new_bg_color);
 }
 
 void ConfigureInputAdvanced::ApplyConfiguration() {
@@ -163,9 +171,8 @@ void ConfigureInputAdvanced::LoadConfiguration() {
                        [](u32 rgb) { return QColor::fromRgb(rgb); });
 
         for (std::size_t button_idx = 0; button_idx < colors.size(); ++button_idx) {
-            controllers_color_buttons[player_idx][button_idx]->setStyleSheet(
-                QStringLiteral("background-color: %1; min-width: 60px;")
-                    .arg(controllers_colors[player_idx][button_idx].name()));
+            SetColorSwatch(*controllers_color_buttons[player_idx][button_idx],
+                           controllers_colors[player_idx][button_idx]);
         }
     }
 

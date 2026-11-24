@@ -12,13 +12,11 @@
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
 #include <QPushButton>
-#include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QStackedWidget>
 #include <QStyle>
 #include <QTabBar>
-#include <QTimer>
 #include "common/logging.h"
 #include "common/settings.h"
 #include "common/settings_enums.h"
@@ -48,6 +46,13 @@
 #include "lichii/configuration/configure_web.h"
 #include "lichii/hotkeys.h"
 
+Q_DECLARE_METATYPE(QList<QWidget*>);
+
+static QString SettingsTabStyle(bool controls) {
+    return controls ? QStringLiteral("QTabBar::tab { padding-left: 5px; padding-right: 5px; }")
+                    : QString{};
+}
+
 class SettingsTabUnderline final : public QWidget {
 public:
     explicit SettingsTabUnderline(QTabBar* tabs_)
@@ -63,6 +68,7 @@ public:
         fade.setDuration(160);
         fade.setEndValue(1.0);
         fade.setEasingCurve(QEasingCurve::OutCubic);
+        lower();
         tabs->installEventFilter(this);
         connect(tabs, &QTabBar::currentChanged, this, [this] { UpdateGeometry(); });
         UpdateGeometry();
@@ -88,7 +94,8 @@ public:
 
 private:
     bool eventFilter(QObject* watched, QEvent* event) override {
-        if (watched == tabs && (event->type() == QEvent::Resize || event->type() == QEvent::Show ||
+        if (watched == tabs && (event->type() == QEvent::Paint || event->type() == QEvent::Resize ||
+                               event->type() == QEvent::Show ||
                                event->type() == QEvent::LayoutRequest ||
                                event->type() == QEvent::StyleChange)) {
             UpdateGeometry();
@@ -103,7 +110,6 @@ private:
                                (theme.empty() || theme == "lichii");
         if (show_line) {
             setGeometry(tab.x(), tab.bottom() - 1, std::max(1, tab.width() - 2), 2);
-            raise();
         }
         setVisible(show_line);
     }
@@ -147,6 +153,7 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
     Settings::SetConfiguringGlobal(true);
 
     ui->setupUi(this);
+    ui->tabWidget->setUsesScrollButtons(true);
     tab_underline = new SettingsTabUnderline(ui->tabWidget->tabBar());
 
     ui->tabWidget->addTab(applets_tab.get(), tr("Applets"));
@@ -196,10 +203,6 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
         tab->setProperty("tabIcon", QString::fromLatin1(icon));
         ConfigurationShared::UseToggles(tab);
     }
-    for (auto* const tab : input_tab->GetSubTabs()) {
-        tab->setProperty("tabIcon", QStringLiteral("gamepad"));
-    }
-
     PopulateSelectionList();
 
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, [this](int index) {
@@ -207,8 +210,6 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
             debug_tab_tab->SetCurrentIndex(0);
         }
     });
-    connect(ui->tabWidget, &QTabWidget::currentChanged, this,
-            [this] { QTimer::singleShot(0, this, &ConfigureDialog::FitPageWidth); });
     connect(ui_tab.get(), &ConfigureUi::LanguageChanged, this, &ConfigureDialog::OnLanguageChanged);
     connect(general_tab.get(), &ConfigureGeneral::ExternalContentDirsChanged, this,
             &ConfigureDialog::ExternalContentDirsChanged);
@@ -223,7 +224,7 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
 
     ui->selectorList->setFixedWidth(std::max(184, ui->selectorList->sizeHintForColumn(0) +
                                                       2 * ui->selectorList->frameWidth() + 32));
-    ConfigurationShared::FitToScreen(this, QSize(1040, 760));
+    FitToPages();
     ui->selectorList->setCurrentRow(0);
     ui->selectorList->setProperty("controllerHighlightItem", true);
     ui->selectorList->installEventFilter(this);
@@ -299,66 +300,50 @@ void ConfigureDialog::changeEvent(QEvent* event) {
     QDialog::changeEvent(event);
 }
 
-void ConfigureDialog::showEvent(QShowEvent* event) {
-    QDialog::showEvent(event);
-    QTimer::singleShot(0, this, &ConfigureDialog::FitPageWidth);
-}
+void ConfigureDialog::FitToPages() {
+    const auto margins =
+        ui->verticalLayout->contentsMargins() + ui->horizontalLayout->contentsMargins();
+    const int frame_width = ui->tabWidget->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr,
+                                                               ui->tabWidget);
+    const int chrome_width = margins.left() + margins.right() + ui->selectorList->width() +
+                             ui->horizontalLayout->spacing() + 2 * frame_width;
+    const QScrollBar scrollbar(Qt::Vertical, this);
+    const int scrollbar_width = scrollbar.sizeHint().width();
 
-void ConfigureDialog::FitPageWidth() {
-    if (!isVisible()) {
-        return;
-    }
-    auto* const area = qobject_cast<QScrollArea*>(ui->tabWidget->currentWidget());
-    if (area == nullptr || area->widget() == nullptr || area->parentWidget() == nullptr) {
-        return;
-    }
-    QWidget* const page = area->widget();
-    // The stacked holder has the same size for every tab, also for one not laid out yet.
-    const QWidget* const holder = area->parentWidget();
-
-    const auto missing_width = [&] {
-        const QSize page_min = page->minimumSizeHint().expandedTo(page->minimumSize());
-        int view_width = holder->width() - 2 * area->frameWidth();
-        if (page_min.height() > holder->height()) {
-            view_width -= area->verticalScrollBar()->sizeHint().width();
+    QTabBar tab_bar(ui->tabWidget);
+    tab_bar.setIconSize(ui->tabWidget->iconSize());
+    tab_bar.setShape(ui->tabWidget->tabBar()->shape());
+    tab_bar.setProperty("controllerTabNavigation", true);
+    const auto controls = input_tab->GetSubTabs();
+    std::vector<std::pair<QWidget*, int>> page_widths;
+    int pages_width = input_tab->MinimumPlayerFooterWidth();
+    int tabs_width = 0;
+    for (int row = 0; row < ui->selectorList->count(); ++row) {
+        const auto tabs = ui->selectorList->item(row)->data(Qt::UserRole).value<QList<QWidget*>>();
+        tab_bar.setStyleSheet(SettingsTabStyle(tabs == controls));
+        for (QWidget* const page : tabs) {
+            page->ensurePolished();
+            const int page_width = page->minimumSizeHint().expandedTo(page->minimumSize()).width();
+            page_widths.emplace_back(page, page_width);
+            pages_width = std::max(pages_width, page_width);
+            tab_bar.addTab(ConfigurationShared::PageIcon(page->property("tabIcon").toString()),
+                           page->accessibleName());
         }
-        const int page_missing = page_min.width() - view_width;
-        const int tabs_missing = ui->tabWidget->tabBar()->sizeHint().width() - holder->width();
-        return std::max(page_missing, tabs_missing);
-    };
-
-    const int missing = missing_width();
-    if (missing <= 0) {
-        return;
-    }
-
-    const QScreen* const current_screen = screen();
-    if (current_screen == nullptr) {
-        return;
-    }
-    const QRect available = current_screen->availableGeometry();
-    const int frame_extra = frameGeometry().width() - width();
-    const int max_width = available.width() * 95 / 100 - frame_extra;
-    const int wanted_width = width() + missing;
-    const int new_width = std::min(wanted_width, max_width);
-
-    if (new_width > width()) {
-        // Grow around the current center, then keep the whole frame on the screen.
-        const int grow = new_width - width();
-        resize(new_width, height());
-        QRect frame = frameGeometry();
-        frame.moveLeft(frame.left() - grow / 2);
-        if (frame.right() > available.right()) {
-            frame.moveRight(available.right());
+        tabs_width = std::max(tabs_width, tab_bar.sizeHint().width());
+        while (tab_bar.count() > 0) {
+            tab_bar.removeTab(tab_bar.count() - 1);
         }
-        if (frame.left() < available.left()) {
-            frame.moveLeft(available.left());
-        }
-        move(frame.topLeft());
     }
 
-    if (wanted_width > new_width && !page->property("compactPage").toBool()) {
-        // Even the screen is too narrow: use tighter buttons so less of the page scrolls.
+    const int content_width = std::max(tabs_width, pages_width + scrollbar_width);
+    const int preferred_width = std::max(1040, chrome_width + content_width);
+    ConfigurationShared::FitToScreen(this, QSize(preferred_width, 760));
+
+    const int viewport_width = width() - chrome_width - scrollbar_width;
+    for (const auto& [page, page_width] : page_widths) {
+        if (page_width <= viewport_width) {
+            continue;
+        }
         page->setProperty("compactPage", true);
         for (auto* const button : page->findChildren<QPushButton*>()) {
             button->style()->unpolish(button);
@@ -385,8 +370,6 @@ void ConfigureDialog::HandleApplyButtonClicked() {
     UISettings::values.configuration_applied = true;
     ApplyConfiguration();
 }
-
-Q_DECLARE_METATYPE(QList<QWidget*>);
 
 void ConfigureDialog::SelectProfiles() {
     for (int row = 0; row < ui->selectorList->count(); ++row) {
@@ -450,6 +433,7 @@ void ConfigureDialog::UpdateVisibleTabs() {
     ui->tabWidget->clear();
 
     const auto tabs = qvariant_cast<QList<QWidget*>>(items[0]->data(Qt::UserRole));
+    ui->tabWidget->tabBar()->setStyleSheet(SettingsTabStyle(tabs == input_tab->GetSubTabs()));
 
     for (auto* const tab : tabs) {
         LOG_DEBUG(Frontend, "{}", tab->accessibleName().toStdString());
@@ -461,6 +445,4 @@ void ConfigureDialog::UpdateVisibleTabs() {
                               ConfigurationShared::PageIcon(tab->property("tabIcon").toString()),
                               tab->accessibleName());
     }
-
-    QTimer::singleShot(0, this, &ConfigureDialog::FitPageWidth);
 }

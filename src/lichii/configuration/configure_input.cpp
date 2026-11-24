@@ -105,6 +105,7 @@ void ConfigureInput::Initialize(InputCommon::InputSubsystem* input_subsystem,
 
     for (std::size_t i = 0; i < player_tabs.size(); ++i) {
         QHBoxLayout* tab_layout = new QHBoxLayout(player_tabs[i]);
+        tab_layout->setContentsMargins(4, 6, 4, 6);
         tab_layout->addWidget(player_controllers[i]);
         connect(player_controllers[i], &ConfigureInputPlayer::Connected, [this, i](bool checked) {
             // Ensures that connecting a controller changes the number of players
@@ -210,6 +211,14 @@ QList<QWidget*> ConfigureInput::GetSubTabs() const {
         ui->tabPlayer1, ui->tabPlayer2, ui->tabPlayer3, ui->tabPlayer4,  ui->tabPlayer5,
         ui->tabPlayer6, ui->tabPlayer7, ui->tabPlayer8, ui->tabAdvanced, microphone,
     };
+}
+
+int ConfigureInput::MinimumPlayerFooterWidth() const {
+    const QWidget* const footer = ui->consoleInputSettings;
+    footer->ensurePolished();
+    const auto margins = player_tabs.front()->layout()->contentsMargins();
+    return footer->minimumSizeHint().expandedTo(footer->minimumSize()).width() + margins.left() +
+           margins.right();
 }
 
 /// Apply all Controls pages, including the saved microphone device and gain.

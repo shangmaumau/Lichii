@@ -54,6 +54,7 @@ public:
     void RestoreConfiguration();
 
     QList<QWidget*> GetSubTabs() const;
+    int MinimumPlayerFooterWidth() const;
 
 private:
     void changeEvent(QEvent* event) override;

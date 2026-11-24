@@ -1055,8 +1055,6 @@ QWidget[compactPage="true"] QPushButton {
     padding: 0 6px;
 }
 
-QSpinBox#spinboxLStickRange,
-QSpinBox#spinboxRStickRange,
 QSpinBox#vibrationSpinPlayer1,
 QSpinBox#vibrationSpinPlayer2,
 QSpinBox#vibrationSpinPlayer3,

@@ -228,7 +228,17 @@ void PlayerControlPreview::paintEvent(QPaintEvent* event) {
     QFrame::paintEvent(event);
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
-    const QPointF center = rect().center();
+
+    // The controller drawings use fixed coordinates around their center.
+    const QSizeF drawing_size = controller_type == Core::HID::NpadStyleIndex::Fullkey
+                                    ? QSizeF(480, 360)
+                                    : QSizeF(540, 440);
+    const QRectF bounds{contentsRect()};
+    const qreal scale = std::min({qreal{1}, bounds.width() / drawing_size.width(),
+                                 bounds.height() / drawing_size.height()});
+    p.translate(bounds.center());
+    p.scale(scale, scale);
+    const QPointF center;
 
     switch (controller_type) {
     case Core::HID::NpadStyleIndex::Handheld:
