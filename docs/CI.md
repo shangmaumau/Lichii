@@ -1,4 +1,12 @@
-# Eglantine CI and release guide
+# CI and release guide
+
+## Lichii release builds
+
+Run `release-binaries` on the desired branch. Set `publish_release`, `include_whats_new`, and `nsight_aftermath` to false for an unpublished test of the full release matrix. The PGO mismatch summary runs only for the Linux x86_64 and Windows x86_64 PGO jobs. It counts compiler warnings, including how many report discarding nonzero counts.
+
+Linux ARM64 PGO installations with the fallback updater (starting with build 116) select the standard ARM64 package on their next update to a release without PGO: AppImage for AppImage installations, `.tar.gz` for unpacked installations. A writable AppImage can be replaced in place; a tarball must be unpacked manually. Builds 75 and 83 match only PGO assets and can first update through an existing PGO release such as [build 386](https://github.com/zortos293/Lichii/releases/tag/build-386) while the updater still lists it. If no update appears, or if you use build 70, which shipped without an updater, download the standard ARM64 package from [GitHub Releases](https://github.com/zortos293/Lichii/releases).
+
+## Eglantine pipeline design (not Lichii's active workflow)
 
 The current `release-binaries` workflow runs on request. On GitHub, open **Actions → release-binaries → Run workflow**, then select the branch. Clear **Publish the binaries as a GitHub release** to keep the packages as workflow artifacts. `build-check` runs independently.
 
@@ -57,7 +65,7 @@ Open Actions → `ci` → Run workflow. Select the branch to build and choose:
 
 - **kind**: `branch` for a test build, or `daily` for a forced daily build of `nx2` only.
 - **platforms**: `all`, `linux`, `windows`, or `macos`. A single-platform run produces a partial release with only that platform's assets.
-- **pgo**: `none` or `both`. For manual runs, `none` is the default. `both` adds PGO variants where supported (Linux x86_64/ARM64 and Windows x86_64); macOS has no PGO variant.
+- **pgo**: `none` or `both`. For manual runs, `none` is the default. `both` adds the Linux x86_64 and Windows x86_64 PGO variants. Linux ARM64 and macOS have no PGO variant.
 - **publish**: enabled by default. Disable it to keep the build as workflow artifacts without creating/updating a GitHub release.
 
 For automatic `nx2` version releases and scheduled daily builds, the workflow requests both PGO variants by default. Label-triggered PR builds default to non-PGO to keep test builds quicker.
@@ -81,7 +89,7 @@ Both the scheme-preparation job and the publishing job check out CI helper scrip
 | Platform            | Default output               | Optional PGO output    |
 | ------------------- | ---------------------------- | ---------------------- |
 | Linux x86_64        | AppImage and `.tar.gz`       | AppImage and `.tar.gz` |
-| Linux aarch64       | AppImage and `.tar.gz`       | AppImage and `.tar.gz` |
+| Linux aarch64       | AppImage and `.tar.gz`       | Not built              |
 | Windows x86_64      | clang-cl + ThinLTO `.zip`    | clang-cl + ThinLTO + PGO `.zip` |
 | macOS Apple Silicon | App bundle `.zip` and `.dmg` | Not built              |
 
