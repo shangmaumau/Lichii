@@ -10,7 +10,6 @@
 #include <QTimer>
 
 class ControllerNavigation;
-class ConfigureDialog;
 class FocusHalo;
 class QAction;
 class QDialog;
@@ -40,7 +39,7 @@ private:
 
     bool eventFilter(QObject* watched, QEvent* event) override;
     QWidget* ActiveWindow() const;
-    void Dispatch(Qt::Key key);
+    void Dispatch(Qt::Key key, bool repeated);
     void SetHeldNavigation(Qt::Key direction, Qt::Key shoulder);
     void PlaySound(SoundEffect effect);
     bool NavigateMainMenu(Qt::Key key, QWidget* window, QWidget* popup);
@@ -65,7 +64,7 @@ private:
     QPointer<QAction> dialog_origin;
     QPointer<QAction> dialog_item;
     QPointer<FocusHalo> halo;
-    QPointer<ConfigureDialog> controller_settings;
+    QPointer<QWidget> controller_tab_window;
     QList<QPointer<QMenu>> outlined_menus;
     QTimer focus_update;
     QTimer repeat;

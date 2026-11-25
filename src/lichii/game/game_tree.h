@@ -19,6 +19,8 @@ public:
     explicit GameTree(QWidget* parent = nullptr);
 
     void SetModel(GameListModel* model);
+    QModelIndex ControllerRow(bool forward, bool from_edge = false);
+    bool ToggleControllerFolder();
 
     QString GetLastFilterResultItem() const;
     int FilterClosedResultCount(GameListModel* model);

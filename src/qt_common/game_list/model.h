@@ -8,6 +8,7 @@
 #include <QFileSystemWatcher>
 #include <QStandardItemModel>
 #include <QStringList>
+#include <QThreadPool>
 #include <QTimer>
 #include <QVector>
 
@@ -88,7 +89,7 @@ private:
     void Repopulate();
     void StopWorker();
     void RestoreSnapshot(QVector<UISettings::GameDir>& game_dirs);
-    void SaveSnapshot() const;
+    void SaveSnapshot();
     void ShowDirectories(std::vector<std::unique_ptr<GameListDir>> directories);
 
     bool m_flat = false;
@@ -97,6 +98,7 @@ private:
     QString snapshot_context;
     QString scanning_context;
     QTimer snapshot_timer;
+    QThreadPool snapshot_writer;
     std::vector<std::unique_ptr<GameListDir>> scanned_directories;
     std::vector<std::unique_ptr<GameListDir>> flat_directories;
 

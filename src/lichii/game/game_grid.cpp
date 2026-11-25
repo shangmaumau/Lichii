@@ -105,6 +105,10 @@ void GameGrid::UpdateIconSize() {
     }
 }
 
+QModelIndex GameGrid::ControllerRow(bool forward) {
+    return moveCursor(forward ? MoveDown : MoveUp, Qt::NoModifier);
+}
+
 QModelIndex GameGrid::indexAt(const QPoint& point) const {
     QModelIndex index = QListView::indexAt(point);
     if (!index.isValid())

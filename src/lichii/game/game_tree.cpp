@@ -235,6 +235,7 @@ GameTree::GameTree(QWidget* parent) : QTreeView{parent} {
     setAlternatingRowColors(true);
     setSelectionMode(QHeaderView::SingleSelection);
     setSelectionBehavior(QHeaderView::SelectRows);
+    setProperty("controllerHighlightItem", true);
     setVerticalScrollMode(QHeaderView::ScrollPerPixel);
     setHorizontalScrollMode(QHeaderView::ScrollPerPixel);
     setSortingEnabled(true);
@@ -258,6 +259,33 @@ void GameTree::SetModel(GameListModel* model) {
     setIconSize(QSize(icon_size, icon_size));
     LoadInterfaceLayout();
     UpdateColumnVisibility(model);
+}
+
+QModelIndex GameTree::ControllerRow(bool forward, bool from_edge) {
+    const auto adjacent = [this, forward](const QModelIndex& index) {
+        return forward ? indexBelow(index) : indexAbove(index);
+    };
+    const auto current = currentIndex().siblingAtColumn(0);
+    auto next = from_edge || !current.isValid() || isIndexHidden(current)
+                    ? moveCursor(forward ? MoveHome : MoveEnd, Qt::NoModifier).siblingAtColumn(0)
+                    : adjacent(current);
+    for (; next.isValid(); next = adjacent(next)) {
+        if (next.flags().testFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable) &&
+            next.data(GameListItem::TypeRole).value<GameListItemType>() != GameListItemType::AddDir) {
+            return next;
+        }
+    }
+    return {};
+}
+
+bool GameTree::ToggleControllerFolder() {
+    const auto current = currentIndex().siblingAtColumn(0);
+    const auto type = current.data(GameListItem::TypeRole).value<GameListItemType>();
+    if (!current.isValid() || type == GameListItemType::Game || type == GameListItemType::AddDir) {
+        return false;
+    }
+    setExpanded(current, !isExpanded(current));
+    return true;
 }
 
 void GameTree::drawBranches(QPainter* painter, const QRect& rect,

@@ -9,8 +9,6 @@
 #include <memory>
 #include <tuple>
 #include <QKeyEvent>
-#include <QGraphicsOpacityEffect>
-#include <QPropertyAnimation>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -53,73 +51,6 @@ static QString SettingsTabStyle(bool controls) {
                     : QString{};
 }
 
-class SettingsTabUnderline final : public QWidget {
-public:
-    explicit SettingsTabUnderline(QTabBar* tabs_)
-        : QWidget(tabs_), tabs(tabs_), opacity(new QGraphicsOpacityEffect(this)),
-          fade(opacity, "opacity", this) {
-        tabs->setProperty("controllerTabNavigation", true);
-        tabs->setProperty("controllerTabInputActive", false);
-        setObjectName(QStringLiteral("settingsTabUnderline"));
-        setAttribute(Qt::WA_StyledBackground);
-        setAttribute(Qt::WA_TransparentForMouseEvents);
-        opacity->setOpacity(1.0);
-        setGraphicsEffect(opacity);
-        fade.setDuration(160);
-        fade.setEndValue(1.0);
-        fade.setEasingCurve(QEasingCurve::OutCubic);
-        lower();
-        tabs->installEventFilter(this);
-        connect(tabs, &QTabBar::currentChanged, this, [this] { UpdateGeometry(); });
-        UpdateGeometry();
-    }
-
-    void SetControllerActive(bool active) {
-        if (controller_active == active) {
-            return;
-        }
-        controller_active = active;
-        tabs->setProperty("controllerTabInputActive", active);
-        tabs->style()->unpolish(tabs);
-        tabs->style()->polish(tabs);
-        tabs->update();
-        fade.stop();
-        opacity->setOpacity(0.0);
-        UpdateGeometry();
-        if (!active) {
-            fade.setStartValue(0.0);
-            fade.start();
-        }
-    }
-
-private:
-    bool eventFilter(QObject* watched, QEvent* event) override {
-        if (watched == tabs && (event->type() == QEvent::Paint || event->type() == QEvent::Resize ||
-                               event->type() == QEvent::Show ||
-                               event->type() == QEvent::LayoutRequest ||
-                               event->type() == QEvent::StyleChange)) {
-            UpdateGeometry();
-        }
-        return QWidget::eventFilter(watched, event);
-    }
-
-    void UpdateGeometry() {
-        const auto& theme = UISettings::values.theme;
-        const QRect tab = tabs->tabRect(tabs->currentIndex());
-        const bool show_line = !controller_active && !tab.isEmpty() &&
-                               (theme.empty() || theme == "lichii");
-        if (show_line) {
-            setGeometry(tab.x(), tab.bottom() - 1, std::max(1, tab.width() - 2), 2);
-        }
-        setVisible(show_line);
-    }
-
-    QTabBar* tabs;
-    QGraphicsOpacityEffect* opacity;
-    QPropertyAnimation fade;
-    bool controller_active{};
-};
-
 ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
                                  InputCommon::InputSubsystem* input_subsystem,
                                  std::vector<VkDeviceInfo::Record>& vk_device_records,
@@ -154,7 +85,6 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
 
     ui->setupUi(this);
     ui->tabWidget->setUsesScrollButtons(true);
-    tab_underline = new SettingsTabUnderline(ui->tabWidget->tabBar());
 
     ui->tabWidget->addTab(applets_tab.get(), tr("Applets"));
     ui->tabWidget->addTab(audio_tab.get(), tr("Audio"));
@@ -235,12 +165,8 @@ ConfigureDialog::ConfigureDialog(QWidget* parent, HotkeyRegistry& registry_,
 ConfigureDialog::~ConfigureDialog() = default;
 
 bool ConfigureDialog::HandleControllerNavigation(Qt::Key key) {
-    return ConfigurationShared::NavigateSettings(key, *ui->selectorList, *ui->tabWidget,
-                                                 *ui->buttonBox);
-}
-
-void ConfigureDialog::SetControllerInputActive(bool active) {
-    tab_underline->SetControllerActive(active);
+    return ConfigurationShared::NavigateSettings(key, *ui->tabWidget, *ui->buttonBox,
+                                                 ui->selectorList);
 }
 
 bool ConfigureDialog::eventFilter(QObject* watched, QEvent* event) {
@@ -313,7 +239,6 @@ void ConfigureDialog::FitToPages() {
     QTabBar tab_bar(ui->tabWidget);
     tab_bar.setIconSize(ui->tabWidget->iconSize());
     tab_bar.setShape(ui->tabWidget->tabBar()->shape());
-    tab_bar.setProperty("controllerTabNavigation", true);
     const auto controls = input_tab->GetSubTabs();
     std::vector<std::pair<QWidget*, int>> page_widths;
     int pages_width = input_tab->MinimumPlayerFooterWidth();

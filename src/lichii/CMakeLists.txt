@@ -239,6 +239,7 @@ add_executable(lichii
     util/controller_navigation.h
     util/controller_ui_navigation.cpp
     util/controller_ui_navigation.h
+    util/tab_bar_underline.h
     util/limitable_input_dialog.cpp
     util/limitable_input_dialog.h
     util/overlay_dialog.cpp

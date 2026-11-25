@@ -17,6 +17,7 @@
 #include <QImage>
 #include <QList>
 #include <QPixmap>
+#include <QPointer>
 #include <QSet>
 #include "configuration/shared_widget.h"
 #include "core/file_sys/vfs/vfs_types.h"
@@ -46,6 +47,7 @@ class ConfigureNetwork;
 class ConfigureApplets;
 
 class QGraphicsScene;
+class QScrollArea;
 class QStandardItem;
 class QStandardItemModel;
 class QTreeView;
@@ -64,6 +66,8 @@ public:
                               std::vector<VkDeviceInfo::Record>& vk_device_records,
                               Core::System& system_);
     ~ConfigurePerGame() override;
+
+    bool HandleControllerNavigation(Qt::Key key, bool repeated);
 
     /// Save all button configurations to settings file
     void ApplyConfiguration();
@@ -131,6 +135,8 @@ private:
     std::shared_ptr<std::atomic_bool> detect_cancel;
 
     QGraphicsScene* scene;
+    QScrollArea* info_area;
+    QPointer<QWidget> info_focus;
 
     std::unique_ptr<QtConfig> game_config;
 

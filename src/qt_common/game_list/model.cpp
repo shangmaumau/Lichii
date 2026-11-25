@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QIcon>
+#include <QImage>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -78,6 +79,7 @@ GameListModel::GameListModel(std::shared_ptr<FileSys::VfsFilesystem> vfs_,
 
     setSortRole(GameListItemPath::SortRole);
 
+    snapshot_writer.setMaxThreadCount(1);
     snapshot_timer.setSingleShot(true);
     snapshot_timer.setInterval(400);
     connect(&snapshot_timer, &QTimer::timeout, this, &GameListModel::SaveSnapshot);
@@ -421,58 +423,76 @@ void GameListModel::RestoreSnapshot(QVector<UISettings::GameDir>& game_dirs) {
     emit SnapshotRestored();
 }
 
-void GameListModel::SaveSnapshot() const {
+void GameListModel::SaveSnapshot() {
     if (!UISettings::values.cache_game_list || snapshot_context.isEmpty() ||
         snapshot_context != SnapshotContext(UISettings::values.game_dirs)) {
         return;
     }
-    const QString path = SnapshotPath();
-    if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
-        return;
-    }
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        return;
-    }
-    QDataStream output(&file);
-    output.setVersion(QDataStream::Qt_6_0);
-
     struct SnapshotFolder {
-        const QStandardItem* directory;
-        QList<QModelIndex> games;
+        qint32 index;
+        qint32 type;
+        quint32 games{};
+        std::vector<std::unique_ptr<QStandardItem>> cells;
     };
-    QList<SnapshotFolder> folders;
+    const auto make_folder = [](const QStandardItem& directory) {
+        return SnapshotFolder{directory.data(GameListDir::GameDirRole).toInt(), directory.type(), 0,
+                              {}};
+    };
+    const auto capture_game = [this](SnapshotFolder& folder, const QModelIndex& game) {
+        for (int column = 0; column < COLUMN_COUNT; ++column) {
+            auto item = std::unique_ptr<QStandardItem>(
+                itemFromIndex(game.siblingAtColumn(column))->clone());
+            const auto decoration = item->data(Qt::DecorationRole);
+            if (decoration.metaType().id() == QMetaType::QPixmap) {
+                item->setData(decoration.value<QPixmap>().toImage(), Qt::DecorationRole);
+            }
+            folder.cells.push_back(std::move(item));
+        }
+        ++folder.games;
+    };
+
+    std::vector<SnapshotFolder> folders;
     if (m_flat) {
         for (const auto& directory : flat_directories) {
-            folders.append(SnapshotFolder{directory.get(), {}});
+            folders.push_back(make_folder(*directory));
         }
         for (int row = 0; row < rowCount(); ++row) {
             const auto game = index(row, 0);
-            folders[game.data(GameListItemPath::DirectoryRole).toInt()].games.append(game);
+            capture_game(folders[game.data(GameListItemPath::DirectoryRole).toInt()], game);
         }
     } else {
         for (int row = 0; row < rowCount(); ++row) {
             if (const auto* directory = item(row); IsDirectoryItem(directory->type())) {
-                SnapshotFolder folder{directory, {}};
+                auto& folder = folders.emplace_back(make_folder(*directory));
                 for (int game = 0; game < directory->rowCount(); ++game) {
-                    folder.games.append(directory->child(game)->index());
+                    capture_game(folder, directory->child(game)->index());
                 }
-                folders.append(std::move(folder));
             }
         }
     }
 
-    output << SnapshotVersion << snapshot_context << static_cast<quint32>(folders.size());
-    for (const auto& folder : folders) {
-        output << folder.directory->data(GameListDir::GameDirRole).toInt()
-               << folder.directory->type() << static_cast<quint32>(folder.games.size());
-        for (const auto& game : folder.games) {
-            for (int column = 0; column < COLUMN_COUNT; ++column) {
-                output << *itemFromIndex(game.siblingAtColumn(column));
+    // Keep at most one pending write. The detached items contain QImages instead of QPixmaps.
+    snapshot_writer.clear();
+    snapshot_writer.start([path = SnapshotPath(), context = snapshot_context,
+                           folders = std::move(folders)] {
+        if (!QDir().mkpath(QFileInfo(path).absolutePath())) {
+            return;
+        }
+        QSaveFile file(path);
+        if (!file.open(QIODevice::WriteOnly)) {
+            return;
+        }
+        QDataStream output(&file);
+        output.setVersion(QDataStream::Qt_6_0);
+        output << SnapshotVersion << context << static_cast<quint32>(folders.size());
+        for (const auto& folder : folders) {
+            output << folder.index << folder.type << folder.games;
+            for (const auto& item : folder.cells) {
+                output << *item;
             }
         }
-    }
-    if (output.status() == QDataStream::Ok && file.size() <= MaximumSnapshotBytes) {
-        file.commit();
-    }
+        if (output.status() == QDataStream::Ok && file.size() <= MaximumSnapshotBytes) {
+            file.commit();
+        }
+    });
 }

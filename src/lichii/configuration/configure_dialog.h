@@ -37,7 +37,6 @@ class ConfigureUi;
 class ConfigureWeb;
 
 class HotkeyRegistry;
-class SettingsTabUnderline;
 
 namespace InputCommon {
 class InputSubsystem;
@@ -60,7 +59,6 @@ public:
     void ApplyConfiguration();
     void SelectProfiles();
     bool HandleControllerNavigation(Qt::Key key);
-    void SetControllerInputActive(bool active);
 
     /// Drop the controller edits that were not applied; the Controls tab changes them live.
     void RestoreInputConfiguration();
@@ -85,7 +83,6 @@ private:
     void PopulateSelectionList();
 
     std::unique_ptr<Ui::ConfigureDialog> ui;
-    SettingsTabUnderline* tab_underline{};
     HotkeyRegistry& registry;
 
     Core::System& system;

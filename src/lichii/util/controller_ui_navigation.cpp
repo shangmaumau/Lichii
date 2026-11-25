@@ -39,9 +39,12 @@
 #include "common/settings.h"
 #include "core/core.h"
 #include "lichii/configuration/configure_dialog.h"
+#include "lichii/configuration/configure_per_game.h"
+#include "lichii/game/game_list.h"
 #include "lichii/util/controller_navigation.h"
 #include "lichii/util/controller_ui_navigation.h"
 #include "lichii/util/focus_halo.h"
+#include "lichii/util/tab_bar_underline.h"
 
 namespace {
 
@@ -57,9 +60,9 @@ struct NavigationFocus {
     bool operator==(const NavigationFocus&) const = default;
 };
 
-bool SendKey(QWidget* target, Qt::Key key) {
+bool SendKey(QWidget* target, Qt::Key key, bool repeated = false) {
     QPointer<QWidget> guard(target);
-    QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier);
+    QKeyEvent press(QEvent::KeyPress, key, Qt::NoModifier, {}, repeated);
     QApplication::sendEvent(target, &press);
     if (guard) {
         QKeyEvent release(QEvent::KeyRelease, key, Qt::NoModifier);
@@ -121,7 +124,7 @@ ControllerUiNavigation::ControllerUiNavigation(Core::System& system_, QMainWindo
       navigate_back(std::move(navigate_back_)), open_game_menu(std::move(open_game_menu_)),
       controller(new ControllerNavigation(system.HIDCore(), this)) {
     connect(controller, &ControllerNavigation::TriggerKeyboardEvent, this,
-            &ControllerUiNavigation::Dispatch, Qt::QueuedConnection);
+            [this](Qt::Key key) { Dispatch(key, false); }, Qt::QueuedConnection);
     connect(controller, &ControllerNavigation::HeldNavigationChanged, this,
             &ControllerUiNavigation::SetHeldNavigation, Qt::QueuedConnection);
     qApp->installEventFilter(this);
@@ -139,7 +142,7 @@ ControllerUiNavigation::ControllerUiNavigation(Core::System& system_, QMainWindo
         if (repeat.interval() != 75) {
             repeat.setInterval(75);
         }
-        Dispatch(held_key);
+        Dispatch(held_key, true);
     });
 }
 
@@ -194,8 +197,9 @@ void ControllerUiNavigation::SetHeldNavigation(Qt::Key direction, Qt::Key should
     auto* window = ActiveWindow();
     auto* popup = QApplication::activePopupWidget();
     auto* target = popup ? popup : window;
-    const bool repeat_shoulder =
-        shoulder != Qt::Key_unknown && !popup && qobject_cast<ConfigureDialog*>(window);
+    const bool repeat_shoulder = shoulder != Qt::Key_unknown && !popup &&
+                                 (qobject_cast<ConfigureDialog*>(window) ||
+                                  qobject_cast<ConfigurePerGame*>(window));
     const auto key = repeat_shoulder ? shoulder : direction;
     if (key == held_key && window == repeat_window && target == repeat_target) {
         return;
@@ -258,6 +262,15 @@ void ControllerUiNavigation::PlaySound(SoundEffect effect) {
 }
 
 bool ControllerUiNavigation::eventFilter(QObject* watched, QEvent* event) {
+    if (event->type() == QEvent::Show) {
+        if (auto* tabs = qobject_cast<QTabBar*>(watched)) {
+            TabBarUnderline::Attach(tabs);
+        }
+    } else if (event->type() == QEvent::Enter) {
+        if (auto* widget = qobject_cast<QWidget*>(watched)) {
+            widget->setMouseTracking(true);
+        }
+    }
     if (event->type() == QEvent::Show && opening_dialog_from) {
         auto* dialog = qobject_cast<QDialog*>(watched);
         if (dialog && dialog->parentWidget() && dialog->parentWidget()->window() == main_window &&
@@ -408,14 +421,13 @@ bool ControllerUiNavigation::NavigateMainMenu(Qt::Key key, QWidget* window, QWid
 
 void ControllerUiNavigation::UpdateFocusHalo() {
     auto* window = controller_active ? ActiveWindow() : nullptr;
-    auto* settings = qobject_cast<ConfigureDialog*>(window);
-    if (settings != controller_settings) {
-        if (controller_settings) {
-            controller_settings->SetControllerInputActive(false);
+    if (window != controller_tab_window) {
+        if (controller_tab_window) {
+            TabBarUnderline::SetControllerActive(controller_tab_window, false);
         }
-        controller_settings = settings;
-        if (settings) {
-            settings->SetControllerInputActive(true);
+        controller_tab_window = window;
+        if (window) {
+            TabBarUnderline::SetControllerActive(window, true);
         }
     }
     if (!window) {
@@ -500,7 +512,7 @@ void ControllerUiNavigation::UpdateOutlinedMenus(QMenu* popup) {
     outlined_menus = std::move(menus);
 }
 
-void ControllerUiNavigation::Dispatch(Qt::Key key) {
+void ControllerUiNavigation::Dispatch(Qt::Key key, bool repeated) {
     auto* window = ActiveWindow();
     if (!window) {
         return;
@@ -595,8 +607,10 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
     if (key == Qt::Key_F10) {
         return;
     }
-    if (auto* settings = qobject_cast<ConfigureDialog*>(window);
-        settings && settings->HandleControllerNavigation(key)) {
+    auto* settings = qobject_cast<ConfigureDialog*>(window);
+    auto* per_game = qobject_cast<ConfigurePerGame*>(window);
+    if ((settings && settings->HandleControllerNavigation(key)) ||
+        (per_game && per_game->HandleControllerNavigation(key, repeated))) {
         if (key == Qt::Key_Enter || key == Qt::Key_Escape) {
             PlaySound(key == Qt::Key_Enter ? SoundEffect::Confirm : SoundEffect::Back);
         }
@@ -663,10 +677,29 @@ void ControllerUiNavigation::Dispatch(Qt::Key key) {
     }
 
     auto* view = qobject_cast<QAbstractItemView*>(target);
+    if (window == main_window && (IsDirection(key) || key == Qt::Key_Enter)) {
+        for (auto* parent = target; parent; parent = parent->parentWidget()) {
+            if (auto* library = qobject_cast<GameList*>(parent)) {
+                switch (library->HandleControllerNavigation(*target, key, repeated)) {
+                case GameList::ControllerNavigation::FocusMenu:
+                    FocusMenuBar();
+                    return;
+                case GameList::ControllerNavigation::Handled:
+                    if (key == Qt::Key_Enter) {
+                        PlaySound(SoundEffect::Confirm);
+                    }
+                    return;
+                case GameList::ControllerNavigation::Unhandled:
+                    break;
+                }
+                break;
+            }
+        }
+    }
     if (IsDirection(key)) {
         const bool uses_focus =
             qobject_cast<QComboBox*>(target) || qobject_cast<QLineEdit*>(target);
-        if (!uses_focus && SendKey(target, key)) {
+        if (!uses_focus && SendKey(target, key, repeated)) {
             return;
         }
         MoveFocus(target, window, key == Qt::Key_Right || key == Qt::Key_Down);

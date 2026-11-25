@@ -40,6 +40,7 @@ class GameHome final : public QWidget {
     bool OpenSelectedGameMenu();
     QModelIndex SourceIndex(const QModelIndex& index) const;
     void FocusLibrary();
+    void FocusFromSearch();
     void Refresh(bool reset_position = false);
     void UpdateProfile();
     void SetFilter(const QString& text);
@@ -50,6 +51,7 @@ class GameHome final : public QWidget {
     void GameMenuRequested(const QModelIndex& source_index, const QPoint& global_position);
     void FilterResultReady(int visible, int total);
     void ProfileRequested();
+    void SearchFocusRequested();
 
   protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -72,7 +74,7 @@ class GameHome final : public QWidget {
     QString SortName(Sort order) const;
     void ShowCollection(bool show);
     void Activate(const QModelIndex& index);
-    bool HandleKey(Qt::Key key);
+    bool HandleKey(Qt::Key key, bool repeated);
 
     GameListModel* library;
     Core::System& system;
@@ -92,6 +94,7 @@ class GameHome final : public QWidget {
     QLabel* sort_label;
     QLabel* empty_message;
     QWidget* loading_panel;
+    QWidget* loading_covers;
     QLabel* loading_message;
     FocusHalo* tile_halo;
     CoverTitleBubble* title_bubble;

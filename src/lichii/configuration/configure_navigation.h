@@ -14,13 +14,13 @@
 
 namespace ConfigurationShared {
 
-inline bool NavigateSettings(Qt::Key key, QListWidget& categories, QTabWidget& pages,
-                             QDialogButtonBox& buttons) {
+inline bool NavigateSettings(Qt::Key key, QTabWidget& pages, QDialogButtonBox& buttons,
+                             QListWidget* categories = nullptr) {
     auto* focus = QApplication::focusWidget();
     auto* tabs = pages.tabBar();
     const bool confirm = key == Qt::Key_Enter || key == Qt::Key_Return;
-    if (key == Qt::Key_Escape && focus != &categories) {
-        categories.setFocus();
+    if (categories && key == Qt::Key_Escape && focus != categories) {
+        categories->setFocus();
         return true;
     }
 
@@ -36,7 +36,7 @@ inline bool NavigateSettings(Qt::Key key, QListWidget& categories, QTabWidget& p
         return true;
     }
 
-    if (focus == &categories) {
+    if (categories && focus == categories) {
         if (key == Qt::Key_Right || confirm) {
             tabs->setFocus();
             return true;
@@ -44,8 +44,10 @@ inline bool NavigateSettings(Qt::Key key, QListWidget& categories, QTabWidget& p
         return false;
     }
     if (focus == tabs && key == Qt::Key_Up) {
-        categories.setFocus();
-        return true;
+        if (categories) {
+            categories->setFocus();
+        }
+        return categories != nullptr;
     }
     if (key != Qt::Key_Up && key != Qt::Key_Down && !(focus == tabs && confirm)) {
         return false;

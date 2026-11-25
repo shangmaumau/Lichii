@@ -94,6 +94,9 @@ public:
     QStandardItemModel* GetModel() const;
 
     QWidget* NavigationTarget() const;
+    enum class ControllerNavigation { Unhandled, Handled, FocusMenu };
+    ControllerNavigation HandleControllerNavigation(const QWidget& focus, Qt::Key key,
+                                                    bool repeated);
     bool ReturnFromCollection();
     bool OpenSelectedGameMenu();
 
@@ -156,6 +159,7 @@ private slots:
 private:
     void SetupViews();
     void SetupScrollAnimation();
+    void FocusFilterFromController();
     bool eventFilter(QObject* obj, QEvent* event) override;
     void changeEvent(QEvent*) override;
 
@@ -209,7 +213,7 @@ private:
 
     bool m_isTreeMode = true;
     bool m_populating = false;
-    bool library_loading = false;
+    bool library_loading = true;
     QString refreshing_game_path;
     u64 refreshing_game_id{};
     QPoint refreshing_scroll;

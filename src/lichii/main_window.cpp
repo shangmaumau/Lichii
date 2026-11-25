@@ -264,8 +264,10 @@ static inline void ApplyWindowsTitleBarDarkMode(HWND hwnd, bool enabled) {
 }
 
 static inline void ApplyDarkToTopLevel(QWidget* w, bool on) {
-    if (!w || !w->isWindow())
+    if (!w || !w->isWindow() || w->windowType() == Qt::Popup ||
+        w->windowType() == Qt::ToolTip || w->windowFlags().testFlag(Qt::FramelessWindowHint)) {
         return;
+    }
     ApplyWindowsTitleBarDarkMode(reinterpret_cast<HWND>(w->winId()), on);
 }
 

@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <numbers>
 #include <utility>
 #include <vector>
 
@@ -25,7 +24,6 @@
 #include <QNetworkInformation>
 #include <QPainter>
 #include <QPainterPath>
-#include <QProgressBar>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QScroller>
@@ -68,52 +66,62 @@ QRect TileCoverRect(const QRect& cell, const QPixmap& cover) {
             tile.y() + (tile.height() - size.height()) / 2, size.width(), size.height()};
 }
 
-class LibraryScanProgress final : public QProgressBar {
+class LibraryLoadingCovers final : public QWidget {
 public:
-    explicit LibraryScanProgress(QWidget* parent) : QProgressBar(parent) {
-        setAttribute(Qt::WA_NoSystemBackground);
-        setRange(0, 0);
-        setTextVisible(false);
-        setFixedSize(160, 10);
+    explicit LibraryLoadingCovers(QWidget* parent) : QWidget(parent) {
         sweep.setStartValue(0.0);
         sweep.setEndValue(1.0);
-        sweep.setDuration(1800);
+        sweep.setDuration(1600);
         sweep.setLoopCount(-1);
         connect(&sweep, &QVariantAnimation::valueChanged, this, qOverload<>(&QWidget::update));
     }
 
 protected:
     void showEvent(QShowEvent* event) override {
-        QProgressBar::showEvent(event);
-        sweep.start();
+        QWidget::showEvent(event);
+        if (style()->styleHint(QStyle::SH_Widget_Animation_Duration, nullptr, this) > 0) {
+            sweep.start();
+        }
     }
 
     void hideEvent(QHideEvent* event) override {
         sweep.stop();
-        QProgressBar::hideEvent(event);
+        QWidget::hideEvent(event);
     }
 
     void paintEvent(QPaintEvent*) override {
+        const int cell = height();
+        if (cell <= 2 * TileInset) {
+            return;
+        }
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
-        const QRectF track = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
-        const qreal radius = track.height() / 2;
-        QColor border = palette().color(QPalette::Active, QPalette::WindowText);
-        QColor background = border;
-        border.setAlpha(100);
-        background.setAlpha(25);
-        painter.setPen(QPen(border, 1));
-        painter.setBrush(background);
-        painter.drawRoundedRect(track, radius, radius);
-
-        const QRectF inner = track.adjusted(radius, 2, -radius, -2);
-        const qreal fill_width = inner.width() / 3;
-        const qreal phase = (1 - std::cos(2 * std::numbers::pi * sweep.currentValue().toReal())) / 2;
-        QColor accent = palette().color(QPalette::Active, QPalette::Highlight);
-        accent.setAlpha(255);
-        painter.fillRect(QRectF(inner.x() + phase * (inner.width() - fill_width), inner.y(),
-                                fill_width, inner.height()),
-                         accent);
+        painter.setPen(Qt::NoPen);
+        QColor base = palette().color(QPalette::Active, QPalette::WindowText);
+        QColor highlight = base;
+        base.setAlpha(15);
+        highlight.setAlpha(30);
+        const bool moving = sweep.state() == QAbstractAnimation::Running;
+        const qreal progress = sweep.currentValue().toReal();
+        const QEasingCurve easing(QEasingCurve::InOutSine);
+        for (int x = 0; x < width(); x += cell) {
+            const QRectF cover = TileCoverRect(QRect(x, 0, cell, cell), {});
+            const qreal radius = cover.width() * GameIconCornerRatio;
+            painter.setBrush(base);
+            if (moving) {
+                const qreal offset = progress - 0.055 * (x / cell);
+                const qreal phase = easing.valueForProgress(offset - std::floor(offset));
+                const qreal center = cover.x() + cover.width() * std::lerp(-0.5, 1.5, phase);
+                const qreal span = cover.width() * 0.32;
+                QLinearGradient glow(center - span, cover.center().y(),
+                                     center + span, cover.top());
+                glow.setColorAt(0, base);
+                glow.setColorAt(0.5, highlight);
+                glow.setColorAt(1, base);
+                painter.setBrush(glow);
+            }
+            painter.drawRoundedRect(cover, radius, radius);
+        }
     }
 
 private:
@@ -410,6 +418,7 @@ GameHome::GameHome(GameListModel* library_, Core::System& system_, QWidget* pare
       profile_picture(new QToolButton(this)), profile_name(new QLabel(this)), clock(new QLabel(this)),
       network_icon(new QLabel(this)), sort_label(new QLabel(collection_bar)),
       empty_message(new QLabel(library_body)), loading_panel(new QWidget(library_body)),
+      loading_covers(new LibraryLoadingCovers(loading_panel)),
       loading_message(new QLabel(loading_panel)), tile_halo(new FocusHalo(view->viewport())),
       title_bubble(new CoverTitleBubble(this)), transition_overlay(new LibraryPageTransition(this)),
       sort_button(new QPushButton(sort_rail)),
@@ -466,13 +475,9 @@ GameHome::GameHome(GameListModel* library_, Core::System& system_, QWidget* pare
     empty_message->setAlignment(Qt::AlignCenter);
     empty_message->setAttribute(Qt::WA_TransparentForMouseEvents);
     empty_message->hide();
-    auto* loading_layout = new QVBoxLayout(loading_panel);
-    loading_layout->setAlignment(Qt::AlignCenter);
-    loading_layout->setSpacing(12);
     loading_message->setObjectName(QStringLiteral("gameLibraryLoading"));
     loading_message->setAlignment(Qt::AlignCenter);
-    loading_layout->addWidget(loading_message);
-    loading_layout->addWidget(new LibraryScanProgress(loading_panel), 0, Qt::AlignHCenter);
+    loading_message->setWordWrap(true);
     loading_panel->hide();
 
     view->setModel(tiles);
@@ -740,7 +745,7 @@ void GameHome::Refresh(bool reset_position) {
         }
         tiles->appendRow(tile);
     }
-    if (!collection) {
+    if (!collection && total > 0) {
         auto* all_games = new QStandardItem(tr("All Games"));
         tiles->appendRow(all_games);
         if (restore_all_games) {
@@ -775,6 +780,7 @@ void GameHome::SetLoading(bool show) {
         empty_message->hide();
         title_bubble->hide();
         tile_halo->hide();
+        UpdateTileSizes();
         loading_panel->raise();
     }
     view->setVisible(!loading);
@@ -864,7 +870,22 @@ void GameHome::Activate(const QModelIndex& index) {
     }
 }
 
-bool GameHome::HandleKey(Qt::Key key) {
+void GameHome::FocusFromSearch() {
+    if (loading) {
+        return;
+    }
+    auto target = view->currentIndex();
+    if (collection || !target.isValid()) {
+        target = tiles->index(collection ? tiles->rowCount() - 1 : 0, 0);
+    }
+    if (target.isValid()) {
+        FocusLibrary();
+        view->setCurrentIndex(target);
+        view->scrollTo(target);
+    }
+}
+
+bool GameHome::HandleKey(Qt::Key key, bool repeated) {
     if (mouse_navigation) {
         mouse_navigation = false;
         hover_position.reset();
@@ -917,6 +938,10 @@ bool GameHome::HandleKey(Qt::Key key) {
         profile_picture->setFocus();
         return true;
     }
+    if (!collection && key == Qt::Key_Down) {
+        emit SearchFocusRequested();
+        return true;
+    }
 
     const int row = view->currentIndex().row();
     if (key == Qt::Key_Menu && view->hasFocus()) {
@@ -932,26 +957,37 @@ bool GameHome::HandleKey(Qt::Key key) {
         return false;
     }
     if (collection && key == Qt::Key_Left && (row < 0 || row % columns == 0)) {
-        sort_button->setFocus();
+        if (!repeated) {
+            sort_button->setFocus();
+        }
         return true;
     }
+    const int last = tiles->rowCount() - 1;
     int next = std::max(0, row);
     if (key == Qt::Key_Left) {
         next = std::max(0, row - 1);
     } else if (key == Qt::Key_Right) {
-        next = row + 1;
+        next = collection && row >= 0 && (row + 1) % columns == 0 ? row : row + 1;
     } else if (collection && key == Qt::Key_Up) {
         if (row < columns) {
-            back_button->setFocus();
+            if (!repeated) {
+                back_button->setFocus();
+            }
             return true;
         }
         next = row - columns;
     } else if (collection && key == Qt::Key_Down) {
-        next = row + columns;
+        if (row >= 0 && row / columns == last / columns) {
+            if (!repeated) {
+                emit SearchFocusRequested();
+            }
+            return true;
+        }
+        next = row < 0 ? 0 : row + columns;
     } else {
         return false;
     }
-    if (const int last = tiles->rowCount() - 1; last >= 0) {
+    if (last >= 0) {
         view->setCurrentIndex(tiles->index(std::clamp(next, 0, last), 0));
     }
     return true;
@@ -960,7 +996,8 @@ bool GameHome::HandleKey(Qt::Key key) {
 bool GameHome::eventFilter(QObject* watched, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         auto* key = static_cast<QKeyEvent*>(event);
-        if (key->modifiers() == Qt::NoModifier && HandleKey(static_cast<Qt::Key>(key->key()))) {
+        if (key->modifiers() == Qt::NoModifier &&
+            HandleKey(static_cast<Qt::Key>(key->key()), key->isAutoRepeat())) {
             return true;
         }
     }
@@ -1010,6 +1047,24 @@ bool GameHome::eventFilter(QObject* watched, QEvent* event) {
 void GameHome::UpdateTileSizes() {
     empty_message->setGeometry(library_body->rect());
     loading_panel->setGeometry(library_body->rect());
+    const int available_height = library_body->height();
+    const int available_width = library_body->width();
+    const int scrollbar = style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+    const int shelf_cell = std::min({std::clamp(available_width / 5, 82, 230), available_width,
+                                     available_height - scrollbar});
+    const int center = height() / 2 - library_body->y();
+    if (loading) {
+        const int label_height =
+            std::min(available_height, std::max(loading_message->sizeHint().height(),
+                                                loading_message->heightForWidth(available_width)));
+        const int height_for_covers = std::max(0, available_height - label_height - TileInset);
+        const int cell = std::clamp(shelf_cell, 0, height_for_covers);
+        const int width = std::min(available_width, (ShelfLimit + 1) * cell);
+        const int gap = cell > 2 * TileInset ? TileInset : 0;
+        const int top = std::clamp(center - cell / 2, 0, available_height - label_height - gap - cell);
+        loading_covers->setGeometry((available_width - width) / 2, top, width, cell);
+        loading_message->setGeometry(0, top + cell + gap, available_width, label_height);
+    }
     if (collection) {
         const int available = view->viewport()->width();
         columns = std::clamp(available / 128, 1, 8);
@@ -1024,11 +1079,7 @@ void GameHome::UpdateTileSizes() {
             collection_header->setContentsMargins(0, 0, right_margin, 0);
         }
     } else {
-        const int available_height = library_body->height();
-        const int available_width = library_body->width();
-        const int scrollbar = style()->pixelMetric(QStyle::PM_ScrollBarExtent);
-        const int cell = std::min({std::clamp(available_width / 5, 82, 230), available_width,
-                                   available_height - scrollbar});
+        const int cell = shelf_cell;
         if (cell <= 2 * TileInset) {
             view->setGeometry(library_body->rect());
             return;
@@ -1036,7 +1087,6 @@ void GameHome::UpdateTileSizes() {
         view->setGridSize(QSize(cell, cell));
         const int shelf_height = cell + scrollbar;
         const int shelf_width = std::min(available_width, std::max(1, tiles->rowCount()) * cell);
-        const int center = height() / 2 - library_body->y();
         const int y = std::clamp(center - cell / 2, 0, available_height - shelf_height);
         view->setGeometry((available_width - shelf_width) / 2, y, shelf_width, shelf_height);
     }
@@ -1162,6 +1212,10 @@ void GameHome::changeEvent(QEvent* event) {
         UpdateStatus();
     } else if (event->type() == QEvent::FontChange) {
         UpdateCollectionButtons();
+    }
+    if (loading && (event->type() == QEvent::LanguageChange ||
+                    event->type() == QEvent::StyleChange || event->type() == QEvent::FontChange)) {
+        UpdateTileSizes();
     }
     QWidget::changeEvent(event);
 }

@@ -12,6 +12,7 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QJsonArray>
@@ -74,6 +75,20 @@ void PrepareGameMenu(QMenu* menu) {
         }
     }
 }
+
+QModelIndex VisibleListBoundary(const QListView& view, bool from_start) {
+    const auto root = view.rootIndex();
+    const int rows = view.model()->rowCount(root);
+    const int step = from_start ? 1 : -1;
+    for (int row = from_start ? 0 : rows - 1; row >= 0 && row < rows; row += step) {
+        const auto index = view.model()->index(row, view.modelColumn(), root);
+        if (!view.isRowHidden(row) &&
+            index.flags().testFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable)) {
+            return index;
+        }
+    }
+    return {};
+}
 } // namespace
 
 GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvider* provider_,
@@ -109,6 +124,7 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
     connect(home_view, &GameHome::GameActivated, this, &GameList::ValidateEntry);
     connect(home_view, &GameHome::GameMenuRequested, this, &GameList::ShowContextMenu);
     connect(home_view, &GameHome::ProfileRequested, this, &GameList::ProfileRequested);
+    connect(home_view, &GameHome::SearchFocusRequested, this, &GameList::FocusFilterFromController);
     connect(home_view->View(), &QListView::customContextMenuRequested, this,
             &GameList::PopupContextMenu);
 
@@ -118,7 +134,14 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
     connect(item_model, &GameListModel::ShowList, this, &GameList::ShowList);
     connect(item_model, &GameListModel::SaveConfig, this, &GameList::SaveConfig);
     connect(item_model, &GameListModel::PopulatingStarted, this, &GameList::OnPopulate);
-    connect(item_model, &GameListModel::SnapshotRestored, this, &GameList::RefreshLibraryView);
+    connect(item_model, &GameListModel::SnapshotRestored, this, [this] {
+        if (item_model->HasGames()) {
+            library_loading = false;
+            current_page->setEnabled(true);
+            home_view->SetLoading(false);
+        }
+        RefreshLibraryView();
+    });
     connect(item_model, &GameListModel::ScanResultsReady, this, [this] {
         const auto selection = m_currentView->currentIndex().siblingAtColumn(0);
         refreshing_game_path = selection.data(GameListItemPath::FullPathRole).toString();
@@ -158,6 +181,7 @@ void GameList::SetupViews() {
     grid_view = new GameGrid(this);
     carousel_view = new GameCarousel(this);
     home_view = new GameHome(item_model, system, this);
+    home_view->SetLoading(library_loading);
 
     tree_view->SetModel(item_model);
     grid_view->SetModel(item_model);
@@ -183,6 +207,14 @@ void GameList::ClearFilter() {
 void GameList::SetFilterFocus() {
     if (item_model->rowCount() > 0) {
         search_field->setFocus();
+    }
+}
+
+void GameList::FocusFilterFromController() {
+    if (search_field->isHidden() && main_window) {
+        main_window->filterBarSetChecked(true);
+    } else {
+        SetFilterFocus();
     }
 }
 
@@ -264,6 +296,75 @@ QStandardItemModel* GameList::GetModel() const {
 
 QWidget* GameList::NavigationTarget() const {
     return current_page == home_view ? home_view->NavigationTarget() : m_currentView;
+}
+
+GameList::ControllerNavigation GameList::HandleControllerNavigation(const QWidget& focus,
+                                                                    Qt::Key key, bool repeated) {
+    if (search_field->isAncestorOf(&focus)) {
+        if (key == Qt::Key_Up) {
+            if (current_page == home_view) {
+                home_view->FocusFromSearch();
+                return ControllerNavigation::Handled;
+            }
+            QModelIndex target;
+            if (current_page == carousel_view) {
+                target = carousel_view->currentIndex();
+                if (!target.isValid() || carousel_view->isRowHidden(target.row())) {
+                    target = VisibleListBoundary(*carousel_view, true);
+                }
+            } else if (current_page == grid_view) {
+                target = VisibleListBoundary(*grid_view, false);
+            } else if (current_page == tree_view) {
+                target = tree_view->ControllerRow(false, true);
+            }
+            if (target.isValid()) {
+                m_currentView->setFocus(Qt::BacktabFocusReason);
+                m_currentView->setCurrentIndex(target);
+                m_currentView->scrollTo(target);
+            }
+            return ControllerNavigation::Handled;
+        }
+        if (key == Qt::Key_Down && repeated) {
+            return ControllerNavigation::Handled;
+        }
+    }
+    if (&focus != m_currentView || current_page == home_view) {
+        return ControllerNavigation::Unhandled;
+    }
+    if (current_page == tree_view && key == Qt::Key_Enter && tree_view->ToggleControllerFolder()) {
+        return ControllerNavigation::Handled;
+    }
+    if (key != Qt::Key_Up && key != Qt::Key_Down) {
+        return ControllerNavigation::Unhandled;
+    }
+
+    const bool forward = key == Qt::Key_Down;
+    if (current_page == carousel_view) {
+        if (!forward) {
+            return ControllerNavigation::Unhandled;
+        }
+        FocusFilterFromController();
+        return ControllerNavigation::Handled;
+    }
+    const auto current = m_currentView->currentIndex();
+    QModelIndex next;
+    if (current_page == tree_view) {
+        next = tree_view->ControllerRow(forward);
+    } else if (!current.isValid() || grid_view->isRowHidden(current.row())) {
+        next = VisibleListBoundary(*grid_view, forward);
+    } else {
+        next = grid_view->ControllerRow(forward);
+    }
+    if (next.isValid() && next != current) {
+        m_currentView->setCurrentIndex(next);
+        m_currentView->scrollTo(next);
+    } else if (!repeated) {
+        if (!forward) {
+            return ControllerNavigation::FocusMenu;
+        }
+        FocusFilterFromController();
+    }
+    return ControllerNavigation::Handled;
 }
 
 bool GameList::ReturnFromCollection() {
@@ -875,6 +976,8 @@ void GameList::ShowContextMenu(const QModelIndex& item, const QPoint& global_pos
         return;
     }
 
+    QElapsedTimer timer;
+    timer.start();
     const auto selected = item.sibling(item.row(), 0);
     auto* context_menu = new QMenu(this);
     switch (selected.data(GameListItem::TypeRole).value<GameListItemType>()) {
@@ -900,7 +1003,12 @@ void GameList::ShowContextMenu(const QModelIndex& item, const QPoint& global_pos
     }
     PrepareGameMenu(context_menu);
     connect(context_menu, &QMenu::aboutToHide, context_menu, &QObject::deleteLater);
+    const auto prepare_ms = timer.elapsed();
     context_menu->popup(global_position);
+    if (const auto elapsed = timer.elapsed(); elapsed >= 32) {
+        LOG_INFO(Frontend, "Game context menu: prepare_ms={} popup_ms={}", prepare_ms,
+                 elapsed - prepare_ms);
+    }
 }
 
 void GameList::SetReportableProgramId(u64 program_id) {

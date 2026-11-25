@@ -650,30 +650,9 @@ QTabBar::tab:hover {
 
 QTabBar::tab:selected {
     color: #ffffff;
-    border-bottom: 2px solid #f0386b;
-    font-weight: 600;
-}
-
-QTabBar::tab:selected:focus {
-    background-color: rgba(240, 56, 107, 0.16);
-}
-
-QTabBar[controllerTabNavigation="true"]::tab:selected {
-    border-bottom-color: transparent;
-}
-
-QTabBar[controllerTabNavigation="true"][controllerTabInputActive="false"]::tab:selected {
     background-color: rgba(240, 56, 107, 0.16);
     border-radius: 7px;
-}
-
-QTabBar[controllerTabNavigation="true"][controllerTabInputActive="true"]::tab:selected,
-QTabBar[controllerTabNavigation="true"][controllerTabInputActive="true"]::tab:selected:focus {
-    background-color: transparent;
-}
-
-QWidget#settingsTabUnderline {
-    background-color: #f0386b;
+    font-weight: 600;
 }
 
 QTabBar::tab:disabled {

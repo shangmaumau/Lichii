@@ -23,6 +23,7 @@
 #include <nlohmann/json.hpp>
 
 #include <QAbstractButton>
+#include <QApplication>
 #include <QByteArray>
 #include <QCheckBox>
 #include <QEventLoop>
@@ -72,6 +73,7 @@
 #include "lichii/configuration/configure_graphics_advanced.h"
 #include "lichii/configuration/configure_graphics_extensions.h"
 #include "lichii/configuration/configure_input_per_game.h"
+#include "lichii/configuration/configure_navigation.h"
 #include "lichii/configuration/configure_network.h"
 #include "lichii/configuration/configure_per_game.h"
 #include "lichii/configuration/configure_per_game_addons.h"
@@ -355,7 +357,7 @@ ConfigurePerGame::ConfigurePerGame(QWidget* parent, u64 title_id_, const std::st
 
     ui->setupUi(this);
 
-    auto* const info_area = new QScrollArea(this);
+    info_area = new QScrollArea(this);
     ui->horizontalLayout->replaceWidget(ui->gameInfo, info_area);
     info_area->setFrameShape(QFrame::NoFrame);
     info_area->setWidgetResizable(true);
@@ -460,6 +462,45 @@ ConfigurePerGame::~ConfigurePerGame() {
     if (detect_cancel) {
         detect_cancel->store(true);
     }
+}
+
+bool ConfigurePerGame::HandleControllerNavigation(Qt::Key key, bool repeated) {
+    auto* const focus = QApplication::focusWidget();
+    auto* const tabs = ui->tabWidget->tabBar();
+    const bool in_info = focus && ui->gameInfo->isAncestorOf(focus);
+    if (in_info) {
+        info_focus = focus;
+    }
+    if (key == Qt::Key_Right &&
+        (!focus || (!ui->tabWidget->isAncestorOf(focus) && !ui->buttonBox->isAncestorOf(focus)))) {
+        tabs->setFocus();
+        return true;
+    }
+    const bool enter_info = focus == tabs && tabs->currentIndex() == 0 && key == Qt::Key_Left;
+    if (enter_info || (in_info && (key == Qt::Key_Up || key == Qt::Key_Down))) {
+        if (enter_info && repeated) {
+            return true;
+        }
+        QList<QWidget*> controls;
+        for (auto* widget = ui->gameInfo->nextInFocusChain(); widget != ui->gameInfo;
+             widget = widget->nextInFocusChain()) {
+            if (ui->gameInfo->isAncestorOf(widget) && widget != ui->icon_view &&
+                widget->isVisible() && widget->isEnabled() &&
+                (widget->focusPolicy() & Qt::TabFocus) && !widget->focusProxy()) {
+                controls.append(widget);
+            }
+        }
+        const auto selected = controls.indexOf(enter_info ? info_focus.data() : focus);
+        const auto next = enter_info ? std::max<qsizetype>(0, selected)
+                                     : selected + (key == Qt::Key_Down ? 1 : -1);
+        if (next >= 0 && next < controls.size()) {
+            info_focus = controls.at(next);
+            info_focus->setFocus(Qt::OtherFocusReason);
+            info_area->ensureWidgetVisible(info_focus);
+        }
+        return true;
+    }
+    return ConfigurationShared::NavigateSettings(key, *ui->tabWidget, *ui->buttonBox);
 }
 
 void ConfigurePerGame::done(int result) {

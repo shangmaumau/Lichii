@@ -18,6 +18,7 @@ public:
     void SetModel(GameListModel* model);
     void ApplyFilter(const QString& edit_filter_text, GameListModel* model);
     void UpdateIconSize();
+    QModelIndex ControllerRow(bool forward);
 
     QModelIndex indexAt(const QPoint& point) const override;
 

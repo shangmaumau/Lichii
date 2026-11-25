@@ -1,0 +1,156 @@
+<div id="lichii-loading-options">
+  <div class="viz-carousel" aria-label="Lichii 主页加载样式" data-previous-label="上一个" data-next-label="下一个">
+    <section class="loading-variant" data-variant="封面占位" aria-label="封面占位">
+      <div class="lichii-preview" data-phase="ready">
+        <div class="titlebar"><span>◈</span> Lichii</div>
+        <div class="library">
+          <div class="library-head">最近游玩</div>
+          <div class="shelf" aria-hidden="true">
+            <div class="cover amber"></div><div class="cover jade"></div><div class="cover lilac"></div><div class="cover all">所有游戏</div>
+          </div>
+          <div class="status" aria-live="polite"></div>
+        </div>
+      </div>
+      <button class="btn cursor-interaction" type="button">预演加载</button>
+    </section>
+    <section class="loading-variant" data-variant="底边细线" aria-label="底边细线" hidden>
+      <div class="lichii-preview" data-phase="ready">
+        <div class="titlebar"><span>◈</span> Lichii</div>
+        <div class="library">
+          <div class="library-head">最近游玩</div>
+          <div class="shelf" aria-hidden="true">
+            <div class="cover amber"></div><div class="cover jade"></div><div class="cover lilac"></div><div class="cover all">所有游戏</div>
+          </div>
+          <div class="status" aria-live="polite"></div>
+          <div class="progress-rail" aria-hidden="true"><div></div></div>
+        </div>
+      </div>
+      <button class="btn cursor-interaction" type="button">预演加载</button>
+    </section>
+    <section class="loading-variant" data-variant="中央脉冲" aria-label="中央脉冲" hidden>
+      <div class="lichii-preview" data-phase="ready">
+        <div class="titlebar"><span>◈</span> Lichii</div>
+        <div class="library">
+          <div class="library-head">最近游玩</div>
+          <div class="shelf" aria-hidden="true">
+            <div class="cover amber"></div><div class="cover jade"></div><div class="cover lilac"></div><div class="cover all">所有游戏</div>
+          </div>
+          <div class="pulse-ring" aria-hidden="true"></div>
+          <div class="status" aria-live="polite"></div>
+        </div>
+      </div>
+      <button class="btn cursor-interaction" type="button">预演加载</button>
+    </section>
+  </div>
+</div>
+<style>
+  #lichii-loading-options .loading-variant { display: grid; gap: 10px; justify-items: start; }
+  #lichii-loading-options .loading-variant[hidden] { display: none; }
+  #lichii-loading-options .lichii-preview {
+    --ink: #f1f1f4;
+    --accent: #f0386b;
+    --muted: #a4a6ae;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #333640;
+    border-radius: 12px;
+    background: #17181b;
+    color: var(--ink);
+    font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+  }
+  #lichii-loading-options .titlebar { padding: 7px 14px; background: #53678e; }
+  #lichii-loading-options .titlebar span { color: #ffc6d6; margin-right: 7px; }
+  #lichii-loading-options .library { position: relative; padding: 13px 16px 38px; }
+  #lichii-loading-options .library-head { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+  #lichii-loading-options .shelf { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(6px, 1.5vw, 14px); }
+  #lichii-loading-options .cover {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 9%;
+    background: #24252a;
+    color: var(--muted);
+    text-align: center;
+  }
+  #lichii-loading-options .amber { background: radial-gradient(circle at 30% 17%, #f7bf8f, transparent 31%), linear-gradient(147deg, #774831, #241d36); }
+  #lichii-loading-options .jade { background: radial-gradient(circle at 68% 23%, #a2ceb0, transparent 26%), linear-gradient(160deg, #2d5d55, #182733); }
+  #lichii-loading-options .lilac { background: radial-gradient(circle at 48% 30%, #c8b7ee, transparent 30%), linear-gradient(154deg, #55447e, #28253f); }
+  #lichii-loading-options .all { background: #282a30; color: var(--ink); }
+  #lichii-loading-options .status {
+    position: absolute;
+    right: 16px;
+    bottom: 13px;
+    left: 16px;
+    text-align: center;
+    color: var(--muted);
+  }
+  #lichii-loading-options [data-phase="loading"] .cover { color: transparent; }
+  #lichii-loading-options [data-variant="封面占位"] [data-phase="loading"] .cover {
+    background: linear-gradient(110deg, #232429 28%, #303139 48%, #232429 68%);
+    background-size: 260% 100%;
+    animation: lichii-shelf-sweep 1.6s ease-in-out infinite;
+  }
+  #lichii-loading-options [data-variant="封面占位"] [data-phase="loading"] .cover:nth-child(2) { animation-delay: 90ms; }
+  #lichii-loading-options [data-variant="封面占位"] [data-phase="loading"] .cover:nth-child(3) { animation-delay: 180ms; }
+  #lichii-loading-options [data-variant="封面占位"] [data-phase="loading"] .cover:nth-child(4) { animation-delay: 270ms; }
+  #lichii-loading-options [data-variant="底边细线"] [data-phase="loading"] .shelf,
+  #lichii-loading-options [data-variant="中央脉冲"] [data-phase="loading"] .shelf { visibility: hidden; }
+  #lichii-loading-options .progress-rail {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: #272830;
+    visibility: hidden;
+  }
+  #lichii-loading-options [data-phase="loading"] .progress-rail { visibility: visible; }
+  #lichii-loading-options [data-phase="loading"] .progress-rail > div {
+    width: 24%;
+    height: 100%;
+    background: var(--accent);
+    animation: lichii-rail-sweep 1.35s ease-in-out infinite;
+  }
+  #lichii-loading-options .pulse-ring {
+    display: none;
+    position: absolute;
+    left: calc(50% - 12px);
+    top: calc(50% - 22px);
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+  }
+  #lichii-loading-options [data-variant="中央脉冲"] [data-phase="loading"] .pulse-ring {
+    display: block;
+    animation: lichii-pulse 1.4s ease-in-out infinite;
+  }
+  #lichii-loading-options [data-variant="中央脉冲"] [data-phase="loading"] .status { bottom: auto; top: calc(50% + 15px); }
+  @keyframes lichii-shelf-sweep { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  @keyframes lichii-rail-sweep { from { transform: translateX(-100%); } to { transform: translateX(420%); } }
+  @keyframes lichii-pulse { 0%, 100% { opacity: .45; transform: scale(.86); } 50% { opacity: 1; transform: scale(1.08); } }
+  @media (prefers-reduced-motion: reduce) {
+    #lichii-loading-options [data-phase="loading"] .cover,
+    #lichii-loading-options [data-phase="loading"] .progress-rail > div,
+    #lichii-loading-options [data-phase="loading"] .pulse-ring { animation: none; }
+  }
+</style>
+<script>
+  (() => {
+    const root = document.getElementById("lichii-loading-options");
+    for (const variant of root.querySelectorAll(".loading-variant")) {
+      const preview = variant.querySelector(".lichii-preview");
+      const status = variant.querySelector(".status");
+      let finish;
+      variant.querySelector("button").addEventListener("click", () => {
+        clearTimeout(finish);
+        preview.dataset.phase = "loading";
+        status.textContent = "正在加载游戏库…";
+        finish = setTimeout(() => {
+          preview.dataset.phase = "ready";
+          status.textContent = "";
+        }, 2500);
+      });
+    }
+  })();
+</script>
