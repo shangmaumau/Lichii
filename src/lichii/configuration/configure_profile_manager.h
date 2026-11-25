@@ -11,6 +11,7 @@
 
 #include <QDialog>
 #include <QList>
+#include <QPersistentModelIndex>
 #include <QWidget>
 #include "core/file_sys/vfs/vfs_types.h"
 
@@ -29,7 +30,6 @@ class QLabel;
 class QStandardItem;
 class QStandardItemModel;
 class QTreeView;
-class QVBoxLayout;
 class QListWidget;
 
 namespace Service::Account {
@@ -47,16 +47,16 @@ public:
     explicit ConfigureProfileManagerDeleteDialog(QWidget* parent);
     ~ConfigureProfileManagerDeleteDialog();
 
-    void SetInfo(const QString& username, const Common::UUID& uuid, int index);
+    void SetInfo(const QString& username, const Common::UUID& uuid, const QModelIndex& index);
 
 signals:
-    void deleteUser(int index);
+    void deleteUser(const QPersistentModelIndex& index);
 
 private:
     QDialogButtonBox* dialog_button_box;
     QGraphicsScene* icon_scene;
     QLabel* label_info;
-    int m_index = 0;
+    QPersistentModelIndex m_index;
 };
 
 class ConfigureProfileManager : public QWidget {
@@ -71,10 +71,11 @@ public:
 private slots:
     void saveImage(QPixmap pixmap, Common::UUID uuid);
     void showContextMenu(const QPoint& pos);
-    void DeleteUser(const int index);
+    void DeleteUser(const QPersistentModelIndex& index);
 
 private:
     void changeEvent(QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void RetranslateUI();
 
     void SetConfiguration();
@@ -84,12 +85,11 @@ private:
 
     void SelectUser(const QModelIndex& index);
     void AddUser();
-    void EditUser();
-    void ConfirmDeleteUser();
+    void EditUser(const QPersistentModelIndex& index);
+    void ConfirmDeleteUser(const QModelIndex& index);
     bool LoadAvatarData();
     std::vector<uint8_t> DecompressYaz0(const FileSys::VirtualFile& file);
 
-    QVBoxLayout* layout;
     QTreeView* tree_view;
     QStandardItemModel* item_model;
     QGraphicsScene* scene;

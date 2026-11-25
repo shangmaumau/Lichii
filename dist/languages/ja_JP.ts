@@ -8595,9 +8595,9 @@ Proceed anyway?</source>
     </message>
     <message>
         <location filename="../../src/lichii/configuration/system/new_user_dialog.cpp" line="349"/>
-        <source>Must be between 1 and 32 characters</source>
+        <source>Must be between 1 and %1 UTF-8 bytes</source>
         <comment>Tooltip</comment>
-        <translation>1〜32文字で入力してください</translation>
+        <translation>UTF-8 で 1～%1 バイトの名前を入力してください</translation>
     </message>
 </context>
 <context>
@@ -10768,6 +10768,93 @@ Error code: %3</source>
         <location filename="../../src/lichii/updater/update_dialog.cpp" line="173"/>
         <source>Successfully downloaded %1. Would you like to open it?</source>
         <translation>%1 をダウンロードしました。今すぐ開きますか？</translation>
+    </message>
+</context>
+<context>
+    <name>Lichii::KeyboardPanel</name>
+    <message>
+        <source>On-screen keyboard</source>
+        <translation>スクリーンキーボード</translation>
+    </message>
+    <message>
+        <source>English (United States)</source>
+        <translation>英語（米国）</translation>
+    </message>
+    <message>
+        <source>English (United Kingdom)</source>
+        <translation>英語（英国）</translation>
+    </message>
+    <message>
+        <source>Simplified Chinese (Pinyin)</source>
+        <translation>中国語（簡体字・ピンイン）</translation>
+    </message>
+    <message>
+        <source>Traditional Chinese (Pinyin)</source>
+        <translation>中国語（繁体字・ピンイン）</translation>
+    </message>
+    <message>
+        <source>Japanese (Romaji)</source>
+        <translation>日本語（ローマ字）</translation>
+    </message>
+    <message>
+        <source>Switch input mode (%1)</source>
+        <translation>入力モードを切り替え（%1）</translation>
+    </message>
+    <message>
+        <source>Direct English</source>
+        <translation>英字直接入力</translation>
+    </message>
+    <message>
+        <source>Wubi (86)</source>
+        <translation>五筆字型（86）</translation>
+    </message>
+    <message>
+        <source>Hide</source>
+        <translation>閉じる</translation>
+    </message>
+    <message>
+        <source>Hide keyboard</source>
+        <translation>キーボードを閉じる</translation>
+    </message>
+    <message>
+        <source>Previous candidates</source>
+        <translation>前の候補</translation>
+    </message>
+    <message>
+        <source>Next candidates</source>
+        <translation>次の候補</translation>
+    </message>
+    <message>
+        <source>Backspace</source>
+        <translation>削除</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>完了</translation>
+    </message>
+    <message>
+        <source>Letters</source>
+        <translation>文字</translation>
+    </message>
+    <message>
+        <source>Numbers and symbols</source>
+        <translation>数字と記号</translation>
+    </message>
+    <message>
+        <source>Move cursor left</source>
+        <translation>カーソルを左へ</translation>
+    </message>
+    <message>
+        <source>Move cursor right</source>
+        <translation>カーソルを右へ</translation>
+    </message>
+    <message>
+        <source>Shift</source>
+        <translation>シフト</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>スペース</translation>
     </message>
 </context>
 </TS>

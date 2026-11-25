@@ -10,6 +10,7 @@
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/nca_metadata.h"
 #include "core/file_sys/romfs.h"
+#include "core/hle/service/acc/profile_manager.h"
 #include "core/hle/service/filesystem/filesystem.h"
 #include "new_user_dialog.h"
 #include "qt_common/qt_common.h"
@@ -17,12 +18,23 @@
 #include "ui_new_user_dialog.h"
 
 #include <QFileDialog>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QStyle>
 #include <fmt/format.h>
 #include <qnamespace.h>
 #include <qregularexpression.h>
 #include <qvalidator.h>
+
+namespace {
+
+bool IsValidProfileName(const QLineEdit& editor) {
+    return editor.hasAcceptableInput() &&
+           editor.text().toUtf8().size() <=
+               static_cast<qsizetype>(Service::Account::profile_username_size);
+}
+
+} // namespace
 
 QPixmap NewUserDialog::DefaultAvatar() {
     QPixmap icon;
@@ -338,7 +350,7 @@ void NewUserDialog::verifyUser() {
     }
 
     const bool uuid_good = ui->uuid->hasAcceptableInput();
-    const bool username_good = ui->username->hasAcceptableInput();
+    const bool username_good = IsValidProfileName(*ui->username);
 
     auto ok_button = ui->buttonBox->button(QDialogButtonBox::Ok);
     ok_button->setEnabled(username_good && uuid_good);
@@ -356,12 +368,18 @@ void NewUserDialog::verifyUser() {
         ui->usernameVerified->setToolTip(tr("All Good", "Tooltip"));
     } else {
         ui->usernameVerified->setPixmap(failed);
-        ui->usernameVerified->setToolTip(tr("Must be between 1 and 32 characters", "Tooltip"));
+        ui->usernameVerified->setToolTip(
+            tr("Must be between 1 and %1 UTF-8 bytes", "Tooltip")
+                .arg(Service::Account::profile_username_size));
     }
 }
 
 // TODO: Move UUID
 void NewUserDialog::dispatchUser() {
+    if (!IsValidProfileName(*ui->username)) {
+        return;
+    }
+
     QByteArray bytes = QByteArray::fromHex(ui->uuid->text().toLatin1());
 
     // convert to 16 u8's

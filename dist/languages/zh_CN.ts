@@ -10714,9 +10714,9 @@ Proceed anyway?</source>
     </message>
     <message>
         <location filename="../../src/lichii/configuration/system/new_user_dialog.cpp" line="349"/>
-        <source>Must be between 1 and 32 characters</source>
+        <source>Must be between 1 and %1 UTF-8 bytes</source>
         <comment>Tooltip</comment>
-        <translation>长度需为 1-32 个字符</translation>
+        <translation>长度须为 1 到 %1 个 UTF-8 字节</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -16083,6 +16083,93 @@ License: Not declared</source>
     <message>
         <source>Too many store requests are already running.</source>
         <translation>正在处理的商店请求过多。</translation>
+    </message>
+</context>
+<context>
+    <name>Lichii::KeyboardPanel</name>
+    <message>
+        <source>On-screen keyboard</source>
+        <translation>屏幕键盘</translation>
+    </message>
+    <message>
+        <source>English (United States)</source>
+        <translation>英语（美国）</translation>
+    </message>
+    <message>
+        <source>English (United Kingdom)</source>
+        <translation>英语（英国）</translation>
+    </message>
+    <message>
+        <source>Simplified Chinese (Pinyin)</source>
+        <translation>简体中文（拼音）</translation>
+    </message>
+    <message>
+        <source>Traditional Chinese (Pinyin)</source>
+        <translation>繁体中文（拼音）</translation>
+    </message>
+    <message>
+        <source>Japanese (Romaji)</source>
+        <translation>日语（罗马字）</translation>
+    </message>
+    <message>
+        <source>Switch input mode (%1)</source>
+        <translation>切换输入模式（%1）</translation>
+    </message>
+    <message>
+        <source>Direct English</source>
+        <translation>纯英文</translation>
+    </message>
+    <message>
+        <source>Wubi (86)</source>
+        <translation>五笔 86</translation>
+    </message>
+    <message>
+        <source>Hide</source>
+        <translation>收起</translation>
+    </message>
+    <message>
+        <source>Hide keyboard</source>
+        <translation>收起键盘</translation>
+    </message>
+    <message>
+        <source>Previous candidates</source>
+        <translation>上一页候选</translation>
+    </message>
+    <message>
+        <source>Next candidates</source>
+        <translation>下一页候选</translation>
+    </message>
+    <message>
+        <source>Backspace</source>
+        <translation>退格</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>完成</translation>
+    </message>
+    <message>
+        <source>Letters</source>
+        <translation>字母</translation>
+    </message>
+    <message>
+        <source>Numbers and symbols</source>
+        <translation>数字和符号</translation>
+    </message>
+    <message>
+        <source>Move cursor left</source>
+        <translation>光标左移</translation>
+    </message>
+    <message>
+        <source>Move cursor right</source>
+        <translation>光标右移</translation>
+    </message>
+    <message>
+        <source>Shift</source>
+        <translation>切换大小写</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>空格</translation>
     </message>
 </context>
 </TS>

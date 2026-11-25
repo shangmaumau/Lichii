@@ -22,6 +22,10 @@ namespace Core {
 class System;
 }
 
+namespace Lichii {
+class KeyboardController;
+}
+
 class ControllerUiNavigation final : public QObject {
 public:
     ControllerUiNavigation(Core::System& system, QMainWindow* window,
@@ -55,6 +59,7 @@ private:
     std::function<bool()> navigate_back;
     std::function<bool()> open_game_menu;
     ControllerNavigation* controller;
+    Lichii::KeyboardController* keyboard;
     MenuFocus menu_focus = MenuFocus::None;
     QPointer<QAction> menu_action;
     QPointer<QMenu> top_menu;

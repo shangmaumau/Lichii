@@ -1,0 +1,12 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<RCC>
+    <qresource prefix="/keyboard/dictionaries">
+        <file alias="en-US.bin">../../dist/keyboard/dictionaries/en-US.bin</file>
+        <file alias="en-GB.bin">../../dist/keyboard/dictionaries/en-GB.bin</file>
+        <file alias="zh-Hans.bin">../../dist/keyboard/dictionaries/zh-Hans.bin</file>
+        <file alias="zh-Hant.bin">../../dist/keyboard/dictionaries/zh-Hant.bin</file>
+        <file alias="wubi-Hans.bin">../../dist/keyboard/dictionaries/wubi-Hans.bin</file>
+        <file alias="wubi-Hant.bin">../../dist/keyboard/dictionaries/wubi-Hant.bin</file>
+        <file alias="ja.bin">../../dist/keyboard/dictionaries/ja.bin</file>
+    </qresource>
+</RCC>

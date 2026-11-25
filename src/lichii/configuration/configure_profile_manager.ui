@@ -45,6 +45,9 @@
           </item>
           <item>
            <widget class="QGraphicsView" name="current_user_icon">
+            <property name="focusPolicy">
+             <enum>Qt::FocusPolicy::NoFocus</enum>
+            </property>
             <property name="minimumSize">
              <size>
               <width>64</width>
@@ -90,7 +93,7 @@
          </layout>
         </item>
         <item row="1" column="0">
-         <widget class="QScrollArea" name="scrollArea">
+         <widget class="QTreeView" name="profile_list">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
@@ -99,9 +102,6 @@
           </property>
           <property name="frameShape">
            <enum>QFrame::Shape::StyledPanel</enum>
-          </property>
-          <property name="widgetResizable">
-           <bool>false</bool>
           </property>
          </widget>
         </item>

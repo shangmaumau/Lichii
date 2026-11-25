@@ -20,6 +20,40 @@ Files: dist/qt_themes/default/icons/256x256/eden.png
 Copyright: 2025 Eden Emulator Project
 License: GPL-3.0-or-later
 
+Files: dist/keyboard/dictionaries/en-*.bin
+Copyright: 2000-2026 Kevin Atkinson
+           Hermit Dave and the OpenSubtitles contributors
+License: LicenseRef-SCOWL AND CC-BY-SA-4.0
+
+Files: dist/keyboard/dictionaries/zh-*.bin
+Copyright: CC-CEDICT contributors
+           1997-1998 Paul Andrew Denisowski
+           Hermit Dave and the OpenSubtitles contributors
+License: CC-BY-SA-4.0
+
+Files: dist/keyboard/dictionaries/wubi-*.bin
+Copyright: Kyle Bing and Jidian Wubi contributors
+           Carbo Kuo and OpenCC contributors
+License: MIT AND Apache-2.0
+
+Files: dist/keyboard/dictionaries/WUBI-MIT.txt
+Copyright: Kyle Bing
+License: MIT
+
+Files: dist/keyboard/dictionaries/ja.bin
+       dist/keyboard/dictionaries/SKK-JISYO.L.unannotated.gz
+       dist/keyboard/dictionaries/SKK-NOTICE.txt
+Copyright: 1988-1995, 1997, 1999-2014 SKK Development Team and contributors
+License: GPL-2.0-or-later
+
+Files: dist/keyboard/dictionaries/SCOWL-Copyright.txt
+Copyright: 2000-2026 Kevin Atkinson and contributors
+License: LicenseRef-SCOWL
+
+Files: dist/keyboard/dictionaries/CC-BY-SA-4.0.txt
+Copyright: Creative Commons
+License: CC0-1.0
+
 Files: dist/qt_themes/qdarkstyle*/LICENSE.*
        dist/qt_themes/qdarkstyle*/style.qrc
        dist/qt_themes/qdarkstyle*/style.qss

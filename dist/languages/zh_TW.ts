@@ -8511,9 +8511,9 @@ Proceed anyway?</source>
     </message>
     <message>
         <location filename="../../src/lichii/configuration/system/new_user_dialog.cpp" line="349"/>
-        <source>Must be between 1 and 32 characters</source>
+        <source>Must be between 1 and %1 UTF-8 bytes</source>
         <comment>Tooltip</comment>
-        <translation type="unfinished"/>
+        <translation>長度須介於 1 到 %1 個 UTF-8 位元組</translation>
     </message>
 </context>
 <context>
@@ -10660,6 +10660,93 @@ Error code: %3</source>
         <location filename="../../src/lichii/updater/update_dialog.cpp" line="173"/>
         <source>Successfully downloaded %1. Would you like to open it?</source>
         <translation type="unfinished"/>
+    </message>
+</context>
+<context>
+    <name>Lichii::KeyboardPanel</name>
+    <message>
+        <source>Switch input mode (%1)</source>
+        <translation>切換輸入模式（%1）</translation>
+    </message>
+    <message>
+        <source>Direct English</source>
+        <translation>純英文</translation>
+    </message>
+    <message>
+        <source>Wubi (86)</source>
+        <translation>五筆 86</translation>
+    </message>
+    <message>
+        <source>On-screen keyboard</source>
+        <translation>螢幕鍵盤</translation>
+    </message>
+    <message>
+        <source>English (United States)</source>
+        <translation>英語（美國）</translation>
+    </message>
+    <message>
+        <source>English (United Kingdom)</source>
+        <translation>英語（英國）</translation>
+    </message>
+    <message>
+        <source>Simplified Chinese (Pinyin)</source>
+        <translation>簡體中文（拼音）</translation>
+    </message>
+    <message>
+        <source>Traditional Chinese (Pinyin)</source>
+        <translation>繁體中文（拼音）</translation>
+    </message>
+    <message>
+        <source>Japanese (Romaji)</source>
+        <translation>日語（羅馬字）</translation>
+    </message>
+    <message>
+        <source>Hide</source>
+        <translation>收起</translation>
+    </message>
+    <message>
+        <source>Hide keyboard</source>
+        <translation>收起鍵盤</translation>
+    </message>
+    <message>
+        <source>Previous candidates</source>
+        <translation>上一頁候選</translation>
+    </message>
+    <message>
+        <source>Next candidates</source>
+        <translation>下一頁候選</translation>
+    </message>
+    <message>
+        <source>Backspace</source>
+        <translation>退格</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>完成</translation>
+    </message>
+    <message>
+        <source>Letters</source>
+        <translation>字母</translation>
+    </message>
+    <message>
+        <source>Numbers and symbols</source>
+        <translation>數字和符號</translation>
+    </message>
+    <message>
+        <source>Move cursor left</source>
+        <translation>游標左移</translation>
+    </message>
+    <message>
+        <source>Move cursor right</source>
+        <translation>游標右移</translation>
+    </message>
+    <message>
+        <source>Shift</source>
+        <translation>切換大小寫</translation>
+    </message>
+    <message>
+        <source>Space</source>
+        <translation>空格</translation>
     </message>
 </context>
 </TS>

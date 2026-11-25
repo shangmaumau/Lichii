@@ -44,6 +44,7 @@
 #include "lichii/util/controller_navigation.h"
 #include "lichii/util/controller_ui_navigation.h"
 #include "lichii/util/focus_halo.h"
+#include "lichii/util/keyboard_controller.h"
 #include "lichii/util/tab_bar_underline.h"
 
 namespace {
@@ -122,7 +123,10 @@ ControllerUiNavigation::ControllerUiNavigation(Core::System& system_, QMainWindo
                                                std::function<bool()> open_game_menu_)
     : QObject(window), system(system_), main_window(window), default_focus(std::move(default_focus_)),
       navigate_back(std::move(navigate_back_)), open_game_menu(std::move(open_game_menu_)),
-      controller(new ControllerNavigation(system.HIDCore(), this)) {
+      controller(new ControllerNavigation(system.HIDCore(), this)),
+      keyboard(new Lichii::KeyboardController(this, [] {
+          return Settings::values.language_index.GetValue();
+      })) {
     connect(controller, &ControllerNavigation::TriggerKeyboardEvent, this,
             [this](Qt::Key key) { Dispatch(key, false); }, Qt::QueuedConnection);
     connect(controller, &ControllerNavigation::HeldNavigationChanged, this,
@@ -154,6 +158,7 @@ void ControllerUiNavigation::Stop() {
     stopped = true;
     repeat.stop();
     focus_update.stop();
+    keyboard->Dismiss();
     UpdateOutlinedMenus(nullptr);
     if (halo) {
         halo->hide();
@@ -430,7 +435,7 @@ void ControllerUiNavigation::UpdateFocusHalo() {
             TabBarUnderline::SetControllerActive(window, true);
         }
     }
-    if (!window) {
+    if (!window || keyboard->IsOpenFor(window)) {
         UpdateOutlinedMenus(nullptr);
         if (halo) {
             halo->hide();
@@ -448,7 +453,8 @@ void ControllerUiNavigation::UpdateFocusHalo() {
         (popup != top_menu || menu_focus != MenuFocus::Preview)) {
         widget = popup;
         area = popup->actionGeometry(popup->activeAction()).adjusted(6, 4, -6, -4);
-    } else if (menu_action && (menu_focus == MenuFocus::Bar || menu_focus == MenuFocus::Preview)) {
+    } else if (window == main_window && menu_action &&
+               (menu_focus == MenuFocus::Bar || menu_focus == MenuFocus::Preview)) {
         auto* bar = main_window->menuBar();
         widget = bar;
         area = bar->actionGeometry(menu_action).adjusted(4, 4, -4, -4);
@@ -522,6 +528,15 @@ void ControllerUiNavigation::Dispatch(Qt::Key key, bool repeated) {
     focus_update.start();
 
     auto* popup = QApplication::activePopupWidget();
+    const bool main_menu_focused = window == main_window && menu_focus != MenuFocus::None &&
+                                   QApplication::focusWidget() == main_window->menuBar();
+    if (!popup && (!main_menu_focused || keyboard->IsOpenFor(window)) &&
+        keyboard->HandleControllerKey(window, key)) {
+        if (key == Qt::Key_Enter || key == Qt::Key_F10 || key == Qt::Key_Escape) {
+            PlaySound(key == Qt::Key_Escape ? SoundEffect::Back : SoundEffect::Confirm);
+        }
+        return;
+    }
     if (key == Qt::Key_F10 && window == main_window && !popup && open_game_menu()) {
         SelectFirstAction(qobject_cast<QMenu*>(QApplication::activePopupWidget()));
         PlaySound(SoundEffect::Confirm);
@@ -530,8 +545,9 @@ void ControllerUiNavigation::Dispatch(Qt::Key key, bool repeated) {
 
     const bool navigation_key = IsDirection(key) || key == Qt::Key_Tab || key == Qt::Key_Backtab ||
                                 key == Qt::Key_PageUp || key == Qt::Key_PageDown || key == Qt::Key_F10;
-    const auto selection = [this] {
-        if (menu_action && (menu_focus == MenuFocus::Bar || menu_focus == MenuFocus::Preview)) {
+    const auto selection = [this, window] {
+        if (window == main_window && menu_action &&
+            (menu_focus == MenuFocus::Bar || menu_focus == MenuFocus::Preview)) {
             return NavigationFocus{main_window->menuBar(), menu_action};
         }
         if (auto* menu = qobject_cast<QMenu*>(QApplication::activePopupWidget())) {

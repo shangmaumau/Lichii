@@ -13,11 +13,13 @@
 #include <QFileDialog>
 #include <QGraphicsItem>
 #include <QHeaderView>
+#include <QKeyEvent>
 #include <QListWidget>
 #include <QMenu>
 #include <QMessageBox>
 #include <QStandardItemModel>
 #include <QTreeView>
+#include <QVBoxLayout>
 #include <QtConcurrent/QtConcurrent>
 #include <qnamespace.h>
 #include <qtreeview.h>
@@ -64,6 +66,12 @@ QString FormatUserEntryText(const QString& username, Common::UUID uuid) {
         .arg(username, QString::fromStdString(uuid.FormattedString()));
 }
 
+QStandardItem* MakeUserEntry(const QPixmap& icon, const QString& username, Common::UUID uuid) {
+    auto* entry = new QStandardItem{icon, FormatUserEntryText(username, uuid)};
+    entry->setData(QVariant::fromValue(uuid), Qt::UserRole);
+    return entry;
+}
+
 QPixmap GetIcon(const Common::UUID& uuid) {
     QPixmap icon{GetImagePath(uuid)};
 
@@ -83,7 +91,7 @@ ConfigureProfileManager::ConfigureProfileManager(Core::System& system_, QWidget*
       profile_manager{system_.GetProfileManager()}, system{system_} {
     ui->setupUi(this);
 
-    tree_view = new QTreeView;
+    tree_view = ui->profile_list;
     item_model = new QStandardItemModel(tree_view);
     item_model->insertColumns(0, 1);
     tree_view->setModel(item_model);
@@ -97,17 +105,12 @@ ConfigureProfileManager::ConfigureProfileManager(Core::System& system_, QWidget*
     tree_view->setUniformRowHeights(true);
     tree_view->setIconSize({64, 64});
     tree_view->setContextMenuPolicy(Qt::CustomContextMenu);
+    tree_view->setProperty("controllerHighlightItem", true);
+    tree_view->installEventFilter(this);
 
     // We must register all custom types with the Qt Automoc system so that we are able to use it
     // with signals/slots. In this case, QList falls under the umbrells of custom types.
     qRegisterMetaType<QList<QStandardItem*>>("QList<QStandardItem*>");
-
-    layout = new QVBoxLayout;
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    layout->addWidget(tree_view);
-
-    ui->scrollArea->setLayout(layout);
 
     connect(tree_view, &QTreeView::customContextMenuRequested, this,
             &ConfigureProfileManager::showContextMenu);
@@ -137,6 +140,17 @@ void ConfigureProfileManager::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
 }
 
+bool ConfigureProfileManager::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == tree_view && event->type() == QEvent::KeyPress) {
+        const auto key = static_cast<QKeyEvent*>(event)->key();
+        if (key == Qt::Key_Enter || key == Qt::Key_Return) {
+            SelectUser(tree_view->currentIndex());
+            return true;
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
 void ConfigureProfileManager::RetranslateUI() {
     ui->retranslateUi(this);
     item_model->setHeaderData(0, Qt::Horizontal, tr("Users"));
@@ -163,8 +177,8 @@ void ConfigureProfileManager::PopulateUserList() {
         const auto username = Common::StringFromFixedZeroTerminatedBuffer(
             reinterpret_cast<const char*>(profile.username.data()), profile.username.size());
 
-        list_items.push_back(QList<QStandardItem*>{new QStandardItem{
-            GetIcon(user), FormatUserEntryText(QString::fromStdString(username), user)}});
+        list_items.push_back(
+            QList<QStandardItem*>{MakeUserEntry(GetIcon(user), QString::fromStdString(username), user)});
     }
 
     for (const auto& item : list_items)
@@ -223,7 +237,7 @@ void ConfigureProfileManager::saveImage(QPixmap pixmap, Common::UUID uuid) {
 }
 
 void ConfigureProfileManager::showContextMenu(const QPoint& pos) {
-    const QModelIndex index = tree_view->indexAt(pos);
+    const QPersistentModelIndex index(tree_view->indexAt(pos));
     if (!index.isValid())
         return;
 
@@ -238,17 +252,18 @@ void ConfigureProfileManager::showContextMenu(const QPoint& pos) {
         return;
 
     if (chosen == edit) {
-        EditUser();
+        EditUser(index);
     } else if (chosen == remove) {
-        ConfirmDeleteUser();
+        ConfirmDeleteUser(index);
     }
 }
 
 void ConfigureProfileManager::SelectUser(const QModelIndex& index) {
-    Settings::values.current_user =
-        std::clamp<s32>(index.row(), 0, static_cast<s32>(profile_manager.GetUserCount() - 1));
-
-    UpdateCurrentUser();
+    const auto uuid = index.data(Qt::UserRole).value<Common::UUID>();
+    if (const auto user = profile_manager.GetUserIndex(uuid)) {
+        Settings::values.current_user = static_cast<s32>(*user);
+        UpdateCurrentUser();
+    }
 }
 
 void ConfigureProfileManager::AddUser() {
@@ -261,7 +276,7 @@ void ConfigureProfileManager::AddUser() {
 
         profile_manager.CreateNewUser(uuid, username.toStdString());
         profile_manager.WriteUserSaveFile();
-        item_model->appendRow(new QStandardItem{pixmap, FormatUserEntryText(username, uuid)});
+        item_model->appendRow(MakeUserEntry(pixmap, username, uuid));
 
         saveImage(pixmap, uuid);
         UpdateCurrentUser();
@@ -274,76 +289,69 @@ void ConfigureProfileManager::AddUser() {
     dialog->show();
 }
 
-void ConfigureProfileManager::EditUser() {
-    const auto user_data = tree_view->currentIndex();
-    const auto user_idx = user_data.row();
-    const auto uuid = profile_manager.GetUser(user_idx);
-    ASSERT(uuid);
-
+void ConfigureProfileManager::EditUser(const QPersistentModelIndex& index) {
+    const auto uuid = index.data(Qt::UserRole).value<Common::UUID>();
     Service::Account::ProfileBase profile{};
-    if (!profile_manager.GetProfileBase(*uuid, profile))
+    if (!profile_manager.GetProfileBase(uuid, profile)) {
         return;
+    }
 
     std::string username;
     username.reserve(32);
-
     std::ranges::copy_if(profile.username, std::back_inserter(username),
                          [](u8 byte) { return byte != 0; });
 
-    NewUserDialog* dialog = new NewUserDialog(uuid.value(), username, tr("Edit User"), this);
-
+    auto* dialog = new NewUserDialog(uuid, username, tr("Edit User"), this);
     connect(dialog, &NewUserDialog::userAdded, this,
-            [dialog, profile, user_idx, uuid, this](User user) mutable {
-                // TODO: MOVE UUID
-                // auto new_uuid = user.uuid;
-                auto new_username = user.username;
-                auto pixmap = user.pixmap;
+            [dialog, profile, index, uuid, this](User user) mutable {
+                dialog->deleteLater();
+                auto* item = item_model->itemFromIndex(index);
+                if (!item) {
+                    return;
+                }
 
-                auto const uuid_val = uuid.value();
-
-                const auto username_std = new_username.toStdString();
+                const auto username_std = user.username.toStdString();
+                if (username_std.size() > profile.username.size()) {
+                    return;
+                }
                 std::fill(profile.username.begin(), profile.username.end(), '\0');
                 std::copy(username_std.begin(), username_std.end(), profile.username.begin());
 
-                profile_manager.SetProfileBase(uuid_val, profile);
+                if (!profile_manager.SetProfileBase(uuid, profile)) {
+                    return;
+                }
                 profile_manager.WriteUserSaveFile();
 
-                item_model->setItem(
-                    user_idx, 0,
-                    new QStandardItem{pixmap, FormatUserEntryText(
-                                                  QString::fromStdString(username_std), uuid_val)});
+                item->setIcon(user.pixmap);
+                item->setText(FormatUserEntryText(user.username, uuid));
 
-                saveImage(pixmap, uuid_val);
+                saveImage(user.pixmap, uuid);
                 UpdateCurrentUser();
-
-                dialog->deleteLater();
             });
 
     connect(dialog, &QDialog::rejected, dialog, &QObject::deleteLater);
-
     dialog->show();
 }
 
-void ConfigureProfileManager::ConfirmDeleteUser() {
-    const auto index = tree_view->currentIndex().row();
-    const auto uuid = profile_manager.GetUser(index);
-    ASSERT(uuid);
-    const auto username = GetAccountUsername(profile_manager, *uuid);
-
-    confirm_dialog->SetInfo(username, *uuid, index);
+void ConfigureProfileManager::ConfirmDeleteUser(const QModelIndex& index) {
+    if (!index.isValid()) {
+        return;
+    }
+    const auto uuid = index.data(Qt::UserRole).value<Common::UUID>();
+    confirm_dialog->SetInfo(GetAccountUsername(profile_manager, uuid), uuid, index);
     confirm_dialog->show();
 }
 
-void ConfigureProfileManager::DeleteUser(const int index) {
-    if (Settings::values.current_user.GetValue() == tree_view->currentIndex().row()) {
-        Settings::values.current_user = 0;
-    }
-
-    const auto uuid = profile_manager.GetUser(index);
-    const auto account = uuid ? Common::Nextendo::LoadAccount(*uuid) : std::nullopt;
-    if (!profile_manager.RemoveProfileAtIndex(index)) {
+void ConfigureProfileManager::DeleteUser(const QPersistentModelIndex& index) {
+    const auto uuid = index.data(Qt::UserRole).value<Common::UUID>();
+    const auto account = uuid.IsValid() ? Common::Nextendo::LoadAccount(uuid) : std::nullopt;
+    const auto current_uuid = profile_manager.GetUser(Settings::values.current_user.GetValue());
+    if (!profile_manager.RemoveUser(uuid)) {
         return;
     }
+    const auto current_index =
+        profile_manager.GetUserIndex(current_uuid.value_or(Common::InvalidUUID)).value_or(0);
+    Settings::values.current_user = static_cast<s32>(current_index);
     if (account && !account->refresh_token.empty()) {
         void(QtConcurrent::run([client_id = Settings::values.nextendo_client_id.GetValue(),
                                 token = account->refresh_token] {
@@ -356,7 +364,7 @@ void ConfigureProfileManager::DeleteUser(const int index) {
 
     UpdateCurrentUser();
 
-    item_model->removeRows(tree_view->currentIndex().row(), 1);
+    item_model->removeRow(index.row());
     tree_view->clearSelection();
 }
 
@@ -402,7 +410,7 @@ ConfigureProfileManagerDeleteDialog::ConfigureProfileManagerDeleteDialog(QWidget
 ConfigureProfileManagerDeleteDialog::~ConfigureProfileManagerDeleteDialog() = default;
 
 void ConfigureProfileManagerDeleteDialog::SetInfo(const QString& username, const Common::UUID& uuid,
-                                                  int index) {
+                                                  const QModelIndex& index) {
     label_info->setText(
         tr("Name: %1\nUUID: %2").arg(username, QString::fromStdString(uuid.FormattedString())));
     icon_scene->clear();

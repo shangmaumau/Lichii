@@ -22,6 +22,7 @@ if(LICHII_TESTS)
     if(TARGET Qt6::Test)
         add_subdirectory(../tests/qt_compatibility ${CMAKE_BINARY_DIR}/qt_compatibility_tests)
         add_subdirectory(../tests/qt_iidb ${CMAKE_BINARY_DIR}/qt_iidb_tests)
+        add_subdirectory(../tests/qt_keyboard ${CMAKE_BINARY_DIR}/qt_keyboard_tests)
         add_subdirectory(../tests/qt_nup ${CMAKE_BINARY_DIR}/qt_nup_tests)
         add_subdirectory(../tests/qt_whats_new ${CMAKE_BINARY_DIR}/qt_whats_new_tests)
     else()
@@ -239,6 +240,14 @@ add_executable(lichii
     util/controller_navigation.h
     util/controller_ui_navigation.cpp
     util/controller_ui_navigation.h
+    util/keyboard_controller.cpp
+    util/keyboard_controller.h
+    util/keyboard_input.cpp
+    util/keyboard_input.h
+    util/keyboard_overlay.cpp
+    util/keyboard_overlay.h
+    util/keyboard_panel.cpp
+    util/keyboard_panel.h
     util/tab_bar_underline.h
     util/limitable_input_dialog.cpp
     util/limitable_input_dialog.h
@@ -256,6 +265,7 @@ add_executable(lichii
 
     user_data_migration.h user_data_migration.cpp
 
+    keyboard.qrc
     lichii.qrc
     lichii.rc
     migration_dialog.h migration_dialog.cpp
@@ -601,8 +611,28 @@ if (LICHII_USE_QT_WEB_ENGINE)
     target_compile_definitions(lichii PRIVATE LICHII_USE_QT_WEB_ENGINE)
 endif ()
 
+set(KEYBOARD_DICTIONARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../dist/keyboard/dictionaries")
+set(KEYBOARD_DICTIONARY_NOTICES
+    "${KEYBOARD_DICTIONARY_DIR}/README.md"
+    "${KEYBOARD_DICTIONARY_DIR}/SCOWL-Copyright.txt"
+    "${KEYBOARD_DICTIONARY_DIR}/SKK-NOTICE.txt"
+    "${KEYBOARD_DICTIONARY_DIR}/SKK-JISYO.L.unannotated.gz"
+    "${KEYBOARD_DICTIONARY_DIR}/CC-BY-SA-4.0.txt"
+    "${KEYBOARD_DICTIONARY_DIR}/WUBI-MIT.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSES/Apache-2.0.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSES/GPL-2.0-or-later.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../tools/ui/build_keyboard_dictionaries.py"
+)
+set(KEYBOARD_LICENSE_DIR "$<TARGET_FILE_DIR:lichii>/licenses/keyboard")
+add_custom_command(TARGET lichii POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${KEYBOARD_LICENSE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${KEYBOARD_DICTIONARY_NOTICES}
+            "${KEYBOARD_LICENSE_DIR}"
+    VERBATIM)
+
 if(UNIX AND NOT APPLE)
     install(TARGETS lichii)
+    install(FILES ${KEYBOARD_DICTIONARY_NOTICES} DESTINATION "share/licenses/lichii/keyboard")
 endif()
 
 if (WIN32 AND NOT LICHII_USE_BUNDLED_QT)
