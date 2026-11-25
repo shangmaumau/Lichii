@@ -8321,16 +8321,6 @@ Debug Message: </source>
         <translation>重置窗口大小 (&amp;R)</translation>
     </message>
     <message>
-        <location filename="../../src/lichii/main.ui" line="263"/>
-        <source>Preserve Window Size Across Sessions</source>
-        <translation>记住窗口大小</translation>
-    </message>
-    <message>
-        <location filename="../../src/lichii/main.ui" line="266"/>
-        <source>Keep the saved window size instead of resizing automatically when a game starts.</source>
-        <translation>启动游戏时沿用已保存的窗口大小。</translation>
-    </message>
-    <message>
         <location filename="../../src/lichii/main.ui" line="105"/>
         <source>&amp;Debugging</source>
         <translation>调试 (&amp;D)</translation>

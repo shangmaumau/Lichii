@@ -782,9 +782,7 @@ bool GRenderWindow::InitRenderTarget() {
 
     layout()->addWidget(child_widget);
     OnMinimalClientAreaChangeRequest(GetActiveConfig().min_client_area_size);
-    if (embedded || !UISettings::values.preserve_window_size.GetValue()) {
-        resize(target_size);
-    }
+    resize(target_size);
     child_widget->resize(size());
     OnFramebufferSizeChanged();
     if (!embedded) {
