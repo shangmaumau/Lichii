@@ -1,62 +1,55 @@
 {
-  "summary": "Browse mods in Lichii, get back the FPS lost in build 366, and try new frame generation options.",
-  "summary_zh_CN": "在 Lichii 内浏览模组，恢复第 366 版损失的帧率，并试用新的插帧选项。",
+  "summary": "Kirby boots on AMD, older GeForce cards render correctly again, and some games run faster.",
+  "summary_zh_CN": "修复了《星之卡比 探索发现》在部分 AMD 显卡上的启动问题和旧款 GeForce 显卡的画面异常，并提升了部分游戏的运行性能。",
   "changes": [
     {
-      "icon": "apps",
-      "title": "Mod Store",
-      "title_zh_CN": "Mod 商店",
-      "body": "Open Tools → Mod Store or Add-Ons → Browse Mods. Find GameBanana mods and over 11,000 Switch 1 listings for 60 FPS and ultrawide patches and cheats. Lichii checks patch build IDs against your game.",
-      "body_zh_CN": "从「工具 → Mod 商店」或「附加项 → 浏览模组」进入。可浏览 GameBanana 模组，以及超过 11,000 个 Switch 1 条目，包括 60 FPS 补丁、超宽屏补丁和金手指。Lichii 会核对补丁的构建 ID 是否与游戏匹配。"
-    },
-    {
-      "icon": "cpu",
-      "title": "FPS recovery after build 366",
-      "title_zh_CN": "恢复第 366 版损失的帧率",
-      "body": "Build 366's third GPU thread cut FPS by about 70% in one Ocarina of Time test. It's back off by default. To try the reworked version, go to Graphics → Advanced → Render thread (experimental).",
-      "body_zh_CN": "在一次《时之笛》测试中，第 366 版的第三个 GPU 线程使帧率下降了约 70%。此功能已恢复为默认关闭。要试用改进后的版本，可前往「图形 → 高级 → 渲染线程（实验性）」。"
-    },
-    {
-      "icon": "sparkles",
-      "title": "FlyHigh on Windows",
-      "title_zh_CN": "Windows 上的 FlyHigh",
-      "body": "FlyHigh is an optional neural frame generator for Vulkan games in SDR on x86-64 Windows. Choose it in the frame generation menu and accept the model license to download it.",
-      "body_zh_CN": "FlyHigh 是可选的神经网络插帧功能，适用于 x86-64 Windows 上以 SDR 运行的 Vulkan 游戏。在插帧菜单中选中它，接受模型许可协议后即可下载。"
-    },
-    {
-      "icon": "clock",
-      "title": "Better Lichii Optical Flow",
-      "title_zh_CN": "改进 Lichii 光流插帧",
-      "body": "Optical Flow tracks faster camera pans and small sprite movements more accurately. Generated frames show less ghosting around moving outlines.",
-      "body_zh_CN": "光流插帧能更准确地跟踪快速平移的镜头和精灵图的细微移动，减少生成帧中运动物体边缘的重影。"
-    },
-    {
       "icon": "gamepad",
-      "title": "Wonder, Pokopia, and Ori",
-      "title_zh_CN": "《惊奇》、Pokopia 与《奥日》",
-      "body": "Mario Wonder's Switch 2 Edition gets a built-in 60 FPS patch. Pokopia 2.0.1 boots again, and Ori and the Will of the Wisps can replace Spirit Trial ghosts without freezing on Windows.",
-      "body_zh_CN": "《超级马力欧兄弟 惊奇》Switch 2 版新增内置 60 FPS 补丁。Pokopia 2.0.1 恢复正常启动，《奥日与鬼火意志》在 Windows 上替换精灵试炼的幽灵记录时不再卡死。"
+      "title": "Kirby and the Forgotten Land",
+      "title_zh_CN": "《星之卡比 探索发现》启动修复",
+      "body": "The Nintendo Switch 2 Edition no longer crashes at launch on affected AMD GPUs. Garbled loading text is also fixed.",
+      "body_zh_CN": "修复 Nintendo Switch 2 版在部分 AMD 显卡上启动时崩溃的问题，以及加载文字显示错乱的问题。"
     },
     {
       "icon": "bug",
-      "title": "Game graphics fixes",
-      "title_zh_CN": "游戏画面修复",
-      "body": "Fixes broken battle sprites in Final Fantasy Resonance on AMD, missing gloom in Hyrule Warriors: Age of Imprisonment, and black or flickering trims in Ocarina of Time.",
-      "body_zh_CN": "修复 Final Fantasy Resonance 在 AMD 显卡上的战斗精灵图异常，修复《塞尔达无双 封印战记》的瘴气缺失，以及《时之笛》中装饰边缘发黑或闪烁的问题。"
+      "title": "Graphics on older GeForce cards",
+      "title_zh_CN": "旧款 GeForce 显卡的画面修复",
+      "body": "Fixes corruption on NVIDIA GeForce GTX 10-series and older cards. Your shader cache rebuilds once after updating.",
+      "body_zh_CN": "修复 NVIDIA GeForce GTX 10 系列及更早型号显卡上的画面异常。更新后，着色器缓存会重建一次。"
+    },
+    {
+      "icon": "cpu",
+      "title": "Faster gameplay",
+      "title_zh_CN": "改善部分游戏的运行性能",
+      "body": "Ocarina of Time and Donkey Kong Bananza run faster in some scenes, and crowded scenes in Fire Emblem: Fortune's Weave can run more smoothly. Gains vary with your hardware and settings.",
+      "body_zh_CN": "《时之笛》和《咚奇刚 蕉力全开》在部分场景中运行更快，Fire Emblem: Fortune’s Weave 在单位密集的场景中也可能更流畅。实际改善幅度取决于硬件和设置。"
+    },
+    {
+      "icon": "clock",
+      "title": "Faster first-time shader compiles",
+      "title_zh_CN": "加快着色器首次编译",
+      "body": "Some large shaders compile faster when you first encounter them, reducing stalls in games such as Ocarina of Time.",
+      "body_zh_CN": "部分大型着色器的首次编译耗时缩短，减少了《时之笛》等游戏运行中的卡顿。"
     },
     {
       "icon": "layers",
-      "title": "Less texture spill on low-VRAM GPUs",
-      "title_zh_CN": "减少低显存显卡的纹理溢出",
-      "body": "Lichii decodes large ASTC texture arrays in smaller batches so their temporary images don't spill into system RAM.",
-      "body_zh_CN": "Lichii 将大型 ASTC 纹理数组拆成较小的批次解码，避免临时图像占用系统内存。"
+      "title": "Safer NUP metadata edits",
+      "title_zh_CN": "编辑 NUP 元数据时保留构建 ID",
+      "body": "Changing an NUP's name, version, or icon no longer strips the Build IDs used to match patches and cheats.",
+      "body_zh_CN": "修改 NUP 的名称、版本或图标时，会保留用于匹配补丁和金手指的构建 ID。"
     },
     {
-      "icon": "download",
-      "title": "Better shader precompilation",
-      "title_zh_CN": "改进着色器预编译",
-      "body": "Turning on Precompile All Shaders sets shader precache to Always for that game. Lichii reuses pipelines built earlier in the same session and shows how many shader builds remain.",
-      "body_zh_CN": "启用「预编译所有着色器」后，该游戏的「启动游戏前预编译着色器」会设为「总是」。Lichii 会复用本次会话中已构建的管线，并显示仍需构建的着色器数量。"
+      "icon": "gamepad",
+      "title": "More game graphics fixes",
+      "title_zh_CN": "游戏画面修复",
+      "body": "Restores correct colors in Xenoblade Chronicles 2's Switch 2 Edition. Mario Kart World avoids a crash from an oversized lightmap on some low-VRAM GPUs.",
+      "body_zh_CN": "恢复《异度神剑 2》Switch 2 版的正确色彩，并修复《马力欧卡丁车 世界》因超大光照贴图而在部分低显存显卡上崩溃的问题。"
+    },
+    {
+      "icon": "bug",
+      "title": "Album, HDR, and multiplayer fixes",
+      "title_zh_CN": "相册、HDR 和多人游戏修复",
+      "body": "Album screenshots show thumbnails again. Games get notified when HDR turns on, and multiplayer rooms can connect over Tailscale and WireGuard.",
+      "body_zh_CN": "相册截图恢复显示缩略图。启用 HDR 时，游戏会收到通知。多人房间支持通过 Tailscale 和 WireGuard 连接。"
     }
   ]
 }
