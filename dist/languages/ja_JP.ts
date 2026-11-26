@@ -6354,6 +6354,14 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>Clear</source>
         <translation>クリア</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>プレイ中</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>現在のゲームを再開</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6758,6 +6766,10 @@ Debug Message: </source>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>パフォーマンスオーバーレイの表示切り替え</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>一時停止してゲームライブラリに戻る</translation>
     </message>
 </context>
 <context>
@@ -8289,6 +8301,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>なし</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>別のゲームを起動</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>別のゲームを起動すると、現在のゲームが終了します。続けますか？</translation>
     </message>
 </context>
 <context>

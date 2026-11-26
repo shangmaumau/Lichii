@@ -442,6 +442,12 @@ void GameListModel::SaveSnapshot() {
         for (int column = 0; column < COLUMN_COUNT; ++column) {
             auto item = std::unique_ptr<QStandardItem>(
                 itemFromIndex(game.siblingAtColumn(column))->clone());
+            // A paused session belongs to this process, so the next launch must not restore it.
+            if (item->data(GameListItemPath::SuspendedRole).toBool()) {
+                item->setData({}, GameListItemPath::SuspendedRole);
+                item->setData({}, Qt::AccessibleDescriptionRole);
+            }
+
             const auto decoration = item->data(Qt::DecorationRole);
             if (decoration.metaType().id() == QMetaType::QPixmap) {
                 item->setData(decoration.value<QPixmap>().toImage(), Qt::DecorationRole);

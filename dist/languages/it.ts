@@ -6338,6 +6338,14 @@ Vai su Configura -&gt; Sistema -&gt; Rete e selezionane una.</translation>
         <source>Clear</source>
         <translation>Cancella</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Partita in corso</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Riprendi la partita corrente</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6742,6 +6750,10 @@ Messaggio debug:</translation>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>Mostra/nascondi prestazioni in sovrimpressione</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Metti in pausa e torna alla raccolta giochi</translation>
     </message>
 </context>
 <context>
@@ -8278,6 +8290,14 @@ Vuoi uscire comunque?</translation>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>Nullo</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Avvia un altro gioco</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Avviando un altro gioco, quello attuale verrà chiuso. Continuare?</translation>
     </message>
 </context>
 <context>

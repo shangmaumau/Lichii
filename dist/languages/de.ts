@@ -6347,6 +6347,14 @@ Bitte gehe zu „Konfigurieren“ -&gt; „System“ -&gt; „Netzwerk“ und tr
         <source>Clear</source>
         <translation>Löschen</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Spiel läuft</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Aktuelles Spiel fortsetzen</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6751,6 +6759,10 @@ Fehlerbehebungs-Meldung: </translation>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>Leistungs Overlay umschalten</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Spiel pausieren und zur Spielebibliothek zurückkehren</translation>
     </message>
 </context>
 <context>
@@ -8284,6 +8296,14 @@ Möchtest du diese Anweisung ignorieren und das Programm trotzdem beenden?</tran
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>Null</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Anderes Spiel starten</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Beim Start eines anderen Spiels wird das aktuelle Spiel beendet. Fortfahren?</translation>
     </message>
 </context>
 <context>

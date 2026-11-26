@@ -7669,6 +7669,14 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>%1 games</source>
         <translation>%1 个游戏</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>游戏进行中</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>继续当前游戏</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -8096,6 +8104,10 @@ Debug Message: </source>
         <location filename="../../src/lichii/configuration/configure_hotkeys.cpp" line="-400"/>
         <source>Exit Lichii</source>
         <translation>退出 Lichii</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>暂停并返回游戏库</translation>
     </message>
 </context>
 <context>
@@ -10372,6 +10384,14 @@ Remove and sign out those sign-ins? Keep them if the profiles are in another NAN
     <message>
         <source>FlyHigh</source>
         <translation>FlyHigh</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>启动其他游戏</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>启动其他游戏会结束当前游戏。是否继续？</translation>
     </message>
 </context>
 <context>

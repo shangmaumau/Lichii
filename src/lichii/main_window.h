@@ -366,6 +366,8 @@ private slots:
     void OnRestartGame();
     void OnPauseGame();
     void OnPauseContinueGame();
+    void PauseToGameLibrary();
+    void ResumeSuspendedGame();
     void OnStopGame();
     void OnPrepareForSleep(bool prepare_sleep);
     void OnMenuReportCompatibility();
@@ -651,6 +653,9 @@ private:
 
     // Whether emulation is currently running in Lichii.
     bool emulation_running = false;
+
+    // The emulation session is still loaded while the game library is interactive.
+    bool game_suspended_to_library = false;
     std::optional<CompatibilityReporting::Session> report_session;
     bool boot_in_progress = false;
     bool mod_store_open = false;

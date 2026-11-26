@@ -6348,6 +6348,14 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>Clear</source>
         <translation>지우기</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>플레이 중</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>현재 게임 계속하기</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6752,6 +6760,10 @@ Debug Message: </source>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>성능 오버레이 토글</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>일시 정지하고 게임 라이브러리로 돌아가기</translation>
     </message>
 </context>
 <context>
@@ -8283,6 +8295,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>Null</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>다른 게임 시작</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>다른 게임을 시작하면 현재 게임이 종료됩니다. 계속하시겠습니까?</translation>
     </message>
 </context>
 <context>

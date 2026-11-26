@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <chrono>
 #include <map>
+#include <mutex>
+#include <optional>
 #include <QKeySequence>
 #include <QString>
 #include <QWidget>
@@ -25,11 +28,15 @@ struct ControllerButtonSequence {
     Core::HID::NpadButtonState npad{};
 };
 
+enum class ControllerShortcutTrigger { Press, ShortPress };
+
 class ControllerShortcut : public QObject {
     Q_OBJECT
 
 public:
-    explicit ControllerShortcut(Core::HID::EmulatedController* controller);
+    explicit ControllerShortcut(Core::HID::EmulatedController* controller,
+                                ControllerShortcutTrigger trigger = ControllerShortcutTrigger::Press,
+                                Core::HID::EmulatedController* handheld = nullptr);
     ~ControllerShortcut();
 
     void SetKey(const ControllerButtonSequence& buttons);
@@ -46,12 +53,21 @@ Q_SIGNALS:
 private:
     void ControllerUpdateEvent(Core::HID::ControllerTriggerType type);
 
-    bool is_enabled{};
-    bool active{};
-    int callback_key{};
+    bool HandleShortPress(ControllerButtonSequence pressed);
+
+    mutable std::mutex mutex;
+    bool is_enabled = true;
+    bool active = false;
     ControllerButtonSequence button_sequence{};
-    std::string name{};
-    Core::HID::EmulatedController* emulated_controller = nullptr;
+
+    // A short press is resolved on release, after other shortcuts had a chance to use the chord.
+    std::optional<std::chrono::steady_clock::time_point> short_press_start;
+    bool short_press_interrupted = false;
+    const ControllerShortcutTrigger trigger;
+    Core::HID::EmulatedController* emulated_controller;
+    Core::HID::EmulatedController* handheld_controller;
+    int callback_key{};
+    int handheld_callback_key{};
 };
 
 class HotkeyRegistry final {
@@ -89,8 +105,10 @@ public:
      *          QShortcut's parent.
      */
     QShortcut* GetHotkey(const std::string& group, const std::string& action, QWidget* widget);
-    ControllerShortcut* GetControllerHotkey(const std::string& group, const std::string& action,
-                                            Core::HID::EmulatedController* controller);
+    ControllerShortcut* GetControllerHotkey(
+        const std::string& group, const std::string& action, Core::HID::EmulatedController* controller,
+        ControllerShortcutTrigger trigger = ControllerShortcutTrigger::Press,
+        Core::HID::EmulatedController* handheld = nullptr);
 
     /**
      * Returns a QKeySequence object whose signal can be connected to QAction::setShortcut.

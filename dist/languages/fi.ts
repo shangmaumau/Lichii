@@ -6231,6 +6231,14 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>Clear</source>
         <translation>Tyhjennä</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Peli käynnissä</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Jatka nykyistä peliä</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6634,6 +6642,10 @@ Debug Message: </source>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Keskeytä ja palaa pelikirjastoon</translation>
     </message>
 </context>
 <context>
@@ -8153,6 +8165,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Käynnistä toinen peli</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Toisen pelin käynnistäminen sulkee nykyisen pelin. Jatketaanko?</translation>
     </message>
 </context>
 <context>

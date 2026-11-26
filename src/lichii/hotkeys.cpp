@@ -34,14 +34,10 @@ void HotkeyRegistry::LoadHotkeys() {
     // beginGroup()
     for (auto shortcut : UISettings::values.shortcuts) {
         Hotkey& hk = hotkey_groups[shortcut.group][shortcut.name];
-        if (!shortcut.shortcut.keyseq.empty()) {
-            hk.keyseq = QKeySequence::fromString(QString::fromStdString(shortcut.shortcut.keyseq),
-                                                 QKeySequence::NativeText);
-            hk.context = static_cast<Qt::ShortcutContext>(shortcut.shortcut.context);
-        }
-        if (!shortcut.shortcut.controller_keyseq.empty()) {
-            hk.controller_keyseq = shortcut.shortcut.controller_keyseq;
-        }
+        hk.keyseq = QKeySequence::fromString(QString::fromStdString(shortcut.shortcut.keyseq),
+                                             QKeySequence::NativeText);
+        hk.context = static_cast<Qt::ShortcutContext>(shortcut.shortcut.context);
+        hk.controller_keyseq = shortcut.shortcut.controller_keyseq;
         if (hk.shortcut) {
             hk.shortcut->disconnect();
             hk.shortcut->setKey(hk.keyseq);
@@ -66,13 +62,13 @@ QShortcut* HotkeyRegistry::GetHotkey(const std::string& group, const std::string
     return hk.shortcut;
 }
 
-ControllerShortcut* HotkeyRegistry::GetControllerHotkey(const std::string& group,
-                                                        const std::string& action,
-                                                        Core::HID::EmulatedController* controller) {
+ControllerShortcut* HotkeyRegistry::GetControllerHotkey(
+    const std::string& group, const std::string& action, Core::HID::EmulatedController* controller,
+    ControllerShortcutTrigger trigger, Core::HID::EmulatedController* handheld) {
     Hotkey& hk = hotkey_groups[group][action];
 
     if (!hk.controller_shortcut) {
-        hk.controller_shortcut = new ControllerShortcut(controller);
+        hk.controller_shortcut = new ControllerShortcut(controller, trigger, handheld);
         hk.controller_shortcut->SetKey(hk.controller_keyseq);
     }
 
@@ -88,27 +84,36 @@ Qt::ShortcutContext HotkeyRegistry::GetShortcutContext(const std::string& group,
     return hotkey_groups[group][action].context;
 }
 
-ControllerShortcut::ControllerShortcut(Core::HID::EmulatedController* controller) {
-    emulated_controller = controller;
+ControllerShortcut::ControllerShortcut(Core::HID::EmulatedController* controller,
+                                       ControllerShortcutTrigger trigger_,
+                                       Core::HID::EmulatedController* handheld)
+    : trigger{trigger_}, emulated_controller{controller}, handheld_controller{handheld} {
     Core::HID::ControllerUpdateCallback engine_callback{
         .on_change = [this](Core::HID::ControllerTriggerType type) { ControllerUpdateEvent(type); },
         .is_npad_service = false,
     };
     callback_key = emulated_controller->SetCallback(engine_callback);
-    is_enabled = true;
+    if (handheld_controller) {
+        handheld_callback_key = handheld_controller->SetCallback(engine_callback);
+    }
 }
 
 ControllerShortcut::~ControllerShortcut() {
     emulated_controller->DeleteCallback(callback_key);
+    if (handheld_controller) {
+        handheld_controller->DeleteCallback(handheld_callback_key);
+    }
 }
 
 void ControllerShortcut::SetKey(const ControllerButtonSequence& buttons) {
+    std::scoped_lock lock{mutex};
     button_sequence = buttons;
+    short_press_start.reset();
+    short_press_interrupted = false;
 }
 
 void ControllerShortcut::SetKey(const std::string& buttons_shortcut) {
     ControllerButtonSequence sequence{};
-    name = buttons_shortcut;
     std::istringstream command_line(buttons_shortcut);
     std::string line;
     while (std::getline(command_line, line, '+')) {
@@ -171,24 +176,37 @@ void ControllerShortcut::SetKey(const std::string& buttons_shortcut) {
         }
     }
 
-    button_sequence = sequence;
+    SetKey(sequence);
 }
 
 ControllerButtonSequence ControllerShortcut::ButtonSequence() const {
+    std::scoped_lock lock{mutex};
+
     return button_sequence;
 }
 
 void ControllerShortcut::SetEnabled(bool enable) {
+    std::scoped_lock lock{mutex};
     is_enabled = enable;
+    short_press_start.reset();
+    short_press_interrupted = false;
 }
 
 bool ControllerShortcut::IsEnabled() const {
+    std::scoped_lock lock{mutex};
+
     return is_enabled;
 }
 
 void ControllerShortcut::ControllerUpdateEvent(Core::HID::ControllerTriggerType type) {
+    std::unique_lock lock{mutex};
     if (!is_enabled) {
         return;
+    }
+    if (type == Core::HID::ControllerTriggerType::Disconnected ||
+        type == Core::HID::ControllerTriggerType::Type) {
+        short_press_start.reset();
+        short_press_interrupted = false;
     }
     if (type != Core::HID::ControllerTriggerType::Button) {
         return;
@@ -198,20 +216,72 @@ void ControllerShortcut::ControllerUpdateEvent(Core::HID::ControllerTriggerType 
         return;
     }
 
-    const auto player_npad_buttons =
-        emulated_controller->GetNpadButtons().raw & button_sequence.npad.raw;
-    const u64 player_capture_buttons =
-        emulated_controller->GetCaptureButtons().raw & button_sequence.capture.raw;
-    const u64 player_home_buttons =
-        emulated_controller->GetHomeButtons().raw & button_sequence.home.raw;
+    ControllerButtonSequence pressed{
+        .capture = emulated_controller->GetCaptureButtons(),
+        .home = emulated_controller->GetHomeButtons(),
+        .npad = emulated_controller->GetNpadButtons(),
+    };
+    if (handheld_controller) {
+        pressed.capture.raw |= handheld_controller->GetCaptureButtons().raw;
+        pressed.home.raw |= handheld_controller->GetHomeButtons().raw;
+        pressed.npad.raw |= handheld_controller->GetNpadButtons().raw;
+    }
+    if (trigger == ControllerShortcutTrigger::ShortPress) {
+        const bool activate = HandleShortPress(pressed);
+        lock.unlock();
+        if (activate) {
+            emit Activated();
+        }
+        return;
+    }
+
+    const auto player_npad_buttons = pressed.npad.raw & button_sequence.npad.raw;
+    const u64 player_capture_buttons = pressed.capture.raw & button_sequence.capture.raw;
+    const u64 player_home_buttons = pressed.home.raw & button_sequence.home.raw;
 
     if (player_npad_buttons == button_sequence.npad.raw &&
         player_capture_buttons == button_sequence.capture.raw &&
         player_home_buttons == button_sequence.home.raw && !active) {
         // Force user to press the home or capture button again
         active = true;
+        lock.unlock();
         emit Activated();
         return;
     }
     active = false;
+}
+
+bool ControllerShortcut::HandleShortPress(ControllerButtonSequence pressed) {
+    using Core::HID::NpadButton;
+    constexpr auto stick_directions = NpadButton::StickLLeft | NpadButton::StickLUp |
+                                      NpadButton::StickLRight | NpadButton::StickLDown |
+                                      NpadButton::StickRLeft | NpadButton::StickRUp |
+                                      NpadButton::StickRRight | NpadButton::StickRDown;
+    const auto held_buttons = pressed.npad.raw & ~stick_directions;
+    const auto npad = held_buttons & button_sequence.npad.raw;
+    const auto home = pressed.home.raw & button_sequence.home.raw;
+    const auto capture = pressed.capture.raw & button_sequence.capture.raw;
+    const bool all_bound = npad == button_sequence.npad.raw && home == button_sequence.home.raw &&
+                           capture == button_sequence.capture.raw;
+    const bool any_bound = npad != NpadButton::None || home != 0 || capture != 0;
+    const bool extra = held_buttons != npad || pressed.home.raw != home || pressed.capture.raw != capture;
+
+    if (all_bound && !short_press_start) {
+        short_press_start = std::chrono::steady_clock::now();
+    }
+    if (short_press_start && extra) {
+        short_press_interrupted = true;
+    }
+    if (any_bound) {
+        return false;
+    }
+
+    // Match the emulated HOME button's short-press interval.
+    constexpr auto max_duration = std::chrono::milliseconds(400);
+    const bool activate = short_press_start && !short_press_interrupted &&
+                          std::chrono::steady_clock::now() - *short_press_start < max_duration;
+    short_press_start.reset();
+    short_press_interrupted = false;
+
+    return activate;
 }

@@ -188,6 +188,7 @@ add_executable(lichii
     game/artwork_image.cpp game/artwork_image.h
     game/iidb_client.cpp game/iidb_client.h
     game/game_list.cpp game/game_list.h
+    game/game_list_suspended_game.cpp
     game/game_grid.cpp game/game_grid.h
     game/game_home.cpp game/game_home.h
 
@@ -283,6 +284,7 @@ add_executable(lichii
     data_widget.ui
     ryujinx_dialog.h ryujinx_dialog.cpp ryujinx_dialog.ui
     main_window.h main_window.cpp main.ui
+    main_window_game_library.cpp
 
     configuration/system/new_user_dialog.h configuration/system/new_user_dialog.cpp configuration/system/new_user_dialog.ui
     configuration/system/profile_avatar_dialog.h configuration/system/profile_avatar_dialog.cpp

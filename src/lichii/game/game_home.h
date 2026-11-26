@@ -40,6 +40,7 @@ class GameHome final : public QWidget {
     bool OpenSelectedGameMenu();
     QModelIndex SourceIndex(const QModelIndex& index) const;
     void FocusLibrary();
+    void FocusSuspendedGame();
     void FocusFromSearch();
     void Refresh(bool reset_position = false);
     void UpdateProfile();

@@ -169,6 +169,14 @@ void ControllerUiNavigation::Stop() {
     controller->UnloadController();
 }
 
+void ControllerUiNavigation::SetGameLibraryActiveWhilePaused(bool active) {
+    game_library_active_while_paused = active;
+    if (!active) {
+        repeat.stop();
+    }
+    focus_update.start();
+}
+
 void ControllerUiNavigation::SetInputCapture(QWidget* widget, bool capturing) {
     widget->window()->setProperty(InputCaptureProperty, capturing);
 }
@@ -192,7 +200,8 @@ QWidget* ControllerUiNavigation::ActiveWindow() const {
         window->property(InputCaptureProperty).toBool()) {
         return nullptr;
     }
-    if (system.IsPoweredOn() && !qobject_cast<QDialog*>(window)) {
+    const bool library_active = game_library_active_while_paused && window == main_window;
+    if (system.IsPoweredOn() && !library_active && !qobject_cast<QDialog*>(window)) {
         return nullptr;
     }
     return window;

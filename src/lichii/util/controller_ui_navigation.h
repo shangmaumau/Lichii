@@ -35,6 +35,7 @@ public:
     ~ControllerUiNavigation() override;
 
     void Stop();
+    void SetGameLibraryActiveWhilePaused(bool active);
     static void SetInputCapture(QWidget* widget, bool capturing);
 
 private:
@@ -79,6 +80,7 @@ private:
     Qt::Key held_key = Qt::Key_unknown;
     QPoint controller_mouse_position;
     bool stopped = false;
+    bool game_library_active_while_paused = false;
     bool controller_active = false;
     bool focus_sound_open_attempted = false;
 };

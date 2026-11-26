@@ -519,11 +519,15 @@ void QtConfig::SavePathValues() {
 void QtConfig::SaveShortcutValues() {
     BeginGroup(Settings::TranslateCategory(Settings::Category::Shortcuts));
 
-    // Lengths of UISettings::values.shortcuts & default_hotkeys are same.
-    // However, their ordering must also be the same.
-    for (std::size_t i = 0; i < UISettings::default_hotkeys.size(); i++) {
-        const auto& [name, group, shortcut] = UISettings::values.shortcuts[i];
-        const auto& default_hotkey = UISettings::default_hotkeys[i].shortcut;
+    for (const auto& [name, group, shortcut] : UISettings::values.shortcuts) {
+        const auto defaults = std::ranges::find_if(UISettings::default_hotkeys, [&](const auto& entry) {
+            return entry.name == name && entry.group == group;
+        });
+        if (defaults == UISettings::default_hotkeys.end()) {
+            continue;
+        }
+
+        const auto& default_hotkey = defaults->shortcut;
 
         BeginGroup(group);
         BeginGroup(name);

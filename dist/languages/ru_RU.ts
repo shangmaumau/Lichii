@@ -6344,6 +6344,14 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>Clear</source>
         <translation>Очистить</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Игра запущена</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Продолжить текущую игру</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6748,6 +6756,10 @@ Debug Message: </source>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>Переключить оверлей производительности</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Приостановить игру и вернуться в библиотеку</translation>
     </message>
 </context>
 <context>
@@ -8288,6 +8300,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>Null</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Запустить другую игру</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>При запуске другой игры текущая игра будет закрыта. Продолжить?</translation>
     </message>
 </context>
 <context>

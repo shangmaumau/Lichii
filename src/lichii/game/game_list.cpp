@@ -22,6 +22,7 @@
 #include <QListView>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPushButton>
 #include <QScrollBar>
 #include <QScroller>
 #include <QScrollerProperties>
@@ -111,6 +112,11 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
     search_field = new GameListSearchField(this);
     layout->addWidget(search_field);
 
+    resume_unlisted_game = new QPushButton(tr("Resume Current Game"), this);
+    layout->addWidget(resume_unlisted_game, 0, Qt::AlignHCenter);
+    resume_unlisted_game->hide();
+    connect(resume_unlisted_game, &QPushButton::clicked, this, &GameList::ResumeGameRequested);
+
     SetupScrollAnimation();
 
     connect(tree_view, &QTreeView::activated, this, &GameList::ValidateEntry);
@@ -121,6 +127,14 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
 
     connect(carousel_view, &QListView::activated, this, &GameList::ValidateEntry);
     connect(carousel_view, &QListView::customContextMenuRequested, this, &GameList::PopupContextMenu);
+    for (auto* view : std::array<QAbstractItemView*, 3>{tree_view, grid_view, carousel_view}) {
+        connect(view, &QAbstractItemView::clicked, this, [this](const QModelIndex& index) {
+            const auto game = index.siblingAtColumn(0);
+            if (isEnabled() && game.data(GameListItemPath::SuspendedRole).toBool()) {
+                emit ResumeGameRequested();
+            }
+        });
+    }
     connect(home_view, &GameHome::GameActivated, this, &GameList::ValidateEntry);
     connect(home_view, &GameHome::GameMenuRequested, this, &GameList::ShowContextMenu);
     connect(home_view, &GameHome::ProfileRequested, this, &GameList::ProfileRequested);
@@ -295,6 +309,10 @@ QStandardItemModel* GameList::GetModel() const {
 }
 
 QWidget* GameList::NavigationTarget() const {
+    if (resume_unlisted_game->isVisible()) {
+        return resume_unlisted_game;
+    }
+
     return current_page == home_view ? home_view->NavigationTarget() : m_currentView;
 }
 
@@ -434,6 +452,10 @@ void GameList::ResetViewMode() {
     item_model->SetFlat(!is_tree);
     current_page->show();
     RefreshLibraryView();
+    if (!suspended_game_path.isEmpty()) {
+        FocusSuspendedGame();
+        return;
+    }
     if (is_home) {
         if (library_loading) {
             emit ShowList(true);
@@ -462,8 +484,12 @@ void GameList::OnFilterCloseClicked() {
 }
 
 void GameList::RefreshLibraryView() {
-    emit ShowList(!item_model->IsEmpty() ||
+    emit ShowList(!suspended_game_path.isEmpty() || !item_model->IsEmpty() ||
                   (library_loading && current_page == home_view));
+
+    if (!suspended_game_path.isEmpty()) {
+        UpdateSuspendedGameRows();
+    }
 
     int count = item_model->rowCount();
     if (m_isTreeMode && count > 0) {
@@ -899,7 +925,15 @@ void GameList::UpdateIconSizes() {
 }
 
 void GameList::ValidateEntry(const QModelIndex& item) {
-    const auto selected = item.sibling(item.row(), 0);
+    if (!isEnabled()) {
+        return;
+    }
+
+    const auto selected = item.siblingAtColumn(0);
+    if (selected.data(GameListItemPath::SuspendedRole).toBool()) {
+        emit ResumeGameRequested();
+        return;
+    }
 
     switch (selected.data(GameListItem::TypeRole).value<GameListItemType>()) {
     case GameListItemType::Game: {
@@ -1365,6 +1399,11 @@ void GameList::changeEvent(QEvent* event) {
 }
 
 void GameList::RetranslateUI() {
+    resume_unlisted_game->setText(tr("Resume Current Game"));
+    if (!suspended_game_path.isEmpty()) {
+        UpdateSuspendedGameRows();
+    }
+
     item_model->RetranslateUI();
 }
 

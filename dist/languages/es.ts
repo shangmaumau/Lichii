@@ -6851,6 +6851,14 @@ Por favor, vaya a Configuración -&gt; Sistema -&gt; Red y selecciona una interf
         <source>Submit compatibility report…</source>
         <translation>Enviar reporte de compatibilidad…</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Partida en curso</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Continuar la partida actual</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -7265,6 +7273,10 @@ Mensaje de depuración:</translation>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="45"/>
         <source>Exit Eglantine</source>
         <translation>Salir de Eglantine</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Pausar y volver a la biblioteca de juegos</translation>
     </message>
 </context>
 <context>
@@ -9231,6 +9243,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="63"/>
         <source>FSR 1 Soft</source>
         <translation>FSR 1 suave</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Iniciar otro juego</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Al iniciar otro juego, se cerrará el juego actual. ¿Continuar?</translation>
     </message>
 </context>
 <context>

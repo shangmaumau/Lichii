@@ -50,10 +50,6 @@ QPixmap TintedPixmap(const QPixmap& source, const QColor& color) {
 
 QIcon BuildMenuIcon(const char* name, bool dark_icons) {
     QIcon icon;
-    if (UISettings::values.theme != "lichii") {
-        return icon;
-    }
-
     const QString base = QStringLiteral(":/lichii/icons/menu_%1").arg(QLatin1String(name));
     QPixmap source = QtCommon::LoadPixmapForDpr(base + QStringLiteral("@2x.png"), 2.0);
     if (source.isNull()) {
@@ -88,10 +84,20 @@ bool MenuUsesDarkIcons() {
 } // namespace
 
 QIcon MenuIcon(const char* name) {
+#ifndef Q_OS_MACOS
+    if (UISettings::values.theme != "lichii") {
+        return {};
+    }
+#endif
+
     return BuildMenuIcon(name, MenuUsesDarkIcons());
 }
 
 QIcon WidgetIcon(const char* name) {
+    if (UISettings::values.theme != "lichii") {
+        return {};
+    }
+
     return BuildMenuIcon(name, UISettings::IsDarkTheme());
 }
 

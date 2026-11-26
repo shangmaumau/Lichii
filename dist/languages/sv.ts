@@ -6355,6 +6355,14 @@ Gå till Konfigurera -&gt; System -&gt; Nätverk och gör ett val.</translation>
         <source>Clear</source>
         <translation>Rensa</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Spel pågår</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Fortsätt det aktuella spelet</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6759,6 +6767,10 @@ Felsökningsmeddelande: </translation>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>Växla prestandaöverlägg</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Pausa och återgå till spelbiblioteket</translation>
     </message>
 </context>
 <context>
@@ -8293,6 +8305,14 @@ Vill du kringgå detta och stänga ändå?</translation>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>Null</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Starta ett annat spel</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Om du startar ett annat spel avslutas det aktuella spelet. Vill du fortsätta?</translation>
     </message>
 </context>
 <context>

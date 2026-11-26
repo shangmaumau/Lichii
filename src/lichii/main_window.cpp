@@ -1208,7 +1208,7 @@ void MainWindow::InitializeWidgets() {
     ui->horizontalLayout->addWidget(loading_screen);
     connect(loading_screen, &LoadingScreen::Hidden, this, [&] {
         loading_screen->Clear();
-        if (emulation_running) {
+        if (emulation_running && !game_suspended_to_library) {
             render_window->show();
             render_window->setFocus();
         }
@@ -1678,8 +1678,18 @@ void MainWindow::InitializeHotkeys() {
                 Qt::QueuedConnection);
     };
 
+    constexpr auto library_hotkey = "Pause and Return to Game Library";
+    const auto* library_keyboard_shortcut = hotkey_registry.GetHotkey("Main Window", library_hotkey, this);
+    auto& hid = QtCommon::system->HIDCore();
+    const auto* library_controller_shortcut = hotkey_registry.GetControllerHotkey(
+        "Main Window", library_hotkey, hid.GetEmulatedController(Core::HID::NpadIdType::Player1),
+        ControllerShortcutTrigger::ShortPress, hid.GetEmulatedController(Core::HID::NpadIdType::Handheld));
+    connect(library_keyboard_shortcut, &QShortcut::activated, this, &MainWindow::PauseToGameLibrary);
+    connect(library_controller_shortcut, &ControllerShortcut::Activated, this,
+            &MainWindow::PauseToGameLibrary, Qt::QueuedConnection);
+
     connect_shortcut(QStringLiteral("Exit Fullscreen"), [&] {
-        if (emulation_running && ui->action_Fullscreen->isChecked()) {
+        if (emulation_running && !game_suspended_to_library && ui->action_Fullscreen->isChecked()) {
             ui->action_Fullscreen->setChecked(false);
             ToggleFullscreen();
         }
@@ -1777,8 +1787,7 @@ void MainWindow::RestoreUIState() {
 
     ui->action_Show_Performance_Overlay->setChecked(
         UISettings::values.show_perf_overlay.GetValue());
-    if (perf_overlay)
-        perf_overlay->setVisible(ui->action_Show_Performance_Overlay->isChecked());
+    OnTogglePerfOverlay();
     Debugger::ToggleConsole();
 }
 
@@ -1826,6 +1835,7 @@ void MainWindow::ConnectWidgetEvents() {
     connect(game_list, &GameList::BootGame, this, &MainWindow::BootGameFromList);
     connect(game_list, &GameList::ProfileRequested, this, [this] { OpenConfiguration(true); });
     connect(game_list, &GameList::GameChosen, this, &MainWindow::OnGameListLoadFile);
+    connect(game_list, &GameList::ResumeGameRequested, this, &MainWindow::ResumeSuspendedGame);
     connect(game_list, &GameList::OpenDirectory, this, &MainWindow::OnGameListOpenDirectory);
     connect(game_list, &GameList::OpenFolderRequested, this, &MainWindow::OnGameListOpenFolder);
     connect(game_list, &GameList::OpenTransferableShaderCacheRequested, this,
@@ -2459,6 +2469,12 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     if (boot_in_progress || close_pending || mod_store_open) {
         return;
     }
+    if (game_suspended_to_library &&
+        !question(this, tr("Start Another Game"),
+                  tr("Starting another game will close the current game. Continue?"),
+                  QMessageBox::Yes | QMessageBox::No, QMessageBox::No)) {
+        return;
+    }
     if (whats_new_dialog) {
         whats_new_dialog->close();
     }
@@ -2851,7 +2867,7 @@ bool MainWindow::OnShutdownBegin() {
         return false;
     }
 
-    if (ui->action_Fullscreen->isChecked()) {
+    if (ui->action_Fullscreen->isChecked() && !game_suspended_to_library) {
         HideFullscreen();
     }
 
@@ -3031,6 +3047,10 @@ void MainWindow::OnEmulationStopped() {
     }
 
     emulation_running = false;
+    if (std::exchange(game_suspended_to_library, false)) {
+        game_list->SetSuspendedGame();
+        controller_ui_navigation->SetGameLibraryActiveWhilePaused(false);
+    }
     nextendo_version_check.reset();
 
     nextendo_social_timer.stop();
@@ -3654,7 +3674,7 @@ void MainWindow::OnGameListAddDirectory() {
 }
 
 void MainWindow::OnGameListShowList(bool show) {
-    if (emulation_running && ui->action_Single_Window_Mode->isChecked())
+    if (emulation_running && !game_suspended_to_library && ui->action_Single_Window_Mode->isChecked())
         return;
     game_list->setVisible(show);
     game_list_placeholder->setVisible(!show);
@@ -3971,6 +3991,10 @@ void MainWindow::OnMenuRecentFile() {
 }
 
 void MainWindow::OnStartGame() {
+    if (game_suspended_to_library) {
+        return;
+    }
+
     PreventOSSleep();
 
     QtCommon::emu_thread->SetRunning(true);
@@ -4007,6 +4031,11 @@ void MainWindow::OnPauseGame() {
 }
 
 void MainWindow::OnPauseContinueGame() {
+    if (game_suspended_to_library) {
+        ResumeSuspendedGame();
+        return;
+    }
+
     if (emulation_running) {
         if (QtCommon::emu_thread->IsRunning()) {
             OnPauseGame();
@@ -4234,7 +4263,7 @@ void MainWindow::OnOpenUserHandbook() {
 }
 
 void MainWindow::ToggleFullscreen() {
-    if (!emulation_running) {
+    if (!emulation_running || game_suspended_to_library) {
         return;
     }
     if (ui->action_Fullscreen->isChecked()) {
@@ -4329,7 +4358,7 @@ void MainWindow::ToggleWindowMode() {
         render_window->setMinimumSize(1, 1);
         ui->horizontalLayout->addWidget(render_window);
         render_window->setFocusPolicy(Qt::StrongFocus);
-        if (emulation_running) {
+        if (emulation_running && !game_suspended_to_library) {
             render_window->setVisible(true);
             render_window->setFocus();
             game_list->hide();
@@ -4340,7 +4369,7 @@ void MainWindow::ToggleWindowMode() {
         ui->horizontalLayout->removeWidget(render_window);
         render_window->setParent(nullptr);
         render_window->setFocusPolicy(Qt::NoFocus);
-        if (emulation_running) {
+        if (emulation_running && !game_suspended_to_library) {
             render_window->setVisible(true);
             render_window->RestoreGeometry();
             game_list->show();
@@ -5230,8 +5259,10 @@ void MainWindow::OnToggleStatusBar() {
 }
 
 void MainWindow::OnTogglePerfOverlay() {
-    if (perf_overlay)
-        perf_overlay->setVisible(ui->action_Show_Performance_Overlay->isChecked());
+    if (perf_overlay) {
+        perf_overlay->setVisible(!game_suspended_to_library &&
+                                 ui->action_Show_Performance_Overlay->isChecked());
+    }
 }
 
 #ifdef HAS_RESHADE
@@ -7000,7 +7031,11 @@ void MainWindow::UpdateMenuIcons() {
         {ui->action_Eden_Dependencies, "list"},
     });
     for (const auto& [action, name] : icons) {
-        action->setIcon(MenuIcon(name));
+        const auto icon = MenuIcon(name);
+#ifdef Q_OS_MACOS
+        action->setIconVisibleInMenu(!icon.isNull());
+#endif
+        action->setIcon(icon);
     }
 }
 

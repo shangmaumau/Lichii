@@ -6333,6 +6333,14 @@ Por favor vá para Configuração -&gt; Sistema -&gt; Rede e selecione.</transla
         <source>Clear</source>
         <translation>Limpar</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Jogo em andamento</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Continuar o jogo atual</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6737,6 +6745,10 @@ Mensagem de Depuração: </translation>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation>Alternar Sobreposição de Desempenho</translation>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Pausar e voltar à biblioteca de jogos</translation>
     </message>
 </context>
 <context>
@@ -8258,6 +8270,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Iniciar outro jogo</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Iniciar outro jogo encerrará o jogo atual. Continuar?</translation>
     </message>
 </context>
 <context>

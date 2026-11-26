@@ -164,6 +164,7 @@ public:
     static constexpr int HasIconRole = SortRole + 5;
     static constexpr int PublisherRole = SortRole + 6;
     static constexpr int DirectoryRole = SortRole + 7;
+    static constexpr int SuspendedRole = SortRole + 8;
 
     GameListItemPath() = default;
     GameListItemPath(const QString& game_path, const std::vector<u8>& picture_data,

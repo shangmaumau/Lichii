@@ -80,6 +80,8 @@ public:
     void SetFilterFocus();
     void RestoreFocus();
     void RefreshHome();
+    void SetSuspendedGame(QString path = {}, u64 program_id = 0);
+    void FocusSuspendedGame();
     void SetFilterVisible(bool visibility);
     bool IsEmpty() const;
     bool IsPopulating() const;
@@ -117,6 +119,7 @@ public slots:
 
 signals:
     void ProfileRequested();
+    void ResumeGameRequested();
     void ReportCompatibilityRequested(u64 program_id);
     void BootGame(const QString& game_path, StartGameType type);
     void GameChosen(const QString& game_path, const u64 title_id = 0);
@@ -170,6 +173,7 @@ private:
     void PopupContextMenu(const QPoint& menu_location);
     void ShowContextMenu(const QModelIndex& item, const QPoint& global_position);
     void RefreshLibraryView();
+    QModelIndex UpdateSuspendedGameRows();
     void AddGamePopup(QMenu& context_menu, u64 program_id, const std::string& path);
     void AddCustomDirPopup(QMenu& context_menu, QModelIndex selected);
     void AddPermDirPopup(QMenu& context_menu, QModelIndex selected);
@@ -193,6 +197,11 @@ private:
     std::shared_ptr<FileSys::VfsFilesystem> vfs;
     FileSys::ManualContentProvider* provider;
     GameListSearchField* search_field = nullptr;
+    QPushButton* resume_unlisted_game = nullptr;
+
+    // The live session identity survives model sorting and view changes.
+    QString suspended_game_path;
+    u64 suspended_program_id = 0;
     MainWindow* main_window = nullptr;
     QVBoxLayout* layout = nullptr;
 

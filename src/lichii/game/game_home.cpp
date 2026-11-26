@@ -271,9 +271,13 @@ class TileDelegate final : public QStyledItemDelegate {
                 }
             }
         }
+        const auto source = index.data(SourceIndexRole).value<QPersistentModelIndex>();
+        if (source.data(GameListItemPath::SuspendedRole).toBool()) {
+            Lichii::DrawSuspendedGameBadge(*painter, tile, option.palette, option.font);
+        }
+
         painter->restore();
     }
-
 };
 
 QString RecentPath(const QString& path) {
@@ -540,7 +544,8 @@ GameHome::GameHome(GameListModel* library_, Core::System& system_, QWidget* pare
     back_button->setProperty("controllerMenuAbove", true);
     back_button->setProperty("controllerBackButton", true);
     connect(view, &QListView::clicked, this, [this](const QModelIndex& index) {
-        if (!collection && !SourceIndex(index).isValid()) {
+        const auto source = SourceIndex(index);
+        if (source.data(GameListItemPath::SuspendedRole).toBool() || (!collection && !source.isValid())) {
             Activate(index);
         }
     });
@@ -621,6 +626,17 @@ QModelIndex GameHome::SourceIndex(const QModelIndex& index) const {
 
 void GameHome::FocusLibrary() {
     view->setFocus();
+}
+
+void GameHome::FocusSuspendedGame() {
+    const auto matches = tiles->match(tiles->index(0, 0), GameListItemPath::SuspendedRole, true,
+                                      1, Qt::MatchExactly);
+    if (!matches.isEmpty()) {
+        view->setCurrentIndex(matches.front());
+        view->scrollTo(matches.front());
+    }
+
+    FocusLibrary();
 }
 
 void GameHome::QueueRefresh() {
@@ -725,6 +741,16 @@ void GameHome::Refresh(bool reset_position) {
     tiles->clear();
     const int count = static_cast<int>(entries.size());
     const int shown = collection ? count : std::min(count, ShelfLimit);
+    // Keep a game in progress on the shelf even when it was launched outside the shelf.
+    if (!collection) {
+        const auto suspended = std::ranges::find_if(entries, [](const Entry& entry) {
+            return entry.source.data(GameListItemPath::SuspendedRole).toBool();
+        });
+        if (suspended != entries.end() && std::distance(entries.begin(), suspended) >= shown) {
+            std::rotate(entries.begin(), suspended, std::next(suspended));
+        }
+    }
+
     QPixmap placeholder;
     for (int i = 0; i < shown; ++i) {
         const auto& entry = entries[i];
@@ -740,6 +766,10 @@ void GameHome::Refresh(bool reset_position) {
         tile->setData(QVariant::fromValue(entry.source), SourceIndexRole);
         tile->setData(entry.key.first, GameListItemPath::FullPathRole);
         tile->setData(entry.key.second, GameListItemPath::ProgramIdRole);
+        if (entry.source.data(GameListItemPath::SuspendedRole).toBool()) {
+            tile->setData(true, GameListItemPath::SuspendedRole);
+            tile->setAccessibleDescription(entry.source.data(Qt::AccessibleDescriptionRole).toString());
+        }
         if (entry.key == selection) {
             restore = i;
         }

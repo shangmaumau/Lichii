@@ -3,7 +3,12 @@
 
 #pragma once
 
+#include <iterator>
+
+#include <QCoreApplication>
 #include <QFontMetrics>
+#include <QPainter>
+#include <QPalette>
 #include <QStandardItem>
 #include <QStringList>
 #include <QTextLayout>
@@ -11,6 +16,46 @@
 #include "qt_common/game_list/game_list_p.h"
 
 namespace Lichii {
+
+// Place the status on the cover, or use a small play symbol when the artwork is too small.
+inline qreal DrawSuspendedGameBadge(QPainter& painter, const QRectF& bounds, const QPalette& palette,
+                                   QFont font) {
+    const auto area = bounds.adjusted(3, 3, -3, -3);
+    if (area.width() < 16 || area.height() < 15) {
+        return 0;
+    }
+
+    font.setPixelSize(12);
+    font.setWeight(QFont::DemiBold);
+    const QFontMetrics metrics(font);
+    const auto label = QCoreApplication::translate("GameList", "Game in progress");
+    const int label_width = metrics.horizontalAdvance(label) + 25;
+    const bool show_text = area.width() >= label_width && area.height() >= metrics.height() + 6;
+    const QSizeF size(show_text ? label_width : 16,
+                      show_text ? metrics.height() + 6 : 15);
+    const QRectF pill(QPointF(area.right() - size.width(), area.top()), size);
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setFont(font);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(palette.color(QPalette::Highlight));
+    painter.drawRoundedRect(pill, size.height() / 2, size.height() / 2);
+
+    const QColor foreground = palette.color(QPalette::HighlightedText);
+    painter.setBrush(foreground);
+    const QPointF icon(show_text ? pill.left() + 8 : pill.left() + 6, pill.center().y());
+    const QPointF triangle[]{icon + QPointF(0, -3.5), icon + QPointF(0, 3.5), icon + QPointF(5, 0)};
+    painter.drawPolygon(triangle, std::size(triangle));
+    if (show_text) {
+        painter.setPen(foreground);
+        painter.drawText(pill.adjusted(18, 0, -7, 0), Qt::AlignVCenter | Qt::AlignLeft, label);
+    }
+
+    painter.restore();
+
+    return size.width() + 6;
+}
 
 inline QStringList WrapGameTitle(const QString& title, const QFont& font, int width, int max_lines) {
     QStringList lines;

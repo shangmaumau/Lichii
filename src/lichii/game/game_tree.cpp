@@ -15,6 +15,7 @@
 #include <QStyledItemDelegate>
 #include <QVariant>
 #include <QVariantAnimation>
+#include <QtMath>
 
 #include "qt_common/config/uisettings.h"
 #include "qt_common/game_list/game_list_p.h"
@@ -101,7 +102,13 @@ public:
 
         const int text_left =
             style->subElementRect(QStyle::SE_ItemViewItemText, &item, widget).left() + 4;
-        const QRect rect(text_left, item.rect.top(), item.rect.right() - text_left - 4,
+        int badge_width = 0;
+        if (index.data(GameListItemPath::SuspendedRole).toBool()) {
+            const auto badge_area = item.rect.adjusted((text_left - item.rect.left() + item.rect.width()) / 2,
+                                                       1, 0, -1);
+            badge_width = qCeil(Lichii::DrawSuspendedGameBadge(*painter, badge_area, item.palette, item.font));
+        }
+        const QRect rect(text_left, item.rect.top(), item.rect.right() - text_left - badge_width - 4,
                          item.rect.height());
 
         const bool selected = item.state & QStyle::State_Selected;

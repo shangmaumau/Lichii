@@ -71,13 +71,20 @@ void GameCard::paint(QPainter* painter, const QStyleOptionViewItem& option,
                     static_cast<int>(icon_size), static_cast<int>(icon_size)};
     }
 
+    const bool suspended = index.data(GameListItemPath::SuspendedRole).toBool();
+    if (suspended) {
+        const QRect badge_bounds = iconRect.isEmpty() ? cardRect : iconRect;
+        Lichii::DrawSuspendedGameBadge(*painter, badge_bounds, palette, option.font);
+    }
+
     if (UISettings::values.show_game_name.GetValue()) {
         // Keep the title within the icon's width: at most two lines, cut with "..." beyond that.
         // Without icons (size 0) it takes the card's width instead.
         const int text_left = icon_size == 0 ? cardRect.left() + cardMargin : iconRect.left();
         const int text_width = icon_size == 0 ? cardRect.width() - 2 * cardMargin : iconRect.width();
-        const QRect textRect(text_left, iconRect.bottom() + cardMargin, text_width,
-                             cardRect.bottom() - iconRect.bottom() - cardMargin);
+        const int badge_clearance = icon_size == 0 && suspended ? 24 : 0;
+        const int text_top = std::max(iconRect.bottom() + cardMargin, cardRect.top() + badge_clearance);
+        const QRect textRect(text_left, text_top, text_width, cardRect.bottom() - text_top);
 
         QString title = index.data(Qt::DisplayRole).toString().split(QLatin1Char('\n')).first();
 

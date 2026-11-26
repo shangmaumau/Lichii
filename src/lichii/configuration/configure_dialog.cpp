@@ -47,6 +47,14 @@
 Q_DECLARE_METATYPE(QList<QWidget*>);
 
 static QString SettingsTabStyle(bool controls) {
+#ifdef Q_OS_MACOS
+    const auto& theme = UISettings::values.theme;
+    if (theme == "default" || theme == "colorful") {
+        // Partial tab rules make Qt bypass Fusion's tab background and border.
+        return {};
+    }
+#endif
+
     return controls ? QStringLiteral("QTabBar::tab { padding-left: 5px; padding-right: 5px; }")
                     : QString{};
 }

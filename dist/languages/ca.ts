@@ -6263,6 +6263,14 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <source>Clear</source>
         <translation>Esborrar</translation>
     </message>
+    <message>
+        <source>Game in progress</source>
+        <translation>Partida en curs</translation>
+    </message>
+    <message>
+        <source>Resume Current Game</source>
+        <translation>Reprèn la partida actual</translation>
+    </message>
 </context>
 <context>
     <name>GameListItemCompat</name>
@@ -6666,6 +6674,10 @@ Debug Message: </source>
         <location filename="../../src/qt_common/config/uisettings.cpp" line="66"/>
         <source>Toggle Performance Overlay</source>
         <translation type="unfinished"/>
+    </message>
+    <message>
+        <source>Pause and Return to Game Library</source>
+        <translation>Posa en pausa i torna a la biblioteca de jocs</translation>
     </message>
 </context>
 <context>
@@ -8186,6 +8198,14 @@ Would you like to bypass this and exit anyway?</source>
         <location filename="../../src/qt_common/config/shared_translation.h" line="78"/>
         <source>Null</source>
         <translation>Nul</translation>
+    </message>
+    <message>
+        <source>Start Another Game</source>
+        <translation>Inicia un altre joc</translation>
+    </message>
+    <message>
+        <source>Starting another game will close the current game. Continue?</source>
+        <translation>Si inicies un altre joc, es tancarà el joc actual. Vols continuar?</translation>
     </message>
 </context>
 <context>
