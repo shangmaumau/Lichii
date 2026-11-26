@@ -10,6 +10,8 @@
 #include <QLineEdit>
 #include <QHash>
 #include <QList>
+#include <QPair>
+#include <QPixmap>
 #include <QSet>
 #include <QPushButton>
 #include <QStandardItemModel>
@@ -80,8 +82,11 @@ public:
     void SetFilterFocus();
     void RestoreFocus();
     void RefreshHome();
-    void SetSuspendedGame(QString path = {}, u64 program_id = 0);
+    void SetSuspendedGame(QString path = {}, u64 program_id = 0, bool loading = false);
+    void SetSuspendedGameLoading(bool loading);
     void FocusSuspendedGame();
+    QPair<QRect, QPixmap> HomeCoverForGame(const QString& filename, u64 program_id,
+                                         const QWidget& surface) const;
     void SetFilterVisible(bool visibility);
     bool IsEmpty() const;
     bool IsPopulating() const;
@@ -101,6 +106,7 @@ public:
                                                     bool repeated);
     bool ReturnFromCollection();
     bool OpenSelectedGameMenu();
+    bool IsSuspendedGame(const QString& path, u64 program_id = 0) const;
 
     void ResetViewMode();
 
@@ -120,9 +126,10 @@ public slots:
 signals:
     void ProfileRequested();
     void ResumeGameRequested();
+    void StopGameRequested();
     void ReportCompatibilityRequested(u64 program_id);
-    void BootGame(const QString& game_path, StartGameType type);
-    void GameChosen(const QString& game_path, const u64 title_id = 0);
+    void BootGame(const QString& game_path, u64 program_id, StartGameType type);
+    void GameChosen(const QString& game_path, u64 title_id = 0);
     void OpenFolderRequested(u64 program_id, GameListOpenTarget target,
                              const std::string& game_path);
     void OpenTransferableShaderCacheRequested(u64 program_id);
@@ -174,7 +181,7 @@ private:
     void ShowContextMenu(const QModelIndex& item, const QPoint& global_position);
     void RefreshLibraryView();
     QModelIndex UpdateSuspendedGameRows();
-    void AddGamePopup(QMenu& context_menu, u64 program_id, const std::string& path);
+    void AddGamePopup(QMenu& context_menu, const QModelIndex& game);
     void AddCustomDirPopup(QMenu& context_menu, QModelIndex selected);
     void AddPermDirPopup(QMenu& context_menu, QModelIndex selected);
     void AddFavoritesPopup(QMenu& context_menu);
@@ -202,6 +209,7 @@ private:
     // The live session identity survives model sorting and view changes.
     QString suspended_game_path;
     u64 suspended_program_id = 0;
+    bool suspended_game_loading = false;
     MainWindow* main_window = nullptr;
     QVBoxLayout* layout = nullptr;
 

@@ -6319,7 +6319,7 @@ Veuillez aller dans Configurer -&gt; Système -&gt; Réseau puis en choisir une.
         <translation>Effacer</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Partie en cours</translation>
     </message>
     <message>

@@ -6349,7 +6349,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>지우기</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>플레이 중</translation>
     </message>
     <message>

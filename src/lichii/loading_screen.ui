@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(0, 0, 0);</string>
+   <string notr="true">QWidget#LoadingScreen { background-color: rgb(0, 0, 0); }</string>
   </property>
   <layout class="QVBoxLayout">
    <property name="spacing">
@@ -77,7 +77,7 @@
            </sizepolicy>
           </property>
           <property name="styleSheet">
-           <string notr="true">background-color: black; color: white;
+           <string notr="true">background-color: transparent; color: white;
 font: 75 20pt &quot;Arial&quot;;</string>
           </property>
           <property name="text">
@@ -134,7 +134,7 @@ border-radius: 15px;
            <string notr="true"/>
           </property>
           <property name="styleSheet">
-           <string notr="true">background-color: black; color: white;
+           <string notr="true">background-color: transparent; color: white;
 font: 75 15pt &quot;Arial&quot;;</string>
           </property>
           <property name="text">
@@ -147,7 +147,7 @@ font: 75 15pt &quot;Arial&quot;;</string>
       <item alignment="Qt::AlignRight|Qt::AlignBottom">
        <widget class="QLabel" name="banner">
         <property name="styleSheet">
-         <string notr="true">background-color: black;</string>
+         <string notr="true">background-color: transparent;</string>
         </property>
         <property name="text">
          <string/>

@@ -951,6 +951,12 @@ QStringList GRenderWindow::GetUnsupportedGLExtensions() const {
 void GRenderWindow::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
 
+    // A widget grab can activate this layout while the native surface is hidden. Lay it out
+    // again now that the native child is visible so its initial platform size cannot stick.
+    layout()->invalidate();
+    layout()->activate();
+    OnFramebufferSizeChanged();
+
     // The top-level window's handle is not initialized until it is shown, so we connect it here.
     connect(window()->windowHandle(), &QWindow::screenChanged, this,
             &GRenderWindow::OnFramebufferSizeChanged, Qt::UniqueConnection);

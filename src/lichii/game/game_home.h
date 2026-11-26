@@ -7,6 +7,7 @@
 
 #include <QModelIndex>
 #include <QPair>
+#include <QPixmap>
 #include <QWidget>
 
 class QActionGroup;
@@ -36,9 +37,11 @@ class GameHome final : public QWidget {
 
     QListView* View() const;
     QWidget* NavigationTarget() const;
-    bool ReturnToShelf();
+    bool ReturnToShelf(bool animate = true);
     bool OpenSelectedGameMenu();
     QModelIndex SourceIndex(const QModelIndex& index) const;
+    QPair<QRect, QPixmap> CoverForGame(const QString& filename, qulonglong program_id,
+                                     const QWidget& surface) const;
     void FocusLibrary();
     void FocusSuspendedGame();
     void FocusFromSearch();
@@ -73,7 +76,7 @@ class GameHome final : public QWidget {
     void StopPageTransition();
     void Retranslate();
     QString SortName(Sort order) const;
-    void ShowCollection(bool show);
+    void ShowCollection(bool show, bool animate = true);
     void Activate(const QModelIndex& index);
     bool HandleKey(Qt::Key key, bool repeated);
 

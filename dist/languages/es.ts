@@ -6852,7 +6852,7 @@ Por favor, vaya a Configuración -&gt; Sistema -&gt; Red y selecciona una interf
         <translation>Enviar reporte de compatibilidad…</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Partida en curso</translation>
     </message>
     <message>

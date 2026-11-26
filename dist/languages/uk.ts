@@ -6347,7 +6347,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Очистити</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Гру запущено</translation>
     </message>
     <message>

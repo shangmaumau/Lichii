@@ -6268,7 +6268,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Xóa</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Đang chơi</translation>
     </message>
     <message>

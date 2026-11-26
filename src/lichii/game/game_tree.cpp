@@ -106,7 +106,9 @@ public:
         if (index.data(GameListItemPath::SuspendedRole).toBool()) {
             const auto badge_area = item.rect.adjusted((text_left - item.rect.left() + item.rect.width()) / 2,
                                                        1, 0, -1);
-            badge_width = qCeil(Lichii::DrawSuspendedGameBadge(*painter, badge_area, item.palette, item.font));
+            badge_width = qCeil(Lichii::DrawSuspendedGameBadge(
+                *painter, badge_area, item.palette, item.font,
+                index.data(Qt::AccessibleDescriptionRole).toString()));
         }
         const QRect rect(text_left, item.rect.top(), item.rect.right() - text_left - badge_width - 4,
                          item.rect.height());

@@ -6138,6 +6138,10 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>開始遊戲</translation>
     </message>
     <message>
+        <source>End Game</source>
+        <translation>結束遊戲</translation>
+    </message>
+    <message>
         <location filename="../../src/lichii/game/game_list.cpp" line="455"/>
         <source>Start Game without Custom Configuration</source>
         <translation>開始遊戲(不使用額外設定)</translation>
@@ -6294,7 +6298,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>清除</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>遊戲進行中</translation>
     </message>
     <message>
@@ -8235,6 +8239,18 @@ Would you like to bypass this and exit anyway?</source>
     <message>
         <source>Starting another game will close the current game. Continue?</source>
         <translation>啟動其他遊戲將結束目前的遊戲。要繼續嗎？</translation>
+    </message>
+    <message>
+        <source>Any unsaved progress will be lost.</source>
+        <translation>未儲存的進度將會遺失。</translation>
+    </message>
+    <message>
+        <source>End Game</source>
+        <translation>結束遊戲</translation>
+    </message>
+    <message>
+        <source>End "%1"? Any unsaved progress will be lost.</source>
+        <translation>要結束《%1》嗎？未儲存的進度將遺失。</translation>
     </message>
 </context>
 <context>

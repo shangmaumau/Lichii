@@ -6254,7 +6254,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Καθαρισμός</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Παιχνίδι σε εξέλιξη</translation>
     </message>
     <message>

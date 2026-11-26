@@ -79,6 +79,7 @@
 
 #include "util/clickable_label.h"
 #include "lichii/util/controller_ui_navigation.h"
+#include "lichii/util/game_scene_transition.h"
 #include "util/overlay_dialog.h"
 
 #include "multiplayer/state.h"
@@ -1206,12 +1207,20 @@ void MainWindow::InitializeWidgets() {
     loading_screen = new LoadingScreen(this);
     loading_screen->hide();
     ui->horizontalLayout->addWidget(loading_screen);
+    game_scene_transition = new GameSceneTransition(centralWidget());
     connect(loading_screen, &LoadingScreen::Hidden, this, [&] {
         loading_screen->Clear();
-        if (emulation_running && !game_suspended_to_library) {
-            render_window->show();
-            render_window->setFocus();
+        if (!emulation_running || awaiting_first_game_frame || game_suspended_to_library ||
+            close_pending || shutdown_game_in_progress || shutdown_dialog) {
+            return;
         }
+        if (!render_window->isVisible() && ui->action_Fullscreen->isChecked() &&
+            !ui->action_Single_Window_Mode->isChecked()) {
+            ShowFullscreen();
+        } else {
+            render_window->show();
+        }
+        render_window->setFocus();
     });
 
     multiplayer_state = new MultiplayerState(this, game_list->GetModel(), ui->action_Leave_Room,
@@ -1679,7 +1688,8 @@ void MainWindow::InitializeHotkeys() {
     };
 
     constexpr auto library_hotkey = "Pause and Return to Game Library";
-    const auto* library_keyboard_shortcut = hotkey_registry.GetHotkey("Main Window", library_hotkey, this);
+    auto* library_keyboard_shortcut = hotkey_registry.GetHotkey("Main Window", library_hotkey, this);
+    library_keyboard_shortcut->setAutoRepeat(false);
     auto& hid = QtCommon::system->HIDCore();
     const auto* library_controller_shortcut = hotkey_registry.GetControllerHotkey(
         "Main Window", library_hotkey, hid.GetEmulatedController(Core::HID::NpadIdType::Player1),
@@ -1697,7 +1707,10 @@ void MainWindow::InitializeHotkeys() {
     connect_shortcut(QStringLiteral("Change Adapting Filter"), &MainWindow::OnToggleAdaptingFilter);
     connect_shortcut(QStringLiteral("Change Docked Mode"), &MainWindow::OnToggleDockedMode);
     connect_shortcut(QStringLiteral("HOME Button"), [this] {
-        if (emulation_running) {
+        if (game_scene_transition->IsExpanding() || game_scene_transition->IsShrinking() ||
+            boot_in_progress || awaiting_first_game_frame) {
+            PauseToGameLibrary();
+        } else if (emulation_running && !game_suspended_to_library) {
             QtCommon::system->GetAppletManager().PressHomeButton();
         }
     });
@@ -1836,6 +1849,7 @@ void MainWindow::ConnectWidgetEvents() {
     connect(game_list, &GameList::ProfileRequested, this, [this] { OpenConfiguration(true); });
     connect(game_list, &GameList::GameChosen, this, &MainWindow::OnGameListLoadFile);
     connect(game_list, &GameList::ResumeGameRequested, this, &MainWindow::ResumeSuspendedGame);
+    connect(game_list, &GameList::StopGameRequested, this, [this] { StopGame(true); });
     connect(game_list, &GameList::OpenDirectory, this, &MainWindow::OnGameListOpenDirectory);
     connect(game_list, &GameList::OpenFolderRequested, this, &MainWindow::OnGameListOpenFolder);
     connect(game_list, &GameList::OpenTransferableShaderCacheRequested, this,
@@ -2466,25 +2480,77 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
         shader_warm_dialog->activateWindow();
         return;
     }
-    if (boot_in_progress || close_pending || mod_store_open) {
+    if (boot_in_progress || game_scene_transition->IsExpanding() || close_pending ||
+        mod_store_open) {
         return;
     }
-    if (game_suspended_to_library &&
-        !question(this, tr("Start Another Game"),
-                  tr("Starting another game will close the current game. Continue?"),
-                  QMessageBox::Yes | QMessageBox::No, QMessageBox::No)) {
-        return;
+    if (game_suspended_to_library) {
+        if (shutdown_dialog || QtCommon::system->IsShuttingDown()) {
+            return;
+        }
+        if (type == StartGameType::Normal && game_list->IsSuspendedGame(filename, params.program_id)) {
+            ResumeSuspendedGame();
+            return;
+        }
+        const QPointer<EmuThread> running_thread(QtCommon::emu_thread.get());
+        const auto prompt = tr("Starting another game will close the current game. Continue?") +
+                            QStringLiteral("\n\n") + tr("Any unsaved progress will be lost.");
+        if (!question(this, tr("Start Another Game"), prompt,
+                      QMessageBox::Yes | QMessageBox::No, QMessageBox::No, Qt::PlainText) ||
+            !running_thread || running_thread.data() != QtCommon::emu_thread.get() || close_pending ||
+            shutdown_game_in_progress || shutdown_dialog || QtCommon::system->IsShuttingDown()) {
+            return;
+        }
     }
+    const bool from_frontend = params.launch_type == Service::AM::LaunchType::FrontendInitiated;
+    auto [bounds, artwork] = from_frontend
+                                 ? game_list->HomeCoverForGame(filename, params.program_id,
+                                                               *centralWidget())
+                                 : QPair<QRect, QPixmap>{};
+    const auto start = [this, filename, params, type](bool use_transition_backdrop) {
+        if (close_pending || boot_in_progress || shutdown_game_in_progress || shutdown_dialog) {
+            game_scene_transition->Clear();
+            return;
+        }
+        CompleteBootGame(filename, params, type, use_transition_backdrop);
+    };
+    if (!bounds.isEmpty() && !artwork.isNull()) {
+        const auto after_zoom = [this, start] {
+            if (QApplication::activeModalWidget()) {
+                game_scene_transition->Clear();
+                return;
+            }
+            start(true);
+        };
+        auto frame = loading_screen->TransitionFrame(centralWidget()->size());
+        if (!frame.isNull() && game_scene_transition->Expand(
+                                   bounds, std::move(artwork), after_zoom, std::move(frame))) {
+            return;
+        }
+    }
+    start(false);
+}
+
+void MainWindow::CompleteBootGame(const QString& filename,
+                                  Service::AM::FrontendAppletParameters params, StartGameType type,
+                                  bool use_transition_backdrop) {
     if (whats_new_dialog) {
         whats_new_dialog->close();
     }
     disconnect(startup_qlaunch_connection);
     boot_in_progress = true;
+    return_to_library_during_boot = false;
     game_list->SetScanEnabled(false);
     QElapsedTimer boot_timer;
     boot_timer.start();
     SCOPE_EXIT {
         boot_in_progress = false;
+        const bool returning = std::exchange(return_to_library_during_boot, false);
+        if (!emulation_running || close_pending || game_suspended_to_library) {
+            if (!returning || !game_scene_transition->IsShrinking()) {
+                game_scene_transition->Clear();
+            }
+        }
         LOG_INFO(Frontend, "Launch finished: elapsed_ms={} running={}", boot_timer.elapsed(),
                  emulation_running);
         if (!emulation_running && !close_pending) {
@@ -2501,7 +2567,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     if (emulation_running) {
         ShutdownGame();
     }
-    if (close_pending) {
+    if (close_pending || return_to_library_during_boot) {
         return;
     }
     LOG_INFO(Frontend, "Lichii starting...");
@@ -2513,8 +2579,9 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
         StoreRecentFile(filename); // Put the filename on top of the list
     }
 
-    if (params.launch_type == Service::AM::LaunchType::FrontendInitiated &&
-        !ConfirmLowRamBoot(filename, params)) {
+    if ((params.launch_type == Service::AM::LaunchType::FrontendInitiated &&
+         !ConfirmLowRamBoot(filename, params)) ||
+        close_pending || return_to_library_during_boot) {
         return;
     }
 
@@ -2556,7 +2623,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
             .display_options = {},
             .purpose = Service::AM::Frontend::UserSelectionPurpose::General,
         };
-        if (SelectAndSetCurrentUser(parameters) == false) {
+        if (!SelectAndSetCurrentUser(parameters) || close_pending || return_to_library_during_boot) {
             return;
         }
     }
@@ -2565,6 +2632,24 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     // game startup only. If the user stops emulation and starts a new one, go back to the expected
     // behavior of asking.
     user_flag_cmd_line = false;
+
+    const auto wait_for_boot_preparation = [this](QProgressDialog& progress, QEventLoop& loop) {
+        auto* main_shortcut =
+            hotkey_registry.GetHotkey("Main Window", "Pause and Return to Game Library", this);
+        QShortcut home_shortcut(main_shortcut->key(), &progress);
+        home_shortcut.setAutoRepeat(false);
+        connect(&home_shortcut, &QShortcut::activated, this, &MainWindow::PauseToGameLibrary);
+
+        const bool shortcut_was_enabled = main_shortcut->isEnabled();
+        main_shortcut->setEnabled(false);
+        boot_preparation_dialog = &progress;
+        SCOPE_EXIT {
+            boot_preparation_dialog = nullptr;
+            main_shortcut->setEnabled(shortcut_was_enabled);
+        };
+        progress.show();
+        loop.exec();
+    };
 
     FileSys::VirtualFile prepared_romfs;
     if (loader && loader->GetFileType() == Loader::FileType::DeconstructedRomDirectory) {
@@ -2581,17 +2666,16 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
             loader->ReadRomFS(image);
             return image;
         }));
-        progress.show();
-        loop.exec();
+        wait_for_boot_preparation(progress, loop);
+        if (close_pending || return_to_library_during_boot) {
+            return;
+        }
         try {
             prepared_romfs = watcher.result();
         } catch (const std::exception& error) {
             LOG_ERROR(Frontend, "Loose RomFS preparation failed: {}", error.what());
             QMessageBox::critical(this, tr("Unable to prepare game files"),
                                   tr("Game preparation failed. See the log for details."));
-            return;
-        }
-        if (close_pending) {
             return;
         }
     }
@@ -2610,9 +2694,8 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
                 title_id, [&] { return loader->ReadMainBuildIdHex(*QtCommon::system); });
             Service::BCAT::Nextendo::PrepareForGame(title_id);
         }));
-        progress.show();
-        loop.exec();
-        if (close_pending) {
+        wait_for_boot_preparation(progress, loop);
+        if (close_pending || return_to_library_during_boot) {
             return;
         }
     }
@@ -2703,6 +2786,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     game_list->setDisabled(true);
 
     // Create and start the emulation thread
+    awaiting_first_game_frame = true;
     QtCommon::emu_thread = std::make_unique<EmuThread>();
     emit EmulationStarting();
     QtCommon::emu_thread->start();
@@ -2740,6 +2824,9 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     connect(
         QtCommon::emu_thread.get(), &EmuThread::ShaderCacheReloadStarted, this,
         [this] {
+            if (!emulation_running || game_suspended_to_library || close_pending) {
+                return;
+            }
             loading_screen->Prepare(QtCommon::system->GetAppLoader());
             render_window->hide();
             loading_screen->show();
@@ -2749,7 +2836,11 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     connect(
         QtCommon::emu_thread.get(), &EmuThread::ShaderCacheReloadFinished, this,
         [this] {
-            loading_screen->OnLoadComplete();
+            if (emulation_running && !awaiting_first_game_frame && !game_suspended_to_library &&
+                !close_pending &&
+                loading_screen->isVisible()) {
+                loading_screen->OnLoadComplete();
+            }
         },
         Qt::QueuedConnection);
 
@@ -2801,6 +2892,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     if (auto custom_title = QtCommon::Game::ReadCustomTitle(title_id); !custom_title.empty()) {
         title_name = std::move(custom_title);
     }
+    current_game_title = QString::fromStdString(title_name);
     const bool is_64bit = QtCommon::system->Kernel().ApplicationProcess()->Is64Bit();
     const auto instruction_set_suffix = is_64bit ? tr("(64-bit)") : tr("(32-bit)");
     title_name = tr("%1 %2", "%1 is the title name. %2 indicates if the title is 64-bit or 32-bit")
@@ -2810,33 +2902,44 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     const auto gpu_vendor = QtCommon::system->GPU().Renderer().GetDeviceVendor();
     UpdateWindowTitle(title_name, title_version, gpu_vendor);
 
-    loading_screen->Prepare(QtCommon::system->GetAppLoader());
+    loading_screen->Prepare(QtCommon::system->GetAppLoader(), use_transition_backdrop);
     const bool single_window = ui->action_Single_Window_Mode->isChecked();
-    if (single_window) {
-        game_list->hide();
-        game_list_placeholder->hide();
-    }
-    loading_screen->show();
-
     emulation_running = true;
-    if (ui->action_Fullscreen->isChecked()) {
-        ShowFullscreen();
-    } else if (!single_window && !render_window->isMaximized()) {
-        if (Settings::IsDockedMode()) {
-            ResetWindowSize1080();
-        } else {
-            ResetWindowSize720();
+    if (!return_to_library_during_boot && !close_pending) {
+        if (single_window) {
+            game_list->hide();
+            game_list_placeholder->hide();
         }
+        loading_screen->show();
+
+        if (ui->action_Fullscreen->isChecked()) {
+            if (single_window) {
+                ShowFullscreen();
+            }
+        } else if (!single_window && !render_window->isMaximized()) {
+            if (Settings::IsDockedMode()) {
+                ResetWindowSize1080();
+            } else {
+                ResetWindowSize720();
+            }
+        }
+        game_scene_transition->Release();
     }
     CheckNextendoOnlineStatus();
     CheckNextendoGameVersion(title_id, title_version);
     nextendo_social_timer.start(Common::Nextendo::FriendsRefreshInterval);
     UpdateNextendoSocial();
     OnStartGame();
+    if (return_to_library_during_boot && !close_pending) {
+        ReturnToLibraryWhileLoading();
+    }
 }
 
-void MainWindow::BootGameFromList(const QString& filename, StartGameType with_config) {
-    BootGame(filename, ApplicationAppletParameters(), with_config);
+void MainWindow::BootGameFromList(const QString& filename, u64 program_id,
+                                  StartGameType with_config) {
+    auto params = ApplicationAppletParameters();
+    params.program_id = program_id;
+    BootGame(filename, params, with_config);
 }
 
 void MainWindow::RememberSpeedLimitBeforeHotkey() {
@@ -3029,6 +3132,10 @@ void MainWindow::OnEmulationStopped() {
     if (QtCommon::emu_thread && QtCommon::emu_thread->isRunning()) {
         return;
     }
+    if (!boot_in_progress) {
+        game_scene_transition->Clear();
+    }
+    suspended_transition_frame = {};
     if (bug_report_dialog) {
         bug_report_dialog->StopCapture();
     }
@@ -3047,6 +3154,7 @@ void MainWindow::OnEmulationStopped() {
     }
 
     emulation_running = false;
+    awaiting_first_game_frame = false;
     if (std::exchange(game_suspended_to_library, false)) {
         game_list->SetSuspendedGame();
         controller_ui_navigation->SetGameLibraryActiveWhilePaused(false);
@@ -3124,6 +3232,7 @@ void MainWindow::OnEmulationStopped() {
     }
 
     current_game_path.clear();
+    current_game_title.clear();
 
     // When closing the game, destroy the GLWindow to clear the context after the game is closed
     render_window->ReleaseRenderTarget();
@@ -3218,11 +3327,8 @@ void MainWindow::UpdateRecentFiles() {
     }
 }
 
-void MainWindow::OnGameListLoadFile(QString game_path, u64 program_id) {
-    auto params = ApplicationAppletParameters();
-    params.program_id = program_id;
-
-    BootGame(game_path, params);
+void MainWindow::OnGameListLoadFile(const QString& game_path, u64 program_id) {
+    BootGameFromList(game_path, program_id, StartGameType::Normal);
 }
 
 // TODO(crueter): Common profile selector
@@ -4046,17 +4152,32 @@ void MainWindow::OnPauseContinueGame() {
 }
 
 void MainWindow::OnStopGame() {
-    if (!emulation_running || shutdown_game_in_progress || shutdown_dialog) {
+    StopGame(false);
+}
+
+void MainWindow::StopGame(bool from_library) {
+    if (!emulation_running || close_pending || shutdown_game_in_progress || shutdown_dialog ||
+        QtCommon::system->IsShuttingDown() || (from_library && !game_suspended_to_library)) {
         return;
     }
 
-    if (ConfirmShutdownGame()) {
-        play_time_manager->Stop();
-        if (OnShutdownBegin()) {
-            OnShutdownBeginDialog();
-        } else {
-            OnEmulationStopped();
-        }
+    const QPointer<EmuThread> running_thread(QtCommon::emu_thread.get());
+    const bool confirmed =
+        from_library
+            ? question(this, tr("End Game"),
+                       tr("End \"%1\"? Any unsaved progress will be lost.").arg(current_game_title),
+                       QMessageBox::Yes | QMessageBox::No, QMessageBox::No, Qt::PlainText)
+            : ConfirmShutdownGame();
+    if (!confirmed || !running_thread || running_thread.data() != QtCommon::emu_thread.get() ||
+        close_pending || shutdown_game_in_progress || shutdown_dialog ||
+        QtCommon::system->IsShuttingDown()) {
+        return;
+    }
+    play_time_manager->Stop();
+    if (OnShutdownBegin()) {
+        OnShutdownBeginDialog();
+    } else {
+        OnEmulationStopped();
     }
 }
 
@@ -4084,10 +4205,29 @@ bool MainWindow::ConfirmShutdownGame() {
 }
 
 void MainWindow::OnLoadComplete() {
-    loading_screen->OnLoadComplete();
+    if (!awaiting_first_game_frame || !emulation_running || !render_window->IsLoadingComplete() ||
+        close_pending || shutdown_game_in_progress || shutdown_dialog || !QtCommon::emu_thread) {
+        return;
+    }
+    awaiting_first_game_frame = false;
+
+    if (game_suspended_to_library || return_to_library_during_boot) {
+        game_list->SetSuspendedGameLoading(false);
+        if (QtCommon::emu_thread->IsRunning()) {
+            OnPauseGame();
+        }
+        if (!game_suspended_to_library) {
+            ReturnToLibraryWhileLoading();
+        }
+        loading_screen->hide();
+        loading_screen->Clear();
+    } else {
+        loading_screen->OnLoadComplete();
+    }
 
     perf_overlay = new PerformanceOverlay(this);
-    perf_overlay->setVisible(ui->action_Show_Performance_Overlay->isChecked());
+    perf_overlay->setVisible(!game_suspended_to_library &&
+                             ui->action_Show_Performance_Overlay->isChecked());
 
     connect(perf_overlay, &PerformanceOverlay::closed, perf_overlay,
             [this]() { ui->action_Show_Performance_Overlay->setChecked(false); });
@@ -4358,7 +4498,8 @@ void MainWindow::ToggleWindowMode() {
         render_window->setMinimumSize(1, 1);
         ui->horizontalLayout->addWidget(render_window);
         render_window->setFocusPolicy(Qt::StrongFocus);
-        if (emulation_running && !game_suspended_to_library) {
+        if (emulation_running && !awaiting_first_game_frame && !game_suspended_to_library &&
+            !loading_screen->isVisible()) {
             render_window->setVisible(true);
             render_window->setFocus();
             game_list->hide();
@@ -4369,7 +4510,8 @@ void MainWindow::ToggleWindowMode() {
         ui->horizontalLayout->removeWidget(render_window);
         render_window->setParent(nullptr);
         render_window->setFocusPolicy(Qt::NoFocus);
-        if (emulation_running && !game_suspended_to_library) {
+        if (emulation_running && !awaiting_first_game_frame && !game_suspended_to_library &&
+            !loading_screen->isVisible()) {
             render_window->setVisible(true);
             render_window->RestoreGeometry();
             game_list->show();
@@ -5070,9 +5212,10 @@ void MainWindow::OnLoadAmiibo() {
 // TODO(crueter): does this need to be ported to QML?
 bool MainWindow::question(QWidget* parent, const QString& title, const QString& text,
                           QMessageBox::StandardButtons buttons,
-                          QMessageBox::StandardButton defaultButton) {
+                          QMessageBox::StandardButton defaultButton, Qt::TextFormat text_format) {
     QMessageBox box_dialog(parent);
     box_dialog.setWindowTitle(title);
+    box_dialog.setTextFormat(text_format);
     box_dialog.setText(text);
     box_dialog.setStandardButtons(buttons);
     box_dialog.setDefaultButton(defaultButton);
@@ -6138,6 +6281,7 @@ void MainWindow::OnApplicationChanged(u64 program_id) {
     if (title_name.empty()) {
         title_name = fmt::format("{:016X}", program_id);
     }
+    current_game_title = QString::fromStdString(title_name);
 
     if (const auto* process = QtCommon::system->Kernel().ApplicationProcess(); process != nullptr) {
         const auto instruction_set_suffix = process->Is64Bit() ? tr("(64-bit)") : tr("(32-bit)");

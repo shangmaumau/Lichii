@@ -6356,7 +6356,7 @@ Gå till Konfigurera -&gt; System -&gt; Nätverk och gör ett val.</translation>
         <translation>Rensa</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Spel pågår</translation>
     </message>
     <message>

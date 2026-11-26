@@ -6334,7 +6334,7 @@ Por favor vá para Configuração -&gt; Sistema -&gt; Rede e selecione.</transla
         <translation>Limpar</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Jogo em andamento</translation>
     </message>
     <message>

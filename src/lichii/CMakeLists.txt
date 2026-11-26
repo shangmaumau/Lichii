@@ -241,6 +241,8 @@ add_executable(lichii
     util/controller_navigation.h
     util/controller_ui_navigation.cpp
     util/controller_ui_navigation.h
+    util/game_scene_transition.cpp
+    util/game_scene_transition.h
     util/keyboard_controller.cpp
     util/keyboard_controller.h
     util/keyboard_input.cpp

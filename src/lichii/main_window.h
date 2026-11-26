@@ -15,6 +15,7 @@
 #include <QElapsedTimer>
 #include <QMainWindow>
 #include <QPointer>
+#include <QPixmap>
 #include <QMessageBox>
 #include <QFutureWatcher>
 #include <QPushButton>
@@ -56,6 +57,7 @@ class GameList;
 class GImageInfo;
 class GRenderWindow;
 class LoadingScreen;
+class GameSceneTransition;
 class OverlayDialog;
 class BugReportDialog;
 class ControllerDialog;
@@ -301,7 +303,11 @@ private:
     bool LoadROM(const QString& filename, Service::AM::FrontendAppletParameters params);
     void BootGame(const QString& filename, Service::AM::FrontendAppletParameters params,
                   StartGameType with_config = StartGameType::Normal);
-    void BootGameFromList(const QString& filename, StartGameType with_config);
+    void CompleteBootGame(const QString& filename, Service::AM::FrontendAppletParameters params,
+                          StartGameType type, bool use_transition_backdrop);
+    void ShowSuspendedGameLibrary(u64 program_id, QPixmap frame, bool use_loading_frame = false);
+    void ReturnToLibraryWhileLoading();
+    void BootGameFromList(const QString& filename, u64 program_id, StartGameType with_config);
     void ShutdownGame();
     void ExitIfEmulationThreadStuck();
 
@@ -341,6 +347,7 @@ private:
     bool ConfirmClose();
     bool ConfirmChangeGame();
     bool ConfirmForceLockedExit();
+    void StopGame(bool from_library);
     void RequestGameExit();
     void changeEvent(QEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
@@ -367,7 +374,9 @@ private slots:
     void OnPauseGame();
     void OnPauseContinueGame();
     void PauseToGameLibrary();
+    void FinishPauseToGameLibrary(u64 program_id, QPixmap frame);
     void ResumeSuspendedGame();
+    void FinishResumeSuspendedGame();
     void OnStopGame();
     void OnPrepareForSleep(bool prepare_sleep);
     void OnMenuReportCompatibility();
@@ -375,7 +384,7 @@ private slots:
     void OnOpenUserHandbook();
 
     /// Called whenever a user selects a game in the game list widget.
-    void OnGameListLoadFile(QString game_path, u64 program_id);
+    void OnGameListLoadFile(const QString& game_path, u64 program_id);
     void OnGameListOpenFolder(u64 program_id, GameListOpenTarget target,
                               const std::string& game_path);
     void OnGameListRemoveInstalledEntry(u64 program_id, QtCommon::Game::InstalledEntryType type);
@@ -554,7 +563,8 @@ private:
     bool question(QWidget* parent, const QString& title, const QString& text,
                   QMessageBox::StandardButtons buttons =
                       QMessageBox::StandardButtons(QMessageBox::Yes | QMessageBox::No),
-                  QMessageBox::StandardButton defaultButton = QMessageBox::NoButton);
+                  QMessageBox::StandardButton defaultButton = QMessageBox::NoButton,
+                  Qt::TextFormat text_format = Qt::AutoText);
 
     std::unique_ptr<Ui::MainWindow> ui;
 
@@ -585,6 +595,9 @@ private:
     GameList* game_list = nullptr;
     ControllerUiNavigation* controller_ui_navigation = nullptr;
     LoadingScreen* loading_screen = nullptr;
+    GameSceneTransition* game_scene_transition = nullptr;
+    QPixmap suspended_transition_frame;
+    bool pause_capture_pending = false;
     QTimer shutdown_timer;
     QTimer emu_terminate_timer;
     bool shutdown_game_in_progress{};
@@ -658,11 +671,15 @@ private:
     bool game_suspended_to_library = false;
     std::optional<CompatibilityReporting::Session> report_session;
     bool boot_in_progress = false;
+    bool return_to_library_during_boot = false;
+    bool awaiting_first_game_frame = false;
+    QProgressDialog* boot_preparation_dialog = nullptr;
     bool mod_store_open = false;
     QMetaObject::Connection startup_qlaunch_connection;
     bool close_pending = false;
     // The path to the game currently running
     QString current_game_path;
+    QString current_game_title;
     // Whether a user was set on the command line (skips UserSelector if it's forced to show up)
     bool user_flag_cmd_line = false;
 

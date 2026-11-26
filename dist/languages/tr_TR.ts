@@ -6295,7 +6295,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Temizle</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Oyun devam ediyor</translation>
     </message>
     <message>

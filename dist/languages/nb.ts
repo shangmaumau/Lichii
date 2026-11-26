@@ -6267,7 +6267,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Tøm</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Spill pågår</translation>
     </message>
     <message>

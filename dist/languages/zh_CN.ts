@@ -7434,6 +7434,10 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>开始游戏</translation>
     </message>
     <message>
+        <source>End Game</source>
+        <translation>结束游戏</translation>
+    </message>
+    <message>
         <location filename="../../src/lichii/game/game_list.cpp" line="455"/>
         <source>Start Game without Custom Configuration</source>
         <translation>使用公共设置项进行游戏</translation>
@@ -7670,7 +7674,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>%1 个游戏</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>游戏进行中</translation>
     </message>
     <message>
@@ -10392,6 +10396,18 @@ Remove and sign out those sign-ins? Keep them if the profiles are in another NAN
     <message>
         <source>Starting another game will close the current game. Continue?</source>
         <translation>启动其他游戏会结束当前游戏。是否继续？</translation>
+    </message>
+    <message>
+        <source>Any unsaved progress will be lost.</source>
+        <translation>未保存的进度会丢失。</translation>
+    </message>
+    <message>
+        <source>End Game</source>
+        <translation>结束游戏</translation>
+    </message>
+    <message>
+        <source>End "%1"? Any unsaved progress will be lost.</source>
+        <translation>要结束《%1》吗？未保存的进度将丢失。</translation>
     </message>
 </context>
 <context>

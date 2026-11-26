@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <QAbstractItemView>
+#include <QCoreApplication>
 #include <QFileInfo>
 #include <QListView>
 
@@ -26,13 +27,25 @@ bool IsSameGamePath(const QString& library_path, const QString& running_path) {
     constexpr auto sensitivity = Qt::CaseSensitive;
 #endif
     return library_absolute.compare(running_file.absoluteFilePath(), sensitivity) == 0 ||
-           (running_file.fileName() == QStringLiteral("main") &&
+           (running_file.fileName().compare(QStringLiteral("main"), sensitivity) == 0 &&
             library_absolute.compare(running_file.absolutePath(), sensitivity) == 0);
 }
 
 } // namespace
 
-void GameList::SetSuspendedGame(QString path, u64 program_id) {
+bool GameList::IsSuspendedGame(const QString& path, u64 program_id) const {
+    return !path.isEmpty() && !suspended_game_path.isEmpty() &&
+           (program_id == 0 || program_id == suspended_program_id) &&
+           IsSameGamePath(path, suspended_game_path);
+}
+
+QPair<QRect, QPixmap> GameList::HomeCoverForGame(const QString& filename, u64 program_id,
+                                               const QWidget& surface) const {
+    return current_page == home_view ? home_view->CoverForGame(filename, program_id, surface)
+                                     : QPair<QRect, QPixmap>{};
+}
+
+void GameList::SetSuspendedGame(QString path, u64 program_id, bool loading) {
     for (const auto& row : item_model->match(item_model->index(0, 0),
                                             GameListItemPath::SuspendedRole, true, -1,
                                             Qt::MatchExactly | Qt::MatchRecursive)) {
@@ -42,10 +55,22 @@ void GameList::SetSuspendedGame(QString path, u64 program_id) {
 
     suspended_game_path = std::move(path);
     suspended_program_id = program_id;
+    suspended_game_loading = loading;
     UpdateSuspendedGameRows();
 
     if (current_page == home_view) {
         home_view->Refresh();
+        home_view->View()->viewport()->update();
+    }
+}
+
+void GameList::SetSuspendedGameLoading(bool loading) {
+    if (suspended_game_path.isEmpty() || suspended_game_loading == loading) {
+        return;
+    }
+    suspended_game_loading = loading;
+    UpdateSuspendedGameRows();
+    if (current_page == home_view) {
         home_view->View()->viewport()->update();
     }
 }
@@ -59,12 +84,15 @@ QModelIndex GameList::UpdateSuspendedGameRows() {
                                                Qt::MatchExactly | Qt::MatchRecursive);
         for (const auto& row : matches) {
             const auto path = row.data(GameListItemPath::FullPathRole).toString();
-            if (path.isEmpty() || !IsSameGamePath(path, suspended_game_path)) {
+            if (!IsSuspendedGame(path)) {
                 continue;
             }
 
             item_model->setData(row, true, GameListItemPath::SuspendedRole);
-            item_model->setData(row, tr("Game in progress"), Qt::AccessibleDescriptionRole);
+            const auto status = suspended_game_loading
+                                    ? QCoreApplication::translate("LoadingScreen", "Loading...")
+                                    : tr("Playing");
+            item_model->setData(row, status, Qt::AccessibleDescriptionRole);
             if (!selected.isValid() || (m_isTreeMode && row.parent().row() != 0)) {
                 selected = row;
             }
@@ -85,7 +113,7 @@ void GameList::FocusSuspendedGame() {
     }
 
     if (current_page == home_view) {
-        home_view->ReturnToShelf();
+        home_view->ReturnToShelf(false);
         home_view->Refresh();
         home_view->FocusSuspendedGame();
         return;

@@ -74,7 +74,8 @@ void GameCard::paint(QPainter* painter, const QStyleOptionViewItem& option,
     const bool suspended = index.data(GameListItemPath::SuspendedRole).toBool();
     if (suspended) {
         const QRect badge_bounds = iconRect.isEmpty() ? cardRect : iconRect;
-        Lichii::DrawSuspendedGameBadge(*painter, badge_bounds, palette, option.font);
+        Lichii::DrawSuspendedGameBadge(*painter, badge_bounds, palette, option.font,
+                                      index.data(Qt::AccessibleDescriptionRole).toString());
     }
 
     if (UISettings::values.show_game_name.GetValue()) {

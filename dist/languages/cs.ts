@@ -6255,7 +6255,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Vymazat</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Rozehraná hra</translation>
     </message>
     <message>

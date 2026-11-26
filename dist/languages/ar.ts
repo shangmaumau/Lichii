@@ -6335,7 +6335,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>مسح</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>لعبة قيد التشغيل</translation>
     </message>
     <message>

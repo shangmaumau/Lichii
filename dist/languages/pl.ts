@@ -6328,7 +6328,7 @@ Przejdź do sekcji Konfiguracja -&gt; System -&gt; Sieć i dokonaj wyboru.</tran
         <translation>Wyczyść</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Gra w toku</translation>
     </message>
     <message>

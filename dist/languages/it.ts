@@ -6339,7 +6339,7 @@ Vai su Configura -&gt; Sistema -&gt; Rete e selezionane una.</translation>
         <translation>Cancella</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Partita in corso</translation>
     </message>
     <message>

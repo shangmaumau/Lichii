@@ -702,7 +702,7 @@ void ControllerUiNavigation::Dispatch(Qt::Key key, bool repeated) {
     }
 
     auto* view = qobject_cast<QAbstractItemView*>(target);
-    if (window == main_window && (IsDirection(key) || key == Qt::Key_Enter)) {
+    if (window == main_window && (IsDirection(key) || key == Qt::Key_Enter || key == Qt::Key_Menu)) {
         for (auto* parent = target; parent; parent = parent->parentWidget()) {
             if (auto* library = qobject_cast<GameList*>(parent)) {
                 switch (library->HandleControllerNavigation(*target, key, repeated)) {
@@ -710,7 +710,7 @@ void ControllerUiNavigation::Dispatch(Qt::Key key, bool repeated) {
                     FocusMenuBar();
                     return;
                 case GameList::ControllerNavigation::Handled:
-                    if (key == Qt::Key_Enter) {
+                    if (key == Qt::Key_Enter || key == Qt::Key_Menu) {
                         PlaySound(SoundEffect::Confirm);
                     }
                     return;

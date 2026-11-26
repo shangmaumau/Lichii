@@ -318,6 +318,22 @@ QWidget* GameList::NavigationTarget() const {
 
 GameList::ControllerNavigation GameList::HandleControllerNavigation(const QWidget& focus,
                                                                     Qt::Key key, bool repeated) {
+    if (key == Qt::Key_Menu && !suspended_game_path.isEmpty()) {
+        if (&focus == resume_unlisted_game) {
+            emit StopGameRequested();
+            return ControllerNavigation::Handled;
+        }
+        if (&focus == m_currentView) {
+            auto selected = m_currentView->currentIndex().siblingAtColumn(0);
+            if (current_page == home_view) {
+                selected = home_view->SourceIndex(selected);
+            }
+            if (selected.data(GameListItemPath::SuspendedRole).toBool()) {
+                emit StopGameRequested();
+                return ControllerNavigation::Handled;
+            }
+        }
+    }
     if (search_field->isAncestorOf(&focus)) {
         if (key == Qt::Key_Up) {
             if (current_page == home_view) {
@@ -1016,8 +1032,7 @@ void GameList::ShowContextMenu(const QModelIndex& item, const QPoint& global_pos
     auto* context_menu = new QMenu(this);
     switch (selected.data(GameListItem::TypeRole).value<GameListItemType>()) {
     case GameListItemType::Game:
-        AddGamePopup(*context_menu, selected.data(GameListItemPath::ProgramIdRole).toULongLong(),
-                     selected.data(GameListItemPath::FullPathRole).toString().toStdString());
+        AddGamePopup(*context_menu, selected);
         break;
     case GameListItemType::CustomDir:
         AddPermDirPopup(*context_menu, selected);
@@ -1049,13 +1064,31 @@ void GameList::SetReportableProgramId(u64 program_id) {
     reportable_program_id = program_id;
 }
 
-void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::string& path) {
+void GameList::AddGamePopup(QMenu& context_menu, const QModelIndex& game) {
+    const auto program_id = game.data(GameListItemPath::ProgramIdRole).toULongLong();
+    const auto game_path = game.data(GameListItemPath::FullPathRole).toString();
+    const auto path = game_path.toStdString();
     // TODO(crueter): Refactor this and make it less bad
     QAction* favorite = context_menu.addAction(tr("Favorite"));
     context_menu.addSeparator();
-    QAction* start_game = context_menu.addAction(tr("Start Game"));
-    QAction* start_game_global =
-        context_menu.addAction(tr("Start Game without Custom Configuration"));
+    if (game.data(GameListItemPath::SuspendedRole).toBool()) {
+        auto* stop_game = context_menu.addAction(MenuIcon("stop"), tr("End Game"));
+        connect(stop_game, &QAction::triggered, this, [this, game_path, program_id] {
+            if (IsSuspendedGame(game_path, program_id)) {
+                emit StopGameRequested();
+            }
+        });
+    } else {
+        auto* start_game = context_menu.addAction(MenuIcon("play"), tr("Start Game"));
+        auto* start_game_global = context_menu.addAction(
+            MenuIcon("play"), tr("Start Game without Custom Configuration"));
+        connect(start_game, &QAction::triggered, this, [this, game_path, program_id] {
+            emit BootGame(game_path, program_id, StartGameType::Normal);
+        });
+        connect(start_game_global, &QAction::triggered, this, [this, game_path, program_id] {
+            emit BootGame(game_path, program_id, StartGameType::Global);
+        });
+    }
     context_menu.addSeparator();
     QAction* open_save_location = context_menu.addAction(tr("Open Save Data Location"));
     QAction* open_mod_location = context_menu.addAction(tr("Open Mod Data Location"));
@@ -1149,10 +1182,8 @@ void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::stri
                 [this, program_id] { emit ReportCompatibilityRequested(program_id); });
     }
 
-    const std::array<std::pair<QAction*, const char*>, 21> icons{{
+    const std::array<std::pair<QAction*, const char*>, 19> icons{{
         {favorite, "star"},
-        {start_game, "play"},
-        {start_game_global, "play"},
         {open_save_location, "folder"},
         {open_mod_location, "puzzle"},
         {open_transferable_shader_cache, "layers"},
@@ -1197,10 +1228,6 @@ void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::stri
     connect(open_save_location, &QAction::triggered, this, [this, program_id, path]() {
         emit OpenFolderRequested(program_id, GameListOpenTarget::SaveData, path);
     });
-    connect(start_game, &QAction::triggered, this,
-            [this, path]() { emit BootGame(QString::fromStdString(path), StartGameType::Normal); });
-    connect(start_game_global, &QAction::triggered, this,
-            [this, path]() { emit BootGame(QString::fromStdString(path), StartGameType::Global); });
     connect(open_mod_location, &QAction::triggered, this, [this, program_id, path]() {
         emit OpenFolderRequested(program_id, GameListOpenTarget::ModData, path);
     });

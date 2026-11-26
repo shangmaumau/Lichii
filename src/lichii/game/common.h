@@ -5,7 +5,6 @@
 
 #include <iterator>
 
-#include <QCoreApplication>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QPalette>
@@ -19,7 +18,7 @@ namespace Lichii {
 
 // Place the status on the cover, or use a small play symbol when the artwork is too small.
 inline qreal DrawSuspendedGameBadge(QPainter& painter, const QRectF& bounds, const QPalette& palette,
-                                   QFont font) {
+                                   QFont font, const QString& label) {
     const auto area = bounds.adjusted(3, 3, -3, -3);
     if (area.width() < 16 || area.height() < 15) {
         return 0;
@@ -28,9 +27,9 @@ inline qreal DrawSuspendedGameBadge(QPainter& painter, const QRectF& bounds, con
     font.setPixelSize(12);
     font.setWeight(QFont::DemiBold);
     const QFontMetrics metrics(font);
-    const auto label = QCoreApplication::translate("GameList", "Game in progress");
     const int label_width = metrics.horizontalAdvance(label) + 25;
-    const bool show_text = area.width() >= label_width && area.height() >= metrics.height() + 6;
+    const bool show_text =
+        !label.isEmpty() && area.width() >= label_width && area.height() >= metrics.height() + 6;
     const QSizeF size(show_text ? label_width : 16,
                       show_text ? metrics.height() + 6 : 15);
     const QRectF pill(QPointF(area.right() - size.width(), area.top()), size);

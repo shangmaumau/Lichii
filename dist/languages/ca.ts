@@ -6264,7 +6264,7 @@ Please go to Configure -&gt; System -&gt; Network and make a selection.</source>
         <translation>Esborrar</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Partida en curs</translation>
     </message>
     <message>

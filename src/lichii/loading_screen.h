@@ -7,9 +7,11 @@
 
 #include <chrono>
 #include <memory>
+#include <QPixmap>
 #include <QString>
 #include <QWidget>
 #include <QtGlobal>
+#include "common/container/unordered_map.h"
 
 #if !QT_CONFIG(movie)
 #define LICHII_QT_MOVIE_MISSING 1
@@ -42,9 +44,11 @@ public:
 
     ~LoadingScreen();
 
+    QPixmap TransitionFrame(const QSize& size) const;
+
     /// Call before showing the loading screen to load the widgets with the logo and banner for the
     /// currently loaded application.
-    void Prepare(Loader::AppLoader& loader);
+    void Prepare(Loader::AppLoader& loader, bool use_transition_backdrop = false);
 
     /// After the loading screen is hidden, the owner of this class can call this to clean up any
     /// used resources such as the logo and banner.
@@ -61,6 +65,7 @@ public:
     void paintEvent(QPaintEvent* event) override;
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 signals:
@@ -76,6 +81,8 @@ private:
     std::unique_ptr<QByteArray> backing_mem;
 #endif
     std::unique_ptr<Ui::LoadingScreen> ui;
+    bool show_transition_backdrop = false;
+    QPixmap transition_backdrop;
     std::size_t previous_total = 0;
     VideoCore::LoadCallbackStage previous_stage;
 

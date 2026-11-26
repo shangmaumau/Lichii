@@ -13,6 +13,7 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
+#include <QFontMetrics>
 #include <QHash>
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -33,6 +34,7 @@
 #include <QTime>
 #include <QTimer>
 #include <QToolButton>
+#include <QtMath>
 #include <QVariantAnimation>
 #include <QVBoxLayout>
 #include <QWheelEvent>
@@ -64,6 +66,82 @@ QRect TileCoverRect(const QRect& cell, const QPixmap& cover) {
     const QSize size = cover.size().scaled(tile.size(), Qt::KeepAspectRatio);
     return {tile.x() + (tile.width() - size.width()) / 2,
             tile.y() + (tile.height() - size.height()) / 2, size.width(), size.height()};
+}
+
+void DrawRunningGameStatus(QPainter& painter, const QRectF& cover, const QPixmap& avatar,
+                           const QPalette& palette, QFont font, const QString& status) {
+    const qreal short_side = std::min(cover.width(), cover.height());
+    const int inset = std::clamp(qRound(short_side * 0.035), 3, 8);
+    const QRectF area = cover.adjusted(inset, inset, -inset, -inset);
+    const qreal preferred_height = std::clamp(short_side * 0.18, 18.0, 40.0);
+    if (area.width() < preferred_height || area.height() < preferred_height) {
+        return;
+    }
+
+    const int gap = std::clamp(qRound(short_side * 0.026), 3, 6);
+    const int text_padding = std::clamp(qRound(short_side * 0.05), 5, 11);
+    const auto badge_height = [preferred_height](const QFontMetrics& metrics) {
+        return std::max(preferred_height, metrics.height() + 6.0);
+    };
+    font.setPixelSize(std::clamp(qRound(short_side * 0.095), 12, 22));
+    font.setWeight(QFont::DemiBold);
+    QFontMetrics metrics(font);
+    while (font.pixelSize() > 12 &&
+           (badge_height(metrics) > area.height() ||
+            badge_height(metrics) + gap + 2 * text_padding + metrics.horizontalAdvance(status) >
+                area.width())) {
+        font.setPixelSize(font.pixelSize() - 1);
+        metrics = QFontMetrics(font);
+    }
+
+    const qreal height = std::min({badge_height(metrics), area.width(), area.height()});
+    const qreal pill_space = area.width() - height - gap;
+    const int text_width = qFloor(pill_space) - 2 * text_padding;
+    const QString label = pill_space >= height && text_width >= 32 && height >= metrics.height() + 6
+                              ? metrics.elidedText(status, Qt::ElideRight, text_width)
+                              : QString{};
+    const qreal pill_width = label.isEmpty()
+                                 ? 0
+                                 : std::max(height, metrics.horizontalAdvance(label) + 2.0 * text_padding);
+    const qreal group_width = height + (label.isEmpty() ? 0 : gap + pill_width);
+    const QRectF image(area.center().x() - group_width / 2, area.bottom() - height, height, height);
+    const qreal border_width = std::clamp(height * 0.048, 1.0, 2.0);
+    const qreal border_inset = border_width / 2;
+
+    painter.save();
+    painter.setClipRect(cover, Qt::IntersectClip);
+    QPainterPath image_mask;
+    image_mask.addEllipse(image);
+    painter.save();
+    painter.setClipPath(image_mask, Qt::IntersectClip);
+    painter.fillRect(image, palette.alternateBase());
+    if (!avatar.isNull()) {
+        const qreal side = std::min(avatar.width(), avatar.height());
+        QRectF source(0, 0, side, side);
+        source.moveCenter(QRectF(avatar.rect()).center());
+        painter.drawPixmap(image, avatar, source);
+    }
+    painter.restore();
+
+    painter.setPen(QPen(Qt::white, border_width));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawEllipse(image.adjusted(border_inset, border_inset, -border_inset, -border_inset));
+
+    if (!label.isEmpty()) {
+        const QRectF pill(image.right() + gap, image.top(), pill_width, height);
+        const QRectF outline = pill.adjusted(border_inset, border_inset, -border_inset, -border_inset);
+        const qreal radius = outline.height() / 2;
+        QColor background = palette.color(QPalette::Window);
+        if (background.lightness() > 64) {
+            background = QColor(23, 23, 27);
+        }
+        background.setAlpha(242);
+        painter.setBrush(background);
+        painter.drawRoundedRect(outline, radius, radius);
+        painter.setFont(font);
+        painter.drawText(pill, Qt::AlignCenter, label);
+    }
+    painter.restore();
 }
 
 class LibraryLoadingCovers final : public QWidget {
@@ -237,6 +315,10 @@ class TileDelegate final : public QStyledItemDelegate {
   public:
     using QStyledItemDelegate::QStyledItemDelegate;
 
+    void SetProfileAvatar(QPixmap avatar) {
+        profile_avatar = std::move(avatar);
+    }
+
     QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override {
         return static_cast<const QListView*>(parent())->gridSize();
     }
@@ -273,11 +355,20 @@ class TileDelegate final : public QStyledItemDelegate {
         }
         const auto source = index.data(SourceIndexRole).value<QPersistentModelIndex>();
         if (source.data(GameListItemPath::SuspendedRole).toBool()) {
-            Lichii::DrawSuspendedGameBadge(*painter, tile, option.palette, option.font);
+            const auto status = source.data(Qt::AccessibleDescriptionRole).toString();
+            if (static_cast<const QListView*>(parent())->isWrapping()) {
+                Lichii::DrawSuspendedGameBadge(*painter, tile, option.palette, option.font, status);
+            } else {
+                DrawRunningGameStatus(*painter, tile, profile_avatar, option.palette, option.font,
+                                      status);
+            }
         }
 
         painter->restore();
     }
+
+  private:
+    QPixmap profile_avatar;
 };
 
 QString RecentPath(const QString& path) {
@@ -587,12 +678,12 @@ QWidget* GameHome::NavigationTarget() const {
     return collection ? static_cast<QWidget*>(back_button) : profile_picture;
 }
 
-bool GameHome::ReturnToShelf() {
+bool GameHome::ReturnToShelf(bool animate) {
     if (!collection) {
         return false;
     }
     mouse_navigation = false;
-    ShowCollection(false);
+    ShowCollection(false, animate);
     return true;
 }
 
@@ -624,6 +715,62 @@ QModelIndex GameHome::SourceIndex(const QModelIndex& index) const {
     return index.data(SourceIndexRole).value<QPersistentModelIndex>();
 }
 
+QPair<QRect, QPixmap> GameHome::CoverForGame(const QString& filename, qulonglong program_id,
+                                          const QWidget& surface) const {
+    if (!isVisible() || !view->isVisible() || filename.isEmpty()) {
+        return {};
+    }
+
+    const QFileInfo file(filename);
+    const auto game_path = RecentPath(file.absoluteFilePath());
+    const auto loose_path = RecentPath(file.fileName()) == QStringLiteral("main")
+                                ? RecentPath(file.absolutePath())
+                                : QString{};
+    const auto cover_for = [&](const QModelIndex& index) -> QPair<QRect, QPixmap> {
+        const auto source = SourceIndex(index);
+        if (!source.isValid() ||
+            (program_id != 0 &&
+             source.data(GameListItemPath::ProgramIdRole).toULongLong() != program_id)) {
+            return {};
+        }
+        const auto path = source.data(GameListItemPath::FullPathRole).toString();
+        if (path.isEmpty()) {
+            return {};
+        }
+        const auto entry = RecentPath(QFileInfo(path).absoluteFilePath());
+        if (entry != game_path && entry != loose_path) {
+            return {};
+        }
+
+        auto cover = index.data(Qt::DecorationRole).value<QPixmap>();
+        const auto bounds = TileCoverRect(view->visualRect(index), cover);
+        const auto visible = bounds.intersected(view->viewport()->rect());
+        if (cover.isNull() || visible.isEmpty()) {
+            return {};
+        }
+        if (visible != bounds) {
+            const qreal x_scale = qreal(cover.width()) / bounds.width();
+            const qreal y_scale = qreal(cover.height()) / bounds.height();
+            const QRectF crop((visible.x() - bounds.x()) * x_scale,
+                              (visible.y() - bounds.y()) * y_scale, visible.width() * x_scale,
+                              visible.height() * y_scale);
+            cover = cover.copy(crop.toAlignedRect().intersected(cover.rect()));
+        }
+        return {QRect(view->viewport()->mapTo(&surface, visible.topLeft()), visible.size()),
+                std::move(cover)};
+    };
+
+    if (auto cover = cover_for(view->currentIndex()); !cover.first.isEmpty()) {
+        return cover;
+    }
+    for (int row = 0; row < tiles->rowCount(); ++row) {
+        if (auto cover = cover_for(tiles->index(row, 0)); !cover.first.isEmpty()) {
+            return cover;
+        }
+    }
+    return {};
+}
+
 void GameHome::FocusLibrary() {
     view->setFocus();
 }
@@ -633,6 +780,7 @@ void GameHome::FocusSuspendedGame() {
                                       1, Qt::MatchExactly);
     if (!matches.isEmpty()) {
         view->setCurrentIndex(matches.front());
+        view->doItemsLayout();
         view->scrollTo(matches.front());
     }
 
@@ -849,8 +997,8 @@ void GameHome::Retranslate() {
     }
 }
 
-void GameHome::ShowCollection(bool show) {
-    QPixmap outgoing = collection != show && isVisible() && !loading ? grab() : QPixmap{};
+void GameHome::ShowCollection(bool show, bool animate) {
+    QPixmap outgoing = animate && collection != show && isVisible() && !loading ? grab() : QPixmap{};
     StopPageTransition();
     collection = show;
     if (show) {
@@ -1191,6 +1339,8 @@ void GameHome::UpdateProfile() {
     painter.drawPixmap(QRect(0, 0, AvatarSide, AvatarSide), avatar);
     painter.end();
     profile_picture->setIcon(QIcon(circle));
+    static_cast<TileDelegate*>(view->itemDelegate())->SetProfileAvatar(avatar);
+    view->viewport()->update();
     profile_name->setTextFormat(Qt::PlainText);
     profile_name->setText(name);
 }

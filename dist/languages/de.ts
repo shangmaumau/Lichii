@@ -6348,7 +6348,7 @@ Bitte gehe zu „Konfigurieren“ -&gt; „System“ -&gt; „Netzwerk“ und tr
         <translation>Löschen</translation>
     </message>
     <message>
-        <source>Game in progress</source>
+        <source>Playing</source>
         <translation>Spiel läuft</translation>
     </message>
     <message>
