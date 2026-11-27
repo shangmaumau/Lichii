@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <optional>
 
 #include <QThread>
@@ -58,6 +59,10 @@ public:
         return m_should_run;
     }
 
+    bool IsLoadingDiskResources() const {
+        return loading_disk_resources.load();
+    }
+
     /**
      * Requests for the emulation thread to immediately stop running
      */
@@ -82,6 +87,7 @@ private:
 
 private:
     std::stop_source m_stop_source;
+    std::atomic<bool> loading_disk_resources{true};
     std::mutex m_should_run_mutex;
     std::condition_variable_any m_should_run_cv;
     Common::Event m_stopped;

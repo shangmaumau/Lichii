@@ -2504,15 +2504,15 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
     }
     const bool from_frontend = params.launch_type == Service::AM::LaunchType::FrontendInitiated;
     auto [bounds, artwork] = from_frontend
-                                 ? game_list->HomeCoverForGame(filename, params.program_id,
-                                                               *centralWidget())
+                                 ? game_list->TransitionArtworkForGame(filename, params.program_id,
+                                                                       *centralWidget())
                                  : QPair<QRect, QPixmap>{};
-    const auto start = [this, filename, params, type](bool use_transition_backdrop) {
+    const auto start = [this, filename, params, type](bool match_loading_transition) {
         if (close_pending || boot_in_progress || shutdown_game_in_progress || shutdown_dialog) {
             game_scene_transition->Clear();
             return;
         }
-        CompleteBootGame(filename, params, type, use_transition_backdrop);
+        CompleteBootGame(filename, params, type, match_loading_transition);
     };
     if (!bounds.isEmpty() && !artwork.isNull()) {
         const auto after_zoom = [this, start] {
@@ -2533,7 +2533,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
 
 void MainWindow::CompleteBootGame(const QString& filename,
                                   Service::AM::FrontendAppletParameters params, StartGameType type,
-                                  bool use_transition_backdrop) {
+                                  bool match_loading_transition) {
     if (whats_new_dialog) {
         whats_new_dialog->close();
     }
@@ -2902,7 +2902,7 @@ void MainWindow::CompleteBootGame(const QString& filename,
     const auto gpu_vendor = QtCommon::system->GPU().Renderer().GetDeviceVendor();
     UpdateWindowTitle(title_name, title_version, gpu_vendor);
 
-    loading_screen->Prepare(QtCommon::system->GetAppLoader(), use_transition_backdrop);
+    loading_screen->Prepare(QtCommon::system->GetAppLoader(), match_loading_transition);
     const bool single_window = ui->action_Single_Window_Mode->isChecked();
     emulation_running = true;
     if (!return_to_library_during_boot && !close_pending) {
@@ -2996,30 +2996,34 @@ bool MainWindow::OnShutdownBegin() {
     LOG_INFO(Frontend, "Shutdown requested; waiting for emulation thread");
     discord_rpc->Pause();
 
-    RequestGameExit();
     QtCommon::emu_thread->disconnect();
-    QtCommon::emu_thread->SetRunning(true);
-
     connect(QtCommon::emu_thread.get(), &QThread::finished, this, &MainWindow::OnEmulationStopped);
     emit EmulationStopping();
-
-    int shutdown_time = 1000;
-
-    if (QtCommon::system->DebuggerEnabled()) {
-        shutdown_time = 0;
-    } else if (QtCommon::system->GetExitLocked()) {
-        shutdown_time = 5000;
-    }
-
-    shutdown_timer.setSingleShot(true);
-    shutdown_timer.start(shutdown_time);
-    connect(&shutdown_timer, &QTimer::timeout, this, &MainWindow::OnEmulationStopTimeExpired,
-            Qt::UniqueConnection);
 
     // Disable everything to prevent anything from being triggered here
     ui->action_Pause->setEnabled(false);
     ui->action_Restart->setEnabled(false);
     ui->action_Stop->setEnabled(false);
+
+    // The guest hasn't started while the initial shader cache is loading.
+    if (QtCommon::emu_thread->IsLoadingDiskResources()) {
+        OnEmulationStopTimeExpired();
+        return true;
+    }
+
+    RequestGameExit();
+    QtCommon::emu_thread->SetRunning(true);
+
+    int shutdown_time = 1000;
+    if (QtCommon::system->DebuggerEnabled()) {
+        shutdown_time = 0;
+    } else if (QtCommon::system->GetExitLocked()) {
+        shutdown_time = 5000;
+    }
+    shutdown_timer.setSingleShot(true);
+    connect(&shutdown_timer, &QTimer::timeout, this, &MainWindow::OnEmulationStopTimeExpired,
+            Qt::UniqueConnection);
+    shutdown_timer.start(shutdown_time);
 
     return true;
 }
@@ -3068,13 +3072,13 @@ static void StartExitWatchdog() {
 void MainWindow::OnEmulationStopTimeExpired() {
     if (QtCommon::emu_thread) {
         StartExitWatchdog();
-        QtCommon::emu_thread->ForceStop();
         emu_force_stop_clock.start();
         shutdown_progress_seen = Common::ShutdownProgress();
         emu_terminate_timer.setSingleShot(true);
-        emu_terminate_timer.start(EmuThreadStopTimeoutMs);
         connect(&emu_terminate_timer, &QTimer::timeout, this, &MainWindow::OnEmulationStopTimeout,
                 Qt::UniqueConnection);
+        emu_terminate_timer.start(EmuThreadStopTimeoutMs);
+        QtCommon::emu_thread->ForceStop();
     }
 }
 
@@ -3271,7 +3275,9 @@ void MainWindow::ShutdownGame() {
     // TODO(crueter): make this common as well (frontend_common?)
     play_time_manager->Stop();
     OnShutdownBegin();
-    OnEmulationStopTimeExpired();
+    if (!emu_terminate_timer.isActive()) {
+        OnEmulationStopTimeExpired();
+    }
     shutdown_timer.stop();
     emu_terminate_timer.stop();
     if (QtCommon::emu_thread && QtCommon::emu_thread->isRunning()) {
@@ -4462,7 +4468,7 @@ void MainWindow::ShowFullscreen() {
     }
 }
 
-void MainWindow::HideFullscreen() {
+void MainWindow::HideFullscreen(bool keep_render_hidden) {
     if (ui->action_Single_Window_Mode->isChecked()) {
         if (UsingExclusiveFullscreen()) {
             showNormal();
@@ -4477,6 +4483,13 @@ void MainWindow::HideFullscreen() {
 
         statusBar()->setVisible(ui->action_Show_Status_Bar->isChecked());
         ui->menubar->show();
+    } else if (keep_render_hidden) {
+        if (UsingExclusiveFullscreen()) {
+            render_window->setWindowState(render_window->windowState() & ~Qt::WindowFullScreen);
+        } else {
+            render_window->setWindowFlags(render_window->windowFlags() & ~Qt::FramelessWindowHint);
+        }
+        render_window->restoreGeometry(UISettings::values.renderwindow_geometry);
     } else {
         if (UsingExclusiveFullscreen()) {
             render_window->showNormal();

@@ -14,6 +14,7 @@
 #include "common/literals.h"
 #include "common/logging.h"
 #include "common/memory_detect.h"
+#include "common/shutdown_progress.h"
 #include "common/thread.h"
 #include "video_core/shader_jobs.h"
 
@@ -85,7 +86,7 @@ void RunOnLargeStack(Body&& body) {
 
 struct ShaderJobBatchState {
     mutable std::mutex mutex;
-    mutable std::condition_variable condition;
+    mutable std::condition_variable_any condition;
     size_t pending{};
     std::atomic<bool> stop{};
 };
@@ -181,8 +182,12 @@ std::exception_ptr ShaderJobHandle::Exception() const {
 }
 
 void ShaderJobBatch::Wait() const {
+    Wait({});
+}
+
+bool ShaderJobBatch::Wait(std::stop_token stop_token) const {
     std::unique_lock lock{state->mutex};
-    state->condition.wait(lock, [this] { return state->pending == 0; });
+    return state->condition.wait(lock, stop_token, [this] { return state->pending == 0; });
 }
 
 bool ShaderJobBatch::Idle() const {
@@ -577,7 +582,8 @@ void ShaderJobScheduler::RunDriver(const JobPtr& job) {
 void ShaderJobScheduler::Finish(ShaderJobState& job, ShaderJobStatus status,
                                 std::vector<ShaderJob>& dead) {
     auto& counters{stats.priorities[Index(job.priority.load())]};
-    if (IsQueued(job.status.load())) {
+    const bool queued = IsQueued(job.status.load());
+    if (queued) {
         --counters.queued;
     } else {
         --counters.running;
@@ -596,6 +602,9 @@ void ShaderJobScheduler::Finish(ShaderJobState& job, ShaderJobStatus status,
     ReleaseBytes(job);
     dead.push_back(TakeStages(job));
     if (job.batch) {
+        if (!queued && job.batch->stop.load(std::memory_order_relaxed)) {
+            Common::NoteShutdownProgress();
+        }
         std::scoped_lock batch_lock{job.batch->mutex};
         if (--job.batch->pending == 0) {
             job.batch->condition.notify_all();

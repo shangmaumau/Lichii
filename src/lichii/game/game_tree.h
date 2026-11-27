@@ -21,6 +21,7 @@ public:
     void SetModel(GameListModel* model);
     QModelIndex ControllerRow(bool forward, bool from_edge = false);
     bool ToggleControllerFolder();
+    QRect CoverRect(const QModelIndex& index) const;
 
     QString GetLastFilterResultItem() const;
     int FilterClosedResultCount(GameListModel* model);

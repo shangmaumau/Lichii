@@ -44,27 +44,16 @@ void GameCard::paint(QPainter* painter, const QStyleOptionViewItem& option,
     painter->drawRoundedRect(cardRect, cardCornerRadius, cardCornerRadius);
 
     const u32 icon_size = UISettings::values.game_cover_size.GetValue();
-    QPixmap icon_pixmap = index.data(Qt::DecorationRole).value<QPixmap>();
+    const auto icon_pixmap = index.data(Qt::DecorationRole).value<QPixmap>();
+    const auto cover = LayoutCover(cardRect, icon_pixmap, icon_size);
 
     QRect iconRect;
-    if (!icon_pixmap.isNull() && icon_size > 0) {
-        const qreal dpr = icon_pixmap.devicePixelRatio() > 0.0
-                              ? icon_pixmap.devicePixelRatio()
-                              : 1.0;
-        const int target = std::max(1, qRound(icon_size * dpr));
-        QSize physical = icon_pixmap.size();
-        physical.scale(target, target, Qt::KeepAspectRatio);
-
-        QPixmap scaled = icon_pixmap.scaled(physical, Qt::KeepAspectRatio,
-                                            Qt::SmoothTransformation);
-        scaled.setDevicePixelRatio(dpr);
-        const QSize logical(qRound(physical.width() / dpr), qRound(physical.height() / dpr));
-
-        iconRect = {cardRect.left() + (cardRect.width() - logical.width()) / 2,
-                    cardRect.top() + cardMargin - 1, logical.width(), logical.height()};
-
+    if (!cover.rect.isEmpty()) {
+        QPixmap scaled =
+            icon_pixmap.scaled(cover.physical_size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        scaled.setDevicePixelRatio(cover.device_pixel_ratio);
+        iconRect = cover.rect;
         painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-
         painter->drawPixmap(iconRect, scaled);
     } else {
         iconRect = {cardRect.left() + cardMargin, cardRect.top() + cardMargin,
@@ -102,6 +91,32 @@ void GameCard::paint(QPainter* painter, const QStyleOptionViewItem& option,
     }
 
     painter->restore();
+}
+
+GameCard::CoverLayout GameCard::LayoutCover(const QRect& card, const QPixmap& picture,
+                                           unsigned int icon_size) {
+    if (picture.isNull() || icon_size == 0 || card.isEmpty()) {
+        return {};
+    }
+
+    const qreal dpr = picture.devicePixelRatio() > 0.0 ? picture.devicePixelRatio() : 1.0;
+    const int target = std::max(1, qRound(icon_size * dpr));
+    QSize physical = picture.size();
+    physical.scale(target, target, Qt::KeepAspectRatio);
+    const QSize logical(qRound(physical.width() / dpr), qRound(physical.height() / dpr));
+    return {{card.left() + (card.width() - logical.width()) / 2, card.top() + cardMargin - 1,
+             logical.width(), logical.height()},
+            physical, dpr};
+}
+
+QRect GameCard::CoverRect(const QStyleOptionViewItem& option, const QModelIndex& index) const {
+    if (!index.isValid() || option.rect.isEmpty()) {
+        return {};
+    }
+    const auto picture = index.data(Qt::DecorationRole).value<QPixmap>();
+    return LayoutCover(getCardRect(option, index), picture,
+                       UISettings::values.game_cover_size.GetValue())
+        .rect;
 }
 
 QRect GameCard::getCardRect(const QStyleOptionViewItem& option, const QModelIndex& index) const {

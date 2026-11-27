@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include <QApplication>
@@ -16,6 +17,12 @@
 #include <QLayout>
 #include <QProgressDialog>
 #include <QTimer>
+#include <QWindow>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <dwmapi.h>
+#endif
 
 #include "common/logging.h"
 #include "core/core.h"
@@ -40,6 +47,77 @@ struct PausedFrameCapture {
     QImage pixels;
     std::atomic<Status> status{Status::Pending};
 };
+
+#ifdef _WIN32
+// The compositor can present the native render window's removal before Qt's backing store updates.
+class NativeHandoffFrame final {
+public:
+    NativeHandoffFrame(const QWidget& outgoing, const QPixmap& frame) {
+        const auto* top_level = outgoing.window();
+        auto* handle = top_level->windowHandle();
+        if (!handle || outgoing.size().isEmpty()) {
+            return;
+        }
+        const auto scale = handle->devicePixelRatio();
+        const QPoint offset = outgoing.mapTo(top_level, QPoint{}) * scale;
+        const QSize extent = outgoing.size() * scale;
+        POINT position{offset.x(), offset.y()};
+        if (!ClientToScreen(reinterpret_cast<HWND>(handle->winId()), &position)) {
+            return;
+        }
+
+        window = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW |
+                                     WS_EX_NOACTIVATE | WS_EX_TRANSPARENT,
+                                 L"STATIC", L"", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr,
+                                 GetModuleHandleW(nullptr), nullptr);
+        if (!window) {
+            return;
+        }
+        const auto image =
+            frame.toImage().scaled(extent, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        const HBITMAP bitmap = image.toHBITMAP();
+        const HDC dc = CreateCompatibleDC(nullptr);
+        if (bitmap && dc) {
+            const HGDIOBJ previous = SelectObject(dc, bitmap);
+            SIZE dimensions{extent.width(), extent.height()};
+            POINT origin{};
+            BLENDFUNCTION blend{AC_SRC_OVER, 0, 255, 0};
+            const bool painted = UpdateLayeredWindow(window, nullptr, &position, &dimensions, dc,
+                                                     &origin, 0, &blend, ULW_ALPHA);
+            SelectObject(dc, previous);
+            if (painted) {
+                shown = SetWindowPos(window, HWND_TOPMOST, 0, 0, 0, 0,
+                                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                if (shown) {
+                    DwmFlush();
+                }
+            }
+        }
+        if (dc) {
+            DeleteDC(dc);
+        }
+        if (bitmap) {
+            DeleteObject(bitmap);
+        }
+    }
+
+    NativeHandoffFrame(const NativeHandoffFrame&) = delete;
+    NativeHandoffFrame& operator=(const NativeHandoffFrame&) = delete;
+
+    ~NativeHandoffFrame() {
+        if (shown) {
+            DwmFlush();
+        }
+        if (window) {
+            DestroyWindow(window);
+        }
+    }
+
+private:
+    HWND window{};
+    bool shown{};
+};
+#endif
 
 } // namespace
 
@@ -162,10 +240,6 @@ void MainWindow::FinishPauseToGameLibrary(u64 program_id, QPixmap frame) {
         return;
     }
 
-    if (QtCommon::emu_thread->IsRunning()) {
-        OnPauseGame();
-    }
-
     ShowSuspendedGameLibrary(program_id, std::move(frame));
 }
 
@@ -182,9 +256,6 @@ void MainWindow::ReturnToLibraryWhileLoading() {
         return;
     }
 
-    if (!awaiting_first_game_frame && QtCommon::emu_thread->IsRunning()) {
-        OnPauseGame();
-    }
     ShowSuspendedGameLibrary(program_id, {}, true);
 }
 
@@ -193,13 +264,20 @@ void MainWindow::ShowSuspendedGameLibrary(u64 program_id, QPixmap frame, bool us
     auto_paused = false;
     auto* surface = centralWidget();
     if (use_loading_frame) {
-        frame = loading_screen->TransitionFrame(surface->size());
-    } else if (frame.isNull()) {
-        frame = QPixmap(1, 1);
-        frame.fill(surface->palette().color(QPalette::Window));
+        frame = loading_screen->isVisible() ? loading_screen->grab()
+                                            : loading_screen->TransitionFrame(surface->size());
     }
     const bool already_shrinking = game_scene_transition->IsShrinking();
     const bool held = !already_shrinking && game_scene_transition->HoldFrame(frame);
+#ifdef _WIN32
+    std::optional<NativeHandoffFrame> native_frame;
+    if (held && render_window->isVisible()) {
+        native_frame.emplace(*render_window, frame);
+    }
+#endif
+    if (!awaiting_first_game_frame && QtCommon::emu_thread->IsRunning()) {
+        OnPauseGame();
+    }
 
     const bool single_window = ui->action_Single_Window_Mode->isChecked();
     const bool leave_fullscreen = ui->action_Fullscreen->isChecked() &&
@@ -215,12 +293,12 @@ void MainWindow::ShowSuspendedGameLibrary(u64 program_id, QPixmap frame, bool us
     game_list->setEnabled(true);
     OnGameListShowList(true);
     controller_ui_navigation->SetGameLibraryActiveWhilePaused(true);
-    if (leave_fullscreen) {
-        HideFullscreen();
-    }
-    OnTogglePerfOverlay();
     render_window->hide();
     loading_screen->hide();
+    if (leave_fullscreen) {
+        HideFullscreen(true);
+    }
+    OnTogglePerfOverlay();
     if (pause_layout) {
         layout->setEnabled(true);
         layout->invalidate();
@@ -237,7 +315,8 @@ void MainWindow::ShowSuspendedGameLibrary(u64 program_id, QPixmap frame, bool us
     }
 
     game_list->FocusSuspendedGame();
-    auto [cover, artwork] = game_list->HomeCoverForGame(current_game_path, program_id, *surface);
+    auto [cover, artwork] =
+        game_list->TransitionArtworkForGame(current_game_path, program_id, *surface);
     suspended_transition_frame = std::move(frame);
     if (cover.isEmpty()) {
         const QRect area = surface->rect();
@@ -245,6 +324,9 @@ void MainWindow::ShowSuspendedGameLibrary(u64 program_id, QPixmap frame, bool us
         cover = QRect(0, 0, side, side);
         cover.moveCenter(area.center());
     }
+#ifdef _WIN32
+    native_frame.reset();
+#endif
     if (!already_shrinking) {
         game_scene_transition->Shrink(cover, suspended_transition_frame, std::move(artwork));
     }
@@ -262,7 +344,8 @@ void MainWindow::ResumeSuspendedGame() {
     }
 
     const auto program_id = QtCommon::system->GetApplicationProcessProgramID();
-    auto [cover, artwork] = game_list->HomeCoverForGame(current_game_path, program_id, *centralWidget());
+    auto [cover, artwork] =
+        game_list->TransitionArtworkForGame(current_game_path, program_id, *centralWidget());
     const auto after_zoom = [this] {
         if (QApplication::activeModalWidget()) {
             game_scene_transition->Clear();

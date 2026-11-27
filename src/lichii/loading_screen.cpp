@@ -15,7 +15,6 @@
 #include <QPixmap>
 #include <QPropertyAnimation>
 #include <QPushButton>
-#include <QRadialGradient>
 #include <QStyle>
 #include <QStyleOption>
 #include <QTime>
@@ -40,17 +39,6 @@ QSize TransitionRasterSize(const QSize& size, qreal scale) {
         pixels.scale(max_pixels, Qt::KeepAspectRatio);
     }
     return pixels;
-}
-
-void PaintTransitionBackdrop(QPainter& painter, const QRectF& bounds) {
-    painter.save();
-    painter.translate(bounds.topLeft());
-    painter.scale(bounds.width(), bounds.height());
-    QRadialGradient glow(QPointF(0.53, 0.37), 0.65);
-    glow.setColorAt(0.0, QColor(0x27, 0x49, 0x61));
-    glow.setColorAt(1.0, QColor(0x0e, 0x18, 0x28));
-    painter.fillRect(QRectF(0, 0, 1, 1), glow);
-    painter.restore();
 }
 
 void PaintLoadingText(QPainter& painter, const QRectF& bounds, const QFont& font,
@@ -170,18 +158,18 @@ QPixmap LoadingScreen::TransitionFrame(const QSize& size) const {
     if (frame.isNull()) {
         return {};
     }
+    frame.fill(Qt::black);
     QPainter painter(&frame);
-    PaintTransitionBackdrop(painter, frame.rect());
     painter.scale(qreal(pixels.width()) / size.width(), qreal(pixels.height()) / size.height());
     PaintLoadingText(painter, QRectF(QPointF{}, size), ui->stage->font(), tr("Loading..."));
     return frame;
 }
 
-void LoadingScreen::Prepare(Loader::AppLoader& loader, bool use_transition_backdrop) {
+void LoadingScreen::Prepare(Loader::AppLoader& loader, bool match_transition_frame) {
     fadeout_animation->stop();
     opacity_effect->setOpacity(1);
     Clear();
-    show_transition_backdrop = use_transition_backdrop;
+    center_prepare_text = match_transition_frame;
     std::vector<u8> buffer;
     if (loader.ReadBanner(buffer) == Loader::ResultStatus::Success) {
 #ifdef LICHII_QT_MOVIE_MISSING
@@ -277,7 +265,7 @@ void LoadingScreen::OnLoadProgress(VideoCore::LoadCallbackStage stage, std::size
     }
     ui->value->setText(estimate);
     const bool transition_prepare =
-        show_transition_backdrop && stage == VideoCore::LoadCallbackStage::Prepare;
+        center_prepare_text && stage == VideoCore::LoadCallbackStage::Prepare;
     ui->stage->setVisible(!transition_prepare);
     ui->logo->setVisible(!transition_prepare);
     ui->banner->setVisible(!transition_prepare);
@@ -286,21 +274,10 @@ void LoadingScreen::OnLoadProgress(VideoCore::LoadCallbackStage stage, std::size
 }
 
 bool LoadingScreen::eventFilter(QObject* watched, QEvent* event) {
-    if (watched == ui->fade_parent && event->type() == QEvent::Paint &&
-        show_transition_backdrop) {
-        const auto bounds = ui->fade_parent->rect();
-        const auto pixels = TransitionRasterSize(bounds.size(), ui->fade_parent->devicePixelRatioF());
-        if (transition_backdrop.size() != pixels) {
-            transition_backdrop = QPixmap(pixels);
-            QPainter painter(&transition_backdrop);
-            PaintTransitionBackdrop(painter, transition_backdrop.rect());
-        }
+    if (watched == ui->fade_parent && event->type() == QEvent::Paint && center_prepare_text &&
+        previous_stage == VideoCore::LoadCallbackStage::Prepare) {
         QPainter painter(ui->fade_parent);
-        painter.setRenderHint(QPainter::SmoothPixmapTransform);
-        painter.drawPixmap(bounds, transition_backdrop);
-        if (previous_stage == VideoCore::LoadCallbackStage::Prepare) {
-            PaintLoadingText(painter, bounds, ui->stage->font(), ui->stage->text());
-        }
+        PaintLoadingText(painter, ui->fade_parent->rect(), ui->stage->font(), ui->stage->text());
         return true;
     }
     return QWidget::eventFilter(watched, event);
@@ -322,8 +299,7 @@ void LoadingScreen::resizeEvent(QResizeEvent* event) {
 void LoadingScreen::Clear() {
     ui->banner->clear();
     ui->logo->clear();
-    show_transition_backdrop = false;
-    transition_backdrop = {};
+    center_prepare_text = false;
 #ifndef LICHII_QT_MOVIE_MISSING
     animation.reset();
     backing_buf.reset();

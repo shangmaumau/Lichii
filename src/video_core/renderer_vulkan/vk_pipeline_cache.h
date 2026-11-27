@@ -219,7 +219,7 @@ private:
         ShaderPools& pools, const GraphicsPipelineCacheKey& key,
         std::span<Shader::Environment* const> envs, PipelineStatistics* statistics,
         bool build_in_parallel, std::shared_ptr<ShaderPools> emit_pools = nullptr,
-        ParallelTranslation* parallel = nullptr);
+        ParallelTranslation* parallel = nullptr, std::stop_token stop_loading = {});
 
     /// Released IR pools for a build, or new ones
     [[nodiscard]] std::shared_ptr<ShaderPools> TakeSparePools();
@@ -267,7 +267,8 @@ private:
     std::unique_ptr<GraphicsPipeline> TranslateCachedGraphics(std::span<const u8> payload,
                                                               const GraphicsPipelineCacheKey& key,
                                                               PipelineStatistics* statistics,
-                                                              bool& incomplete);
+                                                              bool& incomplete,
+                                                              std::stop_token stop_loading);
 
     /// Cancels the v2 prebuild and waits for its running stages
     void StopBackgroundJobs();

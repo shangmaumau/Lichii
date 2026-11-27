@@ -304,7 +304,7 @@ private:
     void BootGame(const QString& filename, Service::AM::FrontendAppletParameters params,
                   StartGameType with_config = StartGameType::Normal);
     void CompleteBootGame(const QString& filename, Service::AM::FrontendAppletParameters params,
-                          StartGameType type, bool use_transition_backdrop);
+                          StartGameType type, bool match_loading_transition);
     void ShowSuspendedGameLibrary(u64 program_id, QPixmap frame, bool use_loading_frame = false);
     void ReturnToLibraryWhileLoading();
     void BootGameFromList(const QString& filename, u64 program_id, StartGameType with_config);
@@ -457,7 +457,7 @@ private slots:
     void ToggleFullscreen();
     bool UsingExclusiveFullscreen();
     void ShowFullscreen();
-    void HideFullscreen();
+    void HideFullscreen(bool keep_render_hidden = false);
     void ToggleWindowMode();
     void ResetWindowSize(u32 width, u32 height);
     void ResetWindowSize720();

@@ -48,7 +48,7 @@ public:
 
     /// Call before showing the loading screen to load the widgets with the logo and banner for the
     /// currently loaded application.
-    void Prepare(Loader::AppLoader& loader, bool use_transition_backdrop = false);
+    void Prepare(Loader::AppLoader& loader, bool match_transition_frame = false);
 
     /// After the loading screen is hidden, the owner of this class can call this to clean up any
     /// used resources such as the logo and banner.
@@ -81,8 +81,7 @@ private:
     std::unique_ptr<QByteArray> backing_mem;
 #endif
     std::unique_ptr<Ui::LoadingScreen> ui;
-    bool show_transition_backdrop = false;
-    QPixmap transition_backdrop;
+    bool center_prepare_text = false;
     std::size_t previous_total = 0;
     VideoCore::LoadCallbackStage previous_stage;
 

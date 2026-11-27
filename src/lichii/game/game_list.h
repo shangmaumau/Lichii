@@ -85,8 +85,8 @@ public:
     void SetSuspendedGame(QString path = {}, u64 program_id = 0, bool loading = false);
     void SetSuspendedGameLoading(bool loading);
     void FocusSuspendedGame();
-    QPair<QRect, QPixmap> HomeCoverForGame(const QString& filename, u64 program_id,
-                                         const QWidget& surface) const;
+    QPair<QRect, QPixmap> TransitionArtworkForGame(const QString& filename, u64 program_id,
+                                                  const QWidget& surface) const;
     void SetFilterVisible(bool visibility);
     bool IsEmpty() const;
     bool IsPopulating() const;

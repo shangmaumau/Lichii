@@ -226,9 +226,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 #endif
 
-#ifdef _WIN32
-    QApplication::setStyle(QStringLiteral("windowsvista"));
-#elif defined(Q_OS_MACOS)
+#ifdef Q_OS_MACOS
     // Keep Qt's widget metrics consistent with the stylesheets while Cocoa owns the menu bar.
     QApplication::setStyle(QStringLiteral("Fusion"));
 #endif

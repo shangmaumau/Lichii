@@ -710,7 +710,7 @@ void ControllerUiNavigation::Dispatch(Qt::Key key, bool repeated) {
                     FocusMenuBar();
                     return;
                 case GameList::ControllerNavigation::Handled:
-                    if (key == Qt::Key_Enter || key == Qt::Key_Menu) {
+                    if (key == Qt::Key_Enter) {
                         PlaySound(SoundEffect::Confirm);
                     }
                     return;

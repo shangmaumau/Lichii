@@ -12,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <stop_token>
 #include <string>
 #include <thread>
 #include <vector>
@@ -91,6 +92,8 @@ class ShaderJobBatch {
 public:
     /// Waits until every job submitted with this batch has reached a final state.
     void Wait() const;
+    /// Waits for the same condition, returning false if interrupted by a stop request.
+    bool Wait(std::stop_token stop_token) const;
     bool Idle() const;
     bool StopRequested() const;
 

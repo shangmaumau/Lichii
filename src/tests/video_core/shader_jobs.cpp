@@ -21,6 +21,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "common/shutdown_progress.h"
 #include "video_core/renderer_vulkan/pipeline_build.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache_prebuild.h"
 #include "video_core/shader_jobs.h"
@@ -466,6 +467,44 @@ TEST_CASE("Shader jobs cancel queued and running jobs", "[video_core][shader_job
         REQUIRE(still_running);
         REQUIRE(job.Status() == ShaderJobStatus::Done);
     }
+}
+
+TEST_CASE("A stop request interrupts the boot wait before driver work ends",
+          "[video_core][shader_jobs]") {
+    ShaderJobScheduler scheduler{Config(1, 1)};
+    auto boot = scheduler.CreateBatch();
+    std::promise<void> driver_entered;
+    Gate driver_gate;
+    const auto active = scheduler.Submit(
+        TwoStageJob(Soon, [](ShaderJobContext&) {}, [&] {
+            driver_entered.set_value();
+            driver_gate.Wait();
+        }),
+        &boot);
+    driver_entered.get_future().wait();
+    const auto queued = scheduler.Submit(
+        TwoStageJob(Soon, [](ShaderJobContext&) {}, [] {}), &boot);
+    WaitForStatus(queued, ShaderJobStatus::DriverQueued);
+
+    std::stop_source stop;
+    auto finished_waiting = std::async(std::launch::async, [&] { return boot.Wait(stop.get_token()); });
+    const bool waiting_for_driver = finished_waiting.wait_for(20ms) == std::future_status::timeout;
+    stop.request_stop();
+    const bool interrupted = finished_waiting.wait_for(2s) == std::future_status::ready;
+    const u64 progress = Common::ShutdownProgress();
+    scheduler.Cancel(boot);
+    const bool awaiting_driver = !boot.Idle();
+    driver_gate.Open();
+    boot.Wait();
+    active.Wait();
+
+    CHECK(waiting_for_driver);
+    CHECK(interrupted);
+    CHECK_FALSE(finished_waiting.get());
+    CHECK(awaiting_driver);
+    CHECK(active.Status() == ShaderJobStatus::Done);
+    CHECK(queued.Status() == ShaderJobStatus::Cancelled);
+    CHECK(Common::ShutdownProgress() > progress);
 }
 
 TEST_CASE("Cancelling a shader job batch leaves the workers running", "[video_core][shader_jobs]") {

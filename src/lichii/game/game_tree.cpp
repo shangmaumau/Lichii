@@ -43,61 +43,20 @@ public:
 
         QStyleOptionViewItem item = option;
         initStyleOption(&item, index);
-        const int icon_size = static_cast<int>(UISettings::values.game_icon_size.GetValue());
-        const int icon_side =
-            std::min({icon_size, item.rect.height() - 2, item.rect.width() - 8});
         const QStringList lines =
             item.text.replace(QChar::LineSeparator, QLatin1Char('\n')).split(QLatin1Char('\n'));
         item.text.clear();
 
-        QPixmap decoration_picture = index.data(Qt::DecorationRole).value<QPixmap>();
-        QSize decoration_size;
-        if (!decoration_picture.isNull()) {
-            if (type == GameListItemType::Game) {
-                if (icon_side > 0) {
-                    decoration_size = QSize(icon_side, icon_side);
-                }
-            } else {
-                const qreal dpr = decoration_picture.devicePixelRatio() > 0.0
-                                      ? decoration_picture.devicePixelRatio()
-                                      : 1.0;
-                decoration_size =
-                    QSize(qRound(decoration_picture.width() / dpr),
-                          qRound(decoration_picture.height() / dpr));
-                const int max_side = std::max(0, item.rect.height() - 2);
-                if (max_side > 0 && (decoration_size.width() > max_side ||
-                                     decoration_size.height() > max_side)) {
-                    decoration_size.scale(QSize(max_side, max_side), Qt::KeepAspectRatio);
-                }
-            }
-
-            if (!decoration_size.isEmpty()) {
-                // Keep the decoration slot for layout and text, but draw the bitmap ourselves so
-                // its physical @2x pixels are used instead of QIcon scaling it through 1x.
-                item.decorationSize = decoration_size;
-                QPixmap placeholder(decoration_size);
-                placeholder.fill(Qt::transparent);
-                item.icon = QIcon(placeholder);
-            }
-        }
+        const auto decoration_picture = index.data(Qt::DecorationRole).value<QPixmap>();
+        const auto decoration_size = PrepareDecoration(item, decoration_picture, type);
 
         const QWidget* widget = item.widget;
         QStyle* style = widget != nullptr ? widget->style() : QApplication::style();
         style->drawControl(QStyle::CE_ItemViewItem, &item, painter, widget);
 
-        if (!decoration_picture.isNull() && !decoration_size.isEmpty()) {
-            const QRect slot =
-                style->subElementRect(QStyle::SE_ItemViewItemDecoration, &item, widget);
-            QSize draw_size = decoration_size;
-            if (draw_size.width() > slot.width() || draw_size.height() > slot.height()) {
-                draw_size.scale(slot.size(), Qt::KeepAspectRatio);
-            }
-            if (!draw_size.isEmpty()) {
-                const QRect target(slot.left() + (slot.width() - draw_size.width()) / 2,
-                                   slot.top() + (slot.height() - draw_size.height()) / 2,
-                                   draw_size.width(), draw_size.height());
-                painter->drawPixmap(target, decoration_picture);
-            }
+        const QRect target = DecorationRect(item, decoration_size, *style);
+        if (!target.isEmpty()) {
+            painter->drawPixmap(target, decoration_picture);
         }
 
         const int text_left =
@@ -202,6 +161,64 @@ public:
         }
         return size;
     }
+
+    QRect CoverRect(const QStyleOptionViewItem& option, const QModelIndex& index) const {
+        const auto type = index.data(GameListItem::TypeRole).value<GameListItemType>();
+        if (type != GameListItemType::Game || option.rect.isEmpty()) {
+            return {};
+        }
+        QStyleOptionViewItem item = option;
+        initStyleOption(&item, index);
+        item.text.clear();
+        const auto picture = index.data(Qt::DecorationRole).value<QPixmap>();
+        const auto decoration_size = PrepareDecoration(item, picture, type);
+        const QStyle* style = item.widget != nullptr ? item.widget->style() : QApplication::style();
+        return DecorationRect(item, decoration_size, *style);
+    }
+
+private:
+    static QSize PrepareDecoration(QStyleOptionViewItem& item, const QPixmap& picture,
+                                   GameListItemType type) {
+        if (picture.isNull()) {
+            return {};
+        }
+        QSize size;
+        if (type == GameListItemType::Game) {
+            const int icon_size = static_cast<int>(UISettings::values.game_icon_size.GetValue());
+            const int side = std::min({icon_size, item.rect.height() - 2, item.rect.width() - 8});
+            size = QSize(side, side);
+        } else {
+            const qreal dpr = picture.devicePixelRatio() > 0.0 ? picture.devicePixelRatio() : 1.0;
+            size = QSize(qRound(picture.width() / dpr), qRound(picture.height() / dpr));
+            const int max_side = std::max(0, item.rect.height() - 2);
+            if (max_side > 0 && (size.width() > max_side || size.height() > max_side)) {
+                size.scale(QSize(max_side, max_side), Qt::KeepAspectRatio);
+            }
+        }
+        if (!size.isEmpty()) {
+            // Keep the layout slot while drawing the original high-DPI bitmap ourselves.
+            item.decorationSize = size;
+            QPixmap placeholder(size);
+            placeholder.fill(Qt::transparent);
+            item.icon = QIcon(placeholder);
+        }
+        return size;
+    }
+
+    static QRect DecorationRect(const QStyleOptionViewItem& item, QSize size, const QStyle& style) {
+        if (size.isEmpty()) {
+            return {};
+        }
+        const auto slot = style.subElementRect(QStyle::SE_ItemViewItemDecoration, &item, item.widget);
+        if (size.width() > slot.width() || size.height() > slot.height()) {
+            size.scale(slot.size(), Qt::KeepAspectRatio);
+        }
+        if (size.isEmpty()) {
+            return {};
+        }
+        return {slot.left() + (slot.width() - size.width()) / 2,
+                slot.top() + (slot.height() - size.height()) / 2, size.width(), size.height()};
+    }
 };
 
 QPixmap LoadTreeChevron() {
@@ -295,6 +312,19 @@ bool GameTree::ToggleControllerFolder() {
     }
     setExpanded(current, !isExpanded(current));
     return true;
+}
+
+QRect GameTree::CoverRect(const QModelIndex& index) const {
+    if (!index.isValid() || index.model() != model()) {
+        return {};
+    }
+    const auto name = index.siblingAtColumn(GameListModel::COLUMN_NAME);
+    QStyleOptionViewItem option;
+    initViewItemOption(&option);
+    option.rect = visualRect(name);
+    const auto* delegate =
+        static_cast<const LichiiNameDelegate*>(itemDelegateForColumn(GameListModel::COLUMN_NAME));
+    return delegate->CoverRect(option, name);
 }
 
 void GameTree::drawBranches(QPainter* painter, const QRect& rect,

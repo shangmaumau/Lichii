@@ -34,6 +34,7 @@ void EmuThread::run() {
                 emit LoadProgress(stage, value, total);
             });
     }
+    loading_disk_resources.store(false);
     emit LoadProgress(VideoCore::LoadCallbackStage::Complete, 0, 0);
 
     gpu.ReleaseContext();
@@ -44,10 +45,9 @@ void EmuThread::run() {
     // its applet manager locked) blocked the next boot. Stopped, the core threads just leave.
     if (!stop_token.stop_requested()) {
         QtCommon::system->GetCpuManager().OnGpuReady();
-    }
-
-    if (QtCommon::system->DebuggerEnabled()) {
-        QtCommon::system->InitializeDebugger();
+        if (QtCommon::system->DebuggerEnabled()) {
+            QtCommon::system->InitializeDebugger();
+        }
     }
 
     while (!stop_token.stop_requested()) {

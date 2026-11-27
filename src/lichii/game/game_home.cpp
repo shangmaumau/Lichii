@@ -209,6 +209,12 @@ private:
 class ShelfView final : public QListView {
   public:
     explicit ShelfView(QWidget* parent) : QListView(parent) {
+        setObjectName(QStringLiteral("gameHomeShelf"));
+        viewport()->setObjectName(QStringLiteral("gameHomeShelfViewport"));
+        setStyleSheet(QStringLiteral(
+            "QListView#gameHomeShelf { background: transparent; border: none; }"
+            "QWidget#gameHomeShelfViewport { background: transparent; }"));
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         scroll_timer.setInterval(16);
         scroll_timer.setTimerType(Qt::PreciseTimer);
         connect(&scroll_timer, &QTimer::timeout, this, &ShelfView::AdvanceScroll);
@@ -1021,7 +1027,6 @@ void GameHome::ShowCollection(bool show, bool animate) {
     view->setFlow(QListView::LeftToRight);
     view->setWrapping(show);
     view->setVerticalScrollBarPolicy(show ? Qt::ScrollBarAlwaysOn : Qt::ScrollBarAlwaysOff);
-    view->setHorizontalScrollBarPolicy(show ? Qt::ScrollBarAlwaysOff : Qt::ScrollBarAsNeeded);
     if (show) {
         library_row->addWidget(view, 1);
     } else {
@@ -1227,9 +1232,8 @@ void GameHome::UpdateTileSizes() {
     loading_panel->setGeometry(library_body->rect());
     const int available_height = library_body->height();
     const int available_width = library_body->width();
-    const int scrollbar = style()->pixelMetric(QStyle::PM_ScrollBarExtent);
     const int shelf_cell = std::min({std::clamp(available_width / 5, 82, 230), available_width,
-                                     available_height - scrollbar});
+                                     available_height});
     const int center = height() / 2 - library_body->y();
     if (loading) {
         const int label_height =
@@ -1263,10 +1267,9 @@ void GameHome::UpdateTileSizes() {
             return;
         }
         view->setGridSize(QSize(cell, cell));
-        const int shelf_height = cell + scrollbar;
         const int shelf_width = std::min(available_width, std::max(1, tiles->rowCount()) * cell);
-        const int y = std::clamp(center - cell / 2, 0, available_height - shelf_height);
-        view->setGeometry((available_width - shelf_width) / 2, y, shelf_width, shelf_height);
+        const int y = std::clamp(center - cell / 2, 0, available_height - cell);
+        view->setGeometry((available_width - shelf_width) / 2, y, shelf_width, cell);
     }
 }
 

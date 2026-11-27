@@ -185,7 +185,7 @@ void GameSceneTransition::Start(Phase next, qreal start, qreal end, int duration
     setGeometry(parentWidget()->rect());
     raise();
     show();
-    update();
+    repaint();
     motion.start();
 }
 
