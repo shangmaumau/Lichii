@@ -86,9 +86,9 @@ void GameSceneTransition::SetAnchor(const QRect& cover) {
                     qreal(cover.width()) / canvas.width(), qreal(cover.height()) / canvas.height());
 }
 
-bool GameSceneTransition::Expand(const QRect& cover, QPixmap artwork,
+bool GameSceneTransition::Expand(const QRect& cover, QPixmap cover_art,
                                  std::function<void()> complete, QPixmap frame) {
-    if (artwork.isNull() || frame.isNull() || cover.isEmpty() || !parentWidget()->isVisible() ||
+    if (cover_art.isNull() || frame.isNull() || cover.isEmpty() || !parentWidget()->isVisible() ||
         parentWidget()->size().isEmpty()) {
         return false;
     }
@@ -96,7 +96,7 @@ bool GameSceneTransition::Expand(const QRect& cover, QPixmap artwork,
     SetAnchor(cover);
     scene = std::move(frame);
     scene_base = SceneBase(scene);
-    this->artwork = std::move(artwork);
+    artwork = std::move(cover_art);
     completion = std::move(complete);
     Start(Phase::Expanding, 0.0, 1.0, ZoomDuration);
     return true;
@@ -125,7 +125,7 @@ void GameSceneTransition::RefreshHeldFrame() {
     }
 }
 
-void GameSceneTransition::Shrink(const QRect& cover, QPixmap frame, QPixmap artwork) {
+void GameSceneTransition::Shrink(const QRect& cover, QPixmap frame, QPixmap cover_art) {
     if (cover.isEmpty() || !parentWidget()->isVisible() || parentWidget()->size().isEmpty() ||
         frame.isNull()) {
         Clear();
@@ -135,7 +135,7 @@ void GameSceneTransition::Shrink(const QRect& cover, QPixmap frame, QPixmap artw
     SetAnchor(cover);
     scene = std::move(frame);
     scene_base = SceneBase(scene);
-    this->artwork = std::move(artwork);
+    artwork = std::move(cover_art);
     Start(Phase::Shrinking, 1.0, 0.0, ZoomDuration);
 }
 

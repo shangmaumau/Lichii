@@ -82,20 +82,21 @@ InputOptions OptionsFor(const QWidget& field) {
             options.numeric = true;
             options.decimal = false;
             options.negative = spin->minimum() < 0;
-        } else if (const auto* spin = qobject_cast<QDoubleSpinBox*>(line->parentWidget())) {
+        } else if (const auto* double_spin = qobject_cast<QDoubleSpinBox*>(line->parentWidget())) {
             options.numeric = true;
-            options.decimal = spin->decimals() > 0;
-            options.negative = spin->minimum() < 0;
-            options.separator = spin->locale().decimalPoint();
+            options.decimal = double_spin->decimals() > 0;
+            options.negative = double_spin->minimum() < 0;
+            options.separator = double_spin->locale().decimalPoint();
         } else if (const auto* validator = qobject_cast<const QIntValidator*>(line->validator())) {
             options.numeric = true;
             options.decimal = false;
             options.negative = validator->bottom() < 0;
-        } else if (const auto* validator = qobject_cast<const QDoubleValidator*>(line->validator())) {
+        } else if (const auto* double_validator =
+                       qobject_cast<const QDoubleValidator*>(line->validator())) {
             options.numeric = true;
-            options.decimal = validator->decimals() != 0;
-            options.negative = validator->bottom() < 0;
-            options.separator = validator->locale().decimalPoint();
+            options.decimal = double_validator->decimals() != 0;
+            options.negative = double_validator->bottom() < 0;
+            options.separator = double_validator->locale().decimalPoint();
         }
     }
     return options;

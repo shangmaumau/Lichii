@@ -13,11 +13,11 @@ class GameSceneTransition final : public QWidget {
 public:
     explicit GameSceneTransition(QWidget* surface);
 
-    bool Expand(const QRect& cover, QPixmap artwork, std::function<void()> complete,
+    bool Expand(const QRect& cover, QPixmap cover_art, std::function<void()> complete,
                 QPixmap frame);
     bool HoldFrame(const QPixmap& frame);
     void RefreshHeldFrame();
-    void Shrink(const QRect& cover, QPixmap frame, QPixmap artwork = {});
+    void Shrink(const QRect& cover, QPixmap frame, QPixmap cover_art = {});
     bool Reverse(std::function<void()> complete = {});
     bool IsExpanding() const;
     bool IsShrinking() const;
