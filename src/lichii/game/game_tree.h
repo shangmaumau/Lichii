@@ -23,7 +23,7 @@ public:
     bool ToggleControllerFolder();
     QRect CoverRect(const QModelIndex& index) const;
 
-    QString GetLastFilterResultItem() const;
+    QModelIndex GetFilterResult() const;
     int FilterClosedResultCount(GameListModel* model);
     void ApplyFilter(const QString& edit_filter_text, GameListModel* model);
 

@@ -77,7 +77,7 @@ public:
                       MainWindow* parent = nullptr);
     ~GameList() override;
 
-    std::pair<QString, u64> GetLastFilterResultItem() const;
+    QModelIndex GetFilterResult();
     void ClearFilter();
     void SetFilterFocus();
     void RestoreFocus();
@@ -173,6 +173,7 @@ private:
     bool eventFilter(QObject* obj, QEvent* event) override;
     void changeEvent(QEvent*) override;
 
+    bool IsEntryHidden(const QModelIndex& index) const;
     void ValidateEntry(const QModelIndex& item);
 
     void ToggleFavorite(u64 program_id);

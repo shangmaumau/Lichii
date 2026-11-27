@@ -721,6 +721,17 @@ QModelIndex GameHome::SourceIndex(const QModelIndex& index) const {
     return index.data(SourceIndexRole).value<QPersistentModelIndex>();
 }
 
+QModelIndex GameHome::GetFilterResult() {
+    if (refresh_timer->isActive()) {
+        Refresh();
+    }
+    // The All Games tile has no source row and does not count as a search result.
+    if (SourceIndex(tiles->index(1, 0)).isValid()) {
+        return {};
+    }
+    return SourceIndex(tiles->index(0, 0));
+}
+
 QPair<QRect, QPixmap> GameHome::CoverForGame(const QString& filename, qulonglong program_id,
                                           const QWidget& surface) const {
     if (!isVisible() || !view->isVisible() || filename.isEmpty()) {

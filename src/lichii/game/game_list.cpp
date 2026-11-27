@@ -164,7 +164,7 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
                              m_currentView->verticalScrollBar()->value()};
     });
 
-    // TODO: impl on grid/carousel
+    // The grid and the carousel report theirs from OnTextChanged.
     connect(tree_view, &GameTree::FilterResultReady, search_field,
             [this](int visible, int total) { search_field->setFilterResult(visible, total); });
     connect(home_view, &GameHome::FilterResultReady, search_field,
@@ -205,13 +205,39 @@ void GameList::SetupViews() {
     }
 }
 
-std::pair<QString, u64> GameList::GetLastFilterResultItem() const {
-    if (game_list_mode == Settings::GameListMode::HomeView) {
-        const auto first = home_view->SourceIndex(home_view->View()->model()->index(0, 0));
-        return {first.data(GameListItemPath::FullPathRole).toString(),
-                first.data(GameListItemPath::ProgramIdRole).toULongLong()};
+QModelIndex GameList::GetFilterResult() {
+    // The scanner replaces the live model and reapplies its filter on the GUI thread.
+    if (library_loading || !isEnabled()) {
+        return {};
     }
-    return {tree_view->GetLastFilterResultItem(), 0};
+    if (current_page == home_view) {
+        return home_view->GetFilterResult();
+    }
+    if (m_isTreeMode) {
+        return tree_view->GetFilterResult();
+    }
+    // The flat views only launch a search with a single visible result.
+    QModelIndex result;
+    for (int row = 0; row < item_model->rowCount(); ++row) {
+        const auto index = item_model->index(row, 0);
+        if (!IsEntryHidden(index)) {
+            if (result.isValid()) {
+                return {};
+            }
+            result = index;
+        }
+    }
+    return result;
+}
+
+bool GameList::IsEntryHidden(const QModelIndex& index) const {
+    if (m_isTreeMode) {
+        const auto parent = index.parent();
+        return tree_view->isRowHidden(index.row(), parent) ||
+               (parent.isValid() && tree_view->isRowHidden(parent.row(), parent.parent()));
+    }
+    return (current_page == grid_view && grid_view->isRowHidden(index.row())) ||
+           (current_page == carousel_view && carousel_view->isRowHidden(index.row()));
 }
 
 void GameList::ClearFilter() {
@@ -488,10 +514,11 @@ void GameList::OnTextChanged(const QString& new_text) {
         home_view->SetFilter(edit_filter_text);
     } else if (m_isTreeMode) {
         tree_view->ApplyFilter(edit_filter_text, item_model);
-    } else if (m_currentView == carousel_view) {
-        carousel_view->ApplyFilter(edit_filter_text, item_model);
     } else {
-        grid_view->ApplyFilter(edit_filter_text, item_model);
+        const int shown = current_page == carousel_view
+                              ? carousel_view->ApplyFilter(edit_filter_text, item_model)
+                              : grid_view->ApplyFilter(edit_filter_text, item_model);
+        search_field->setFilterResult(shown, item_model->rowCount());
     }
 }
 
@@ -583,7 +610,8 @@ void GameList::OnPopulatingCompleted(const QStringList& watch_list) {
             item_model->match(item_model->index(0, 0), GameListItemPath::FullPathRole,
                               refreshing_game_path, -1, Qt::MatchExactly | Qt::MatchRecursive);
         for (const auto& match : matches) {
-            if (match.data(GameListItemPath::ProgramIdRole).toULongLong() == refreshing_game_id) {
+            if (match.data(GameListItemPath::ProgramIdRole).toULongLong() == refreshing_game_id &&
+                !IsEntryHidden(match)) {
                 m_currentView->setCurrentIndex(match);
                 break;
             }
@@ -941,7 +969,7 @@ void GameList::UpdateIconSizes() {
 }
 
 void GameList::ValidateEntry(const QModelIndex& item) {
-    if (!isEnabled()) {
+    if (!isEnabled() || !item.isValid() || IsEntryHidden(item)) {
         return;
     }
 
@@ -954,6 +982,7 @@ void GameList::ValidateEntry(const QModelIndex& item) {
     switch (selected.data(GameListItem::TypeRole).value<GameListItemType>()) {
     case GameListItemType::Game: {
         const QString file_path = selected.data(GameListItemPath::FullPathRole).toString();
+        const auto title_id = selected.data(GameListItemPath::ProgramIdRole).toULongLong();
         if (file_path.isEmpty())
             return;
         const QFileInfo file_info(file_path);
@@ -964,12 +993,10 @@ void GameList::ValidateEntry(const QModelIndex& item) {
             const QDir dir{file_path};
             const QStringList matching_main = dir.entryList({QStringLiteral("main")}, QDir::Files);
             if (matching_main.size() == 1) {
-                emit GameChosen(dir.path() + QDir::separator() + matching_main[0]);
+                emit GameChosen(dir.path() + QDir::separator() + matching_main[0], title_id);
             }
             return;
         }
-
-        const auto title_id = selected.data(GameListItemPath::ProgramIdRole).toULongLong();
 
         search_field->clear();
         emit GameChosen(file_path, title_id);

@@ -2970,7 +2970,8 @@ bool MainWindow::OnShutdownBegin() {
         return false;
     }
 
-    if (ui->action_Fullscreen->isChecked() && !game_suspended_to_library) {
+    // Leave fullscreen only when stopping a game that is still on screen.
+    if (ui->action_Fullscreen->isChecked() && !close_pending && !game_suspended_to_library) {
         HideFullscreen();
     }
 

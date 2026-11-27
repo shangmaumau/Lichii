@@ -40,6 +40,7 @@ class GameHome final : public QWidget {
     bool ReturnToShelf(bool animate = true);
     bool OpenSelectedGameMenu();
     QModelIndex SourceIndex(const QModelIndex& index) const;
+    QModelIndex GetFilterResult();
     QPair<QRect, QPixmap> CoverForGame(const QString& filename, qulonglong program_id,
                                      const QWidget& surface) const;
     void FocusLibrary();
